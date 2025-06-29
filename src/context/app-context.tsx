@@ -26,7 +26,7 @@ interface AppContextType {
   addUser: (newUser: Omit<User, 'id' | 'avatar'>) => void;
   updateUser: (updatedUser: User) => void;
   deleteUser: (userId: string) => void;
-  updateProfile: (name: string, avatar: string) => void;
+  updateProfile: (name: string, email: string, avatar: string) => void;
   requestTaskStatusChange: (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']) => boolean;
   approveTaskStatusChange: (taskId: string, commentText: string) => void;
   returnTaskStatusChange: (taskId: string, commentText: string) => void;
@@ -345,12 +345,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Deleted user: ${userName}`);
   };
 
-  const updateProfile = (name: string, avatar: string) => {
+  const updateProfile = (name: string, email: string, avatar: string) => {
     if (user) {
-        const updatedUser = {...user, name, avatar};
+        const updatedUser = {...user, name, email, avatar};
         setUser(updatedUser);
         setUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
-        recordAction(`Updated own profile name`);
+        recordAction(`Updated own profile`);
     }
   };
 

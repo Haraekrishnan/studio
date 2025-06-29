@@ -19,6 +19,7 @@ export default function AccountPage() {
   const { user, users, updateUser, deleteUser, updateProfile, getVisibleUsers, appName, appLogo, updateBranding } = useAppContext();
   const { toast } = useToast();
   const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -32,6 +33,14 @@ export default function AccountPage() {
     setNewAppName(appName);
     setNewAppLogo(appLogo);
   }, [appName, appLogo]);
+  
+  useEffect(() => {
+    if (user) {
+        setName(user.name);
+        setEmail(user.email);
+        setAvatar(user.avatar);
+    }
+  }, [user]);
 
   const visibleUsers = useMemo(() => {
     if (!user) return [];
@@ -48,7 +57,7 @@ export default function AccountPage() {
 
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(name, avatar);
+    updateProfile(name, email, avatar);
     toast({
       title: 'Profile Updated',
       description: 'Your profile information has been saved.',
@@ -133,7 +142,7 @@ export default function AccountPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" value={user.email} disabled />
+                    <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="avatar-upload">Change Profile Picture</Label>
@@ -214,7 +223,10 @@ export default function AccountPage() {
                                             <AvatarImage src={report.avatar} alt={report.name} />
                                             <AvatarFallback>{report.name.charAt(0)}</AvatarFallback>
                                         </Avatar>
-                                        <p className="font-medium">{report.name}</p>
+                                        <div className="font-medium">
+                                            <p>{report.name}</p>
+                                            <p className="text-xs text-muted-foreground">{report.email}</p>
+                                        </div>
                                     </div>
                                 </TableCell>
                                 <TableCell>{report.role}</TableCell>
