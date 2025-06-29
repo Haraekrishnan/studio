@@ -2,7 +2,7 @@ import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerCo
 import { sub } from 'date-fns';
 
 export const USERS: User[] = [
-  { id: '1', name: 'Harikrishnan P S', email: 'harikrishnan@ariesmarine.com', password: 'password', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=1' },
+  { id: '1', name: 'Harikrishnan P S', email: 'satanin2013@gmail.com', password: 'password', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=1' },
   { id: '2', name: 'Manu M G', email: 'manu@ariesmarine.com', password: 'password', role: 'Manager', avatar: 'https://i.pravatar.cc/150?u=2', supervisorId: '1' },
   { id: '3', name: 'Mujeeb', email: 'mujeeb@ariesmarine.com', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=3', supervisorId: '2' },
   { id: '4', name: 'Albin Raju', email: 'albin@ariesmarine.com', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=4', supervisorId: '2' },
