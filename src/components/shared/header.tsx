@@ -18,7 +18,7 @@ export default function Header() {
     if (pathname.startsWith('/performance')) return 'Performance';
     if (pathname.startsWith('/reports')) return 'Reports';
     if (pathname.startsWith('/account')) return 'Account';
-    return 'TaskMaster Pro - Aries Marine';
+    return 'Task Management System';
   };
   
   const navItems = [
@@ -46,7 +46,7 @@ export default function Header() {
                     <div className="bg-primary p-2 rounded-lg">
                         <CheckSquare className="h-6 w-6 text-primary-foreground" />
                     </div>
-                    <h1 className="text-xl font-bold">TaskMaster Pro - Aries Marine</h1>
+                    <h1 className="text-xl font-bold">Task Management System</h1>
                 </Link>
             </div>
             <nav className="flex-1 p-4">

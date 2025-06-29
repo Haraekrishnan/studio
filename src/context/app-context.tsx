@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Task, TaskStatus, PlannerEvent, Comment } from '@/lib/types';
+import type { User, Task, TaskStatus, PlannerEvent, Comment, Role } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth } from 'date-fns';
 
@@ -20,6 +20,10 @@ interface AppContextType {
   addPlannerEvent: (event: Omit<PlannerEvent, 'id'>) => void;
   getExpandedPlannerEvents: (date: Date) => (PlannerEvent & { eventDate: Date })[];
   getVisibleUsers: () => User[];
+  addUser: (newUser: Omit<User, 'id' | 'avatar'>) => void;
+  updateUser: (updatedUser: User) => void;
+  deleteUser: (userId: string) => void;
+  updateProfile: (name: string, avatar: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -142,6 +146,36 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return expandedEvents;
   }, [plannerEvents]);
 
+  const addUser = (newUser: Omit<User, 'id' | 'avatar'>) => {
+    const userToAdd: User = {
+      ...newUser,
+      id: `user-${Date.now()}`,
+      avatar: `https://i.pravatar.cc/150?u=${Date.now()}`
+    };
+    setUsers(prev => [...prev, userToAdd]);
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    if (user?.id === updatedUser.id) {
+        setUser(updatedUser);
+    }
+  };
+  
+  const deleteUser = (userId: string) => {
+    setUsers(prev => prev.filter(u => u.id !== userId));
+    // Also consider un-assigning tasks or re-assigning them
+    setTasks(prev => prev.map(t => t.assigneeId === userId ? {...t, assigneeId: ''} : t));
+  };
+
+  const updateProfile = (name: string, avatar: string) => {
+    if (user) {
+        const updatedUser = {...user, name, avatar};
+        setUser(updatedUser);
+        setUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
+    }
+  };
+
 
   const value = {
     user,
@@ -157,6 +191,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addPlannerEvent,
     getExpandedPlannerEvents,
     getVisibleUsers,
+    addUser,
+    updateUser,
+    deleteUser,
+    updateProfile,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

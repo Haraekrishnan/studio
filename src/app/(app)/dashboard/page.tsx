@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Users, CheckCircle } from 'lucide-react';
 import CreateTaskDialog from '@/components/tasks/create-task-dialog';
 import { useMemo } from 'react';
-import EmployeePerformanceChart from '@/components/dashboard/employee-performance-chart';
+import EmployeePerformancePieChart from '@/components/dashboard/employee-performance-pie-chart';
 
 export default function DashboardPage() {
   const { tasks, user, getVisibleUsers } = useAppContext();
@@ -77,10 +77,10 @@ export default function DashboardPage() {
         </Card>
         <Card>
             <CardHeader>
-                <CardTitle>Team Performance</CardTitle>
+                <CardTitle>Team Task Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-                <EmployeePerformanceChart />
+                <EmployeePerformancePieChart />
             </CardContent>
         </Card>
       </div>

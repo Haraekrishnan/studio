@@ -6,7 +6,7 @@ import './globals.css';
 
 // This would typically be in a metadata export, but for client components we can do it this way.
 if (typeof window !== 'undefined') {
-  document.title = 'TaskMaster Pro - Aries Marine';
+  document.title = 'Task Management System';
 }
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <head>
-        <title>TaskMaster Pro - Aries Marine</title>
+        <title>Task Management System</title>
         <meta name="description" content="A collaborative task management application." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
