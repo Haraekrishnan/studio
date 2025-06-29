@@ -129,7 +129,9 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         description: 'Sync up on project progress and blockers.',
         date: new Date().toISOString(),
         frequency: 'daily',
-        creatorId: '1',
+        creatorId: '7',
+        userId: '3',
+        comments: [],
     },
     {
         id: 'event-2',
@@ -138,6 +140,8 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
         frequency: 'once',
         creatorId: '2',
+        userId: '2',
+        comments: [],
     },
     {
         id: 'event-3',
@@ -146,6 +150,8 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         date: new Date(new Date().setDate(15)).toISOString(),
         frequency: 'monthly',
         creatorId: '1',
+        userId: '1',
+        comments: [],
     },
     {
         id: 'event-4',
@@ -153,7 +159,9 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         description: 'Discuss what went well and what could be improved.',
         date: new Date(new Date().setDate(25)).toISOString(),
         frequency: 'weekly',
-        creatorId: '6'
+        creatorId: '6',
+        userId: '5',
+        comments: [],
     }
 ];
 

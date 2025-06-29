@@ -17,8 +17,8 @@ interface AppContextType {
   updateTask: (updatedTask: Task) => void;
   addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'completionDateIsMandatory'>) => void;
   deleteTask: (taskId: string) => void;
-  addPlannerEvent: (event: Omit<PlannerEvent, 'id'>) => void;
-  getExpandedPlannerEvents: (date: Date) => (PlannerEvent & { eventDate: Date })[];
+  addPlannerEvent: (event: Omit<PlannerEvent, 'id' | 'comments'>) => void;
+  getExpandedPlannerEvents: (date: Date, userId: string) => (PlannerEvent & { eventDate: Date })[];
   getVisibleUsers: () => User[];
   addUser: (newUser: Omit<User, 'id' | 'avatar'>) => void;
   updateUser: (updatedUser: User) => void;
@@ -31,6 +31,7 @@ interface AppContextType {
   addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => void;
   approveAchievement: (achievementId: string, points: number) => void;
   rejectAchievement: (achievementId: string) => void;
+  addPlannerEventComment: (eventId: string, commentText: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -187,21 +188,24 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
   };
 
-  const addPlannerEvent = (event: Omit<PlannerEvent, 'id'>) => {
+  const addPlannerEvent = (event: Omit<PlannerEvent, 'id' | 'comments'>) => {
     const newEvent: PlannerEvent = {
       ...event,
       id: `event-${Date.now()}`,
+      comments: [],
     };
     setPlannerEvents(prevEvents => [newEvent, ...prevEvents]);
   };
   
-  const getExpandedPlannerEvents = useCallback((date: Date) => {
+  const getExpandedPlannerEvents = useCallback((date: Date, userId: string) => {
     const start = startOfMonth(date);
     const end = endOfMonth(date);
     const daysInMonth = eachDayOfInterval({ start, end });
     const expandedEvents: (PlannerEvent & { eventDate: Date })[] = [];
 
-    plannerEvents.forEach(event => {
+    const userEvents = plannerEvents.filter(event => event.userId === userId);
+
+    userEvents.forEach(event => {
       const eventStartDate = new Date(event.date);
       daysInMonth.forEach(day => {
         let shouldAdd = false;
@@ -229,6 +233,18 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
     return expandedEvents;
   }, [plannerEvents]);
+
+  const addPlannerEventComment = (eventId: string, commentText: string) => {
+    if (!user) return;
+    const newComment: Comment = {
+      userId: user.id,
+      text: commentText,
+      date: new Date().toISOString(),
+    };
+    setPlannerEvents(prevEvents => prevEvents.map(event => 
+      event.id === eventId ? { ...event, comments: [...(event.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : event
+    ));
+  };
 
   const addUser = (newUser: Omit<User, 'id' | 'avatar'>) => {
     const userToAdd: User = {
@@ -311,7 +327,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addComment,
     addManualAchievement,
     approveAchievement,
-    rejectAchievement
+    rejectAchievement,
+    addPlannerEventComment
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

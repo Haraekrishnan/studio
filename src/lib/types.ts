@@ -58,6 +58,8 @@ export interface PlannerEvent {
   date: string; // ISO string, represents the start date for recurring events
   frequency: Frequency;
   creatorId: string;
+  userId: string; // The user this event is for
+  comments?: Comment[];
 }
 
 export interface Achievement {
