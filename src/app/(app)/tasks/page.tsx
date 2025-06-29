@@ -18,7 +18,7 @@ import TaskCard from '@/components/tasks/task-card';
 
 export default function TasksPage() {
   const { user, tasks, users } = useAppContext();
-  const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor';
+  const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE';
 
   const [filters, setFilters] = useState<FiltersType>({
     status: 'all',

@@ -39,7 +39,15 @@ interface EditTaskDialogProps {
   task: Task;
 }
 
-const roleHierarchy: Role[] = ['Team Member', 'Junior Supervisor', 'Supervisor', 'Manager', 'Admin'];
+const roleHierarchy: Record<Role, number> = {
+  'Team Member': 0,
+  'Junior Supervisor': 1,
+  'Junior HSE': 1,
+  'Supervisor': 2,
+  'HSE': 2,
+  'Manager': 3,
+  'Admin': 4,
+};
 
 export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDialogProps) {
   const { user, users, updateTask, getVisibleUsers, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, addComment } = useAppContext();
@@ -74,10 +82,10 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     if (user.role === 'Admin' || user.role === 'Manager') {
       return allVisibleUsers;
     }
-    const userRoleIndex = roleHierarchy.indexOf(user.role);
+    const userRoleLevel = roleHierarchy[user.role];
     return allVisibleUsers.filter(assignee => {
-      const assigneeRoleIndex = roleHierarchy.indexOf(assignee.role);
-      return assignee.id === user.id || assigneeRoleIndex < userRoleIndex;
+      const assigneeRoleLevel = roleHierarchy[assignee.role];
+      return assignee.id === user.id || assigneeRoleLevel < userRoleLevel;
     });
   }, [user, allVisibleUsers]);
 
@@ -150,7 +158,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     toast({ title: 'Task Updated', description: `"${data.title}" has been successfully updated.` });
   };
   
-  const canReassign = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor';
+  const canReassign = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE';
   const isApprover = user?.id === task.creatorId || user?.id === assignee?.supervisorId;
   const isAssignee = user?.id === task.assigneeId;
 

@@ -31,7 +31,15 @@ const taskSchema = z.object({
 
 type TaskFormValues = z.infer<typeof taskSchema>;
 
-const roleHierarchy: Role[] = ['Team Member', 'Junior Supervisor', 'Supervisor', 'Manager', 'Admin'];
+const roleHierarchy: Record<Role, number> = {
+  'Team Member': 0,
+  'Junior Supervisor': 1,
+  'Junior HSE': 1,
+  'Supervisor': 2,
+  'HSE': 2,
+  'Manager': 3,
+  'Admin': 4,
+};
 
 export default function CreateTaskDialog() {
   const { user, users, addTask, getVisibleUsers } = useAppContext();
@@ -58,12 +66,12 @@ export default function CreateTaskDialog() {
       return allVisibleUsers;
     }
     
-    const userRoleIndex = roleHierarchy.indexOf(user.role);
+    const userRoleLevel = roleHierarchy[user.role];
 
     return allVisibleUsers.filter(assignee => {
-      const assigneeRoleIndex = roleHierarchy.indexOf(assignee.role);
+      const assigneeRoleLevel = roleHierarchy[assignee.role];
       // Allow assigning to self or to roles lower in the hierarchy
-      return assignee.id === user.id || assigneeRoleIndex < userRoleIndex;
+      return assignee.id === user.id || assigneeRoleLevel < userRoleLevel;
     });
   }, [user, allVisibleUsers]);
 

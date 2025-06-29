@@ -147,7 +147,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const directReports = users.filter(u => u.supervisorId === managerId);
     for (const report of directReports) {
       subordinates.push(report.id);
-      if (['Manager', 'Supervisor', 'Junior Supervisor'].includes(report.role)) {
+      if (['Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE'].includes(report.role)) {
         subordinates = subordinates.concat(getSubordinates(report.id));
       }
     }
@@ -159,7 +159,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (user.role === 'Admin' || user.role === 'Manager') {
       return users;
     }
-    if (user.role === 'Supervisor' || user.role === 'Junior Supervisor') {
+    if (['Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE'].includes(user.role)) {
       const subordinateIds = getSubordinates(user.id);
       return users.filter(u => u.id === user.id || subordinateIds.includes(u.id));
     }

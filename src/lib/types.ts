@@ -1,4 +1,4 @@
-export type Role = 'Admin' | 'Manager' | 'Supervisor' | 'Junior Supervisor' | 'Team Member';
+export type Role = 'Admin' | 'Manager' | 'Supervisor' | 'HSE' | 'Junior Supervisor' | 'Junior HSE' | 'Team Member';
 
 export type TaskStatus = 'To Do' | 'In Progress' | 'Pending Approval' | 'Completed' | 'Overdue';
 

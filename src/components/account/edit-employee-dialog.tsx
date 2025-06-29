@@ -12,12 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import type { Role, User } from '@/lib/types';
 import { Label } from '../ui/label';
 
-const roles: Role[] = ['Admin', 'Manager', 'Supervisor', 'Junior Supervisor', 'Team Member'];
+const roles: Role[] = ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Team Member'];
 
 const employeeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  role: z.enum(['Admin', 'Manager', 'Supervisor', 'Junior Supervisor', 'Team Member']),
+  role: z.enum(['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Team Member']),
   supervisorId: z.string().optional(),
 });
 
@@ -33,7 +33,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
   const { user: currentUser, users, updateUser } = useAppContext();
   const { toast } = useToast();
   
-  const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'Junior Supervisor'].includes(u.role));
+  const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE'].includes(u.role));
   const canEditRoles = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
   const canEditEmail = currentUser?.role === 'Admin';
 

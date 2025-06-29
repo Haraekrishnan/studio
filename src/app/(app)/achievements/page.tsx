@@ -44,7 +44,7 @@ export default function AchievementsPage() {
   const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
   const visibleUserIds = useMemo(() => visibleUsers.map(u => u.id), [visibleUsers]);
 
-  const canAddManualAchievement = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor';
+  const canAddManualAchievement = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE';
   const canApprove = user?.role === 'Admin' || user?.role === 'Manager';
 
   const performanceData = useMemo(() => {

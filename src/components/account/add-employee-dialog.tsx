@@ -11,13 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 import type { Role } from '@/lib/types';
 import { Label } from '../ui/label';
 
-const roles: Role[] = ['Admin', 'Manager', 'Supervisor', 'Junior Supervisor', 'Team Member'];
+const roles: Role[] = ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Team Member'];
 
 const employeeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['Admin', 'Manager', 'Supervisor', 'Junior Supervisor', 'Team Member']),
+  role: z.enum(['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Team Member']),
   supervisorId: z.string().optional(),
 });
 
@@ -32,7 +32,7 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
   const { users, addUser } = useAppContext();
   const { toast } = useToast();
   
-  const supervisors = users.filter(u => u.role === 'Supervisor' || u.role === 'Manager' || u.role === 'Admin' || u.role === 'Junior Supervisor');
+  const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE'].includes(u.role));
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
