@@ -20,7 +20,7 @@ export const USERS: User[] = [
   { id: '16', name: 'Vishnu J', email: 'vishnu.j@ariesmarine.com', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=16', supervisorId: '5' },
   { id: '17', name: 'Amaldas M', email: 'amaldas@ariesmarine.com', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=17', supervisorId: '6' },
   { id: '18', name: 'Sajin Soman', email: 'sajin@ariesmarine.com', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=18', supervisorId: '6' },
-  { id: '19', name: 'Aparana M R', email: 'aparana@ariesmarine.com', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=19', supervisorId: '11' },
+  { id: '19', name: 'Aparna M R', email: 'aparna@ariesmarine.com', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=19', supervisorId: '11' },
 ];
 
 export const TASKS: Task[] = [
@@ -31,7 +31,7 @@ export const TASKS: Task[] = [
     status: 'In Progress',
     priority: 'High',
     dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '19', // Aparana M R
+    assigneeId: '19', // Aparna M R
     creatorId: '11', // Akhil Pillai
     comments: [
         { userId: '11', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
@@ -88,7 +88,7 @@ export const TASKS: Task[] = [
     status: 'Completed',
     priority: 'Low',
     dueDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '19', // Aparana M R
+    assigneeId: '19', // Aparna M R
     creatorId: '11', // Akhil Pillai
     comments: [],
     requiresAttachmentForCompletion: false,
@@ -143,7 +143,7 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         date: new Date().toISOString(),
         frequency: 'daily',
         creatorId: '11', // Akhil Pillai
-        userId: '19', // Aparana M R
+        userId: '19', // Aparna M R
         comments: [],
     },
     {
