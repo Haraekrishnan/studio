@@ -14,6 +14,7 @@ import { CSS } from '@dnd-kit/utilities';
 import AiToolsDialog from './ai-tools-dialog';
 import EditTaskDialog from './edit-task-dialog';
 import { Button } from '../ui/button';
+import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
   task: Task;
