@@ -2,50 +2,69 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { USERS } from '@/lib/mock-data';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email address.'),
+  password: z.string().min(1, 'Password is required.'),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { login } = useAppContext();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedUserId) {
-      login(selectedUserId);
-      router.push('/dashboard');
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const handleLogin = (data: LoginFormValues) => {
+    setIsLoading(true);
+    const success = login(data.email, data.password);
+    
+    if (!success) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Invalid email or password. Please try again.',
+      });
+      setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleLogin}>
+    <form onSubmit={form.handleSubmit(handleLogin)}>
       <Card className="bg-card shadow-lg">
-        <CardContent className="p-6">
+        <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
-            <label htmlFor="user-select" className="text-sm font-medium text-foreground">
-              Select Profile
-            </label>
-            <Select onValueChange={setSelectedUserId} value={selectedUserId || ''}>
-              <SelectTrigger id="user-select" className="w-full">
-                <SelectValue placeholder="Choose your profile..." />
-              </SelectTrigger>
-              <SelectContent>
-                {USERS.map(user => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name} ({user.role})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" placeholder="name@example.com" {...form.register('email')} />
+            {form.formState.errors.email && <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" placeholder="••••••••" {...form.register('password')} />
+            {form.formState.errors.password && <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>}
           </div>
         </CardContent>
         <CardFooter className="p-6 pt-0">
-          <Button type="submit" className="w-full" disabled={!selectedUserId}>
-            Login
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Logging in...' : 'Login'}
           </Button>
         </CardFooter>
       </Card>

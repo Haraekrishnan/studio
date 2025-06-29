@@ -11,11 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import type { Role, User } from '@/lib/types';
 
-const roles: Role[] = ['Admin', 'Manager', 'Supervisor', 'Team Member'];
+const roles: Role[] = ['Admin', 'Manager', 'Supervisor', 'Junior Supervisor', 'Team Member'];
 
 const employeeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  role: z.enum(['Admin', 'Manager', 'Supervisor', 'Team Member']),
+  role: z.enum(['Admin', 'Manager', 'Supervisor', 'Junior Supervisor', 'Team Member']),
   supervisorId: z.string().optional(),
 });
 
@@ -31,7 +31,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user }: EditEmpl
   const { users, updateUser } = useAppContext();
   const { toast } = useToast();
   
-  const supervisors = users.filter(u => u.role === 'Supervisor' || u.role === 'Manager' || u.role === 'Admin');
+  const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'Junior Supervisor'].includes(u.role));
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
@@ -42,7 +42,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user }: EditEmpl
       form.reset({
         name: user.name,
         role: user.role,
-        supervisorId: user.supervisorId || '',
+        supervisorId: user.supervisorId || 'unassigned',
       });
     }
   }, [user, isOpen, form]);
@@ -88,7 +88,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user }: EditEmpl
             control={form.control}
             name="supervisorId"
             render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+              <Select onValueChange={field.onChange} value={field.value || 'unassigned'}>
                 <SelectTrigger><SelectValue placeholder="Assign a supervisor" /></SelectTrigger>
                 <SelectContent>
                     <SelectItem value="unassigned">None</SelectItem>

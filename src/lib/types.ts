@@ -1,4 +1,4 @@
-export type Role = 'Admin' | 'Manager' | 'Supervisor' | 'Team Member';
+export type Role = 'Admin' | 'Manager' | 'Supervisor' | 'Junior Supervisor' | 'Team Member';
 
 export type TaskStatus = 'To Do' | 'In Progress' | 'Completed';
 
@@ -9,6 +9,8 @@ export type Frequency = 'once' | 'daily' | 'weekly' | 'weekends' | 'monthly';
 export interface User {
   id: string;
   name: string;
+  email: string;
+  password?: string; // Password is optional on the type for security reasons
   role: Role;
   avatar: string; // URL to avatar image
   supervisorId?: string; // ID of this user's supervisor

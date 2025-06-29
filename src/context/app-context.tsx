@@ -11,7 +11,7 @@ interface AppContextType {
   users: User[];
   tasks: Task[];
   plannerEvents: PlannerEvent[];
-  login: (userId: string) => void;
+  login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
   addTask: (task: Omit<Task, 'id' | 'comments'>) => void;
@@ -35,12 +35,14 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
   const router = useRouter();
 
-  const login = (userId: string) => {
-    const foundUser = users.find(u => u.id === userId);
+  const login = (email: string, password: string): boolean => {
+    const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (foundUser) {
       setUser(foundUser);
       router.push('/dashboard');
+      return true;
     }
+    return false;
   };
 
   const logout = () => {
@@ -53,7 +55,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const directReports = users.filter(u => u.supervisorId === managerId);
     for (const report of directReports) {
       subordinates.push(report.id);
-      if (report.role === 'Manager' || report.role === 'Supervisor') {
+      if (['Manager', 'Supervisor', 'Junior Supervisor'].includes(report.role)) {
         subordinates = subordinates.concat(getSubordinates(report.id));
       }
     }
@@ -65,7 +67,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (user.role === 'Admin' || user.role === 'Manager') {
       return users;
     }
-    if (user.role === 'Supervisor') {
+    if (user.role === 'Supervisor' || user.role === 'Junior Supervisor') {
       const subordinateIds = getSubordinates(user.id);
       return users.filter(u => u.id === user.id || subordinateIds.includes(u.id));
     }

@@ -13,6 +13,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import AiToolsDialog from './ai-tools-dialog';
 import EditTaskDialog from './edit-task-dialog';
+import { Button } from '../ui/button';
 
 interface TaskCardProps {
   task: Task;
@@ -44,6 +45,7 @@ export default function TaskCard({ task }: TaskCardProps) {
   const handleDelete = () => {
     deleteTask(task.id);
     toast({
+      variant: 'destructive',
       title: 'Task Deleted',
       description: `"${task.title}" has been removed.`,
     });
@@ -56,28 +58,30 @@ export default function TaskCard({ task }: TaskCardProps) {
           style={style}
           className="shadow-md hover:shadow-lg transition-shadow bg-background/80 touch-none"
       >
-        <CardHeader {...attributes} {...listeners} className="p-4 pb-2 flex-row items-start justify-between cursor-grab active:cursor-grabbing">
-          <CardTitle className="text-base font-semibold leading-tight pr-4">{task.title}</CardTitle>
-          {canManageTask && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex-shrink-0 rounded-full p-1 -mr-2 -mt-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
-                  <MoreVertical className="h-5 w-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={handleDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </CardHeader>
+        <div className="p-4 flex items-start justify-between">
+            <div {...attributes} {...listeners} className="flex-grow cursor-grab active:cursor-grabbing">
+                <CardTitle className="text-base font-semibold leading-tight">{task.title}</CardTitle>
+            </div>
+            {canManageTask && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+                           <MoreVertical className="h-5 w-5" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit / Reassign
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={handleDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+        </div>
         <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
           <p className="line-clamp-2">{task.description}</p>
           <div className="flex items-center gap-2 mt-4">

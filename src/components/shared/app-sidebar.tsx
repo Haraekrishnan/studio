@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, User, LogOut, CheckSquare, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, User, LogOut, Layers, CalendarDays } from 'lucide-react';
 
 export function AppSidebar() {
   const { user, logout } = useAppContext();
@@ -26,7 +26,7 @@ export function AppSidebar() {
       <div className="p-4">
         <Link href="/dashboard" className="flex items-center gap-3">
             <div className="bg-primary p-2 rounded-lg">
-                <CheckSquare className="h-6 w-6 text-primary-foreground" />
+                <Layers className="h-6 w-6 text-primary-foreground" />
             </div>
             <h1 className="text-xl font-bold">Task Management System</h1>
         </Link>

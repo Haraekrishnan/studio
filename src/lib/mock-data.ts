@@ -1,12 +1,13 @@
 import type { User, Task, PlannerEvent } from './types';
 
 export const USERS: User[] = [
-  { id: '1', name: 'Alex Williams', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=alex' },
-  { id: '2', name: 'Samantha Jones', role: 'Manager', avatar: 'https://i.pravatar.cc/150?u=samantha' },
-  { id: '6', name: 'David Wilson', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=david', supervisorId: '2' },
-  { id: '3', name: 'Michael Brown', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=michael', supervisorId: '6' },
-  { id: '4', name: 'Jessica Davis', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=jessica', supervisorId: '6' },
-  { id: '5', name: 'Chris Miller', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=chris', supervisorId: '2' },
+  { id: '1', name: 'Alex Williams', email: 'alex@taskmaster.pro', password: 'password', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=alex' },
+  { id: '2', name: 'Samantha Jones', email: 'samantha@taskmaster.pro', password: 'password', role: 'Manager', avatar: 'https://i.pravatar.cc/150?u=samantha' },
+  { id: '6', name: 'David Wilson', email: 'david@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=david', supervisorId: '2' },
+  { id: '7', name: 'Laura Green', email: 'laura@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=laura', supervisorId: '6' },
+  { id: '3', name: 'Michael Brown', email: 'michael@taskmaster.pro', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=michael', supervisorId: '7' },
+  { id: '4', name: 'Jessica Davis', email: 'jessica@taskmaster.pro', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=jessica', supervisorId: '7' },
+  { id: '5', name: 'Chris Miller', email: 'chris@taskmaster.pro', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=chris', supervisorId: '6' },
 ];
 
 export const TASKS: Task[] = [
@@ -18,9 +19,9 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '3',
-    creatorId: '6',
+    creatorId: '7',
     comments: [
-        { userId: '6', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+        { userId: '7', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
     ],
   },
   {
@@ -31,7 +32,7 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '4',
-    creatorId: '6',
+    creatorId: '7',
     comments: [],
   },
   {
@@ -53,9 +54,9 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '5',
-    creatorId: '2',
+    creatorId: '6',
     comments: [
-        { userId: '2', text: 'This is a top priority, please escalate if you run into issues.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+        { userId: '6', text: 'This is a top priority, please escalate if you run into issues.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
         { userId: '5', text: 'On it. I think I have an idea of what the issue is.', date: new Date().toISOString() }
     ],
   },
@@ -67,7 +68,7 @@ export const TASKS: Task[] = [
     priority: 'Low',
     dueDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '3',
-    creatorId: '2',
+    creatorId: '7',
     comments: [],
   },
   {
@@ -89,7 +90,7 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '4',
-    creatorId: '1',
+    creatorId: '7',
     comments: [],
   },
   {
@@ -100,7 +101,7 @@ export const TASKS: Task[] = [
     priority: 'Medium',
     dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '5',
-    creatorId: '2',
+    creatorId: '6',
     comments: [],
   },
 ];

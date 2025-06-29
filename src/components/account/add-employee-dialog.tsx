@@ -9,12 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { Role } from '@/lib/types';
+import { Label } from '../ui/label';
 
-const roles: Role[] = ['Admin', 'Manager', 'Supervisor', 'Team Member'];
+const roles: Role[] = ['Admin', 'Manager', 'Supervisor', 'Junior Supervisor', 'Team Member'];
 
 const employeeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  role: z.enum(['Admin', 'Manager', 'Supervisor', 'Team Member']),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['Admin', 'Manager', 'Supervisor', 'Junior Supervisor', 'Team Member']),
   supervisorId: z.string().optional(),
 });
 
@@ -29,12 +32,14 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
   const { users, addUser } = useAppContext();
   const { toast } = useToast();
   
-  const supervisors = users.filter(u => u.role === 'Supervisor' || u.role === 'Manager' || u.role === 'Admin');
+  const supervisors = users.filter(u => u.role === 'Supervisor' || u.role === 'Manager' || u.role === 'Admin' || u.role === 'Junior Supervisor');
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
       name: '',
+      email: '',
+      password: '',
       role: 'Team Member',
       supervisorId: '',
     },
@@ -68,35 +73,56 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
           <DialogDescription>Fill in the details to add a new member to the team.</DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-          <Input {...form.register('name')} placeholder="Full Name" />
-          {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
-          
-          <Controller
-            control={form.control}
-            name="role"
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
-                <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
-                <SelectContent>
-                  {roles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-          />
+          <div>
+            <Label htmlFor="name">Full Name</Label>
+            <Input id="name" {...form.register('name')} placeholder="John Doe" />
+            {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+          </div>
 
-          <Controller
-            control={form.control}
-            name="supervisorId"
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value || ''}>
-                <SelectTrigger><SelectValue placeholder="Assign a supervisor" /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="unassigned">None</SelectItem>
-                    {supervisors.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-          />
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" {...form.register('email')} placeholder="john.doe@example.com" />
+            {form.formState.errors.email && <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" {...form.register('password')} placeholder="••••••••" />
+            {form.formState.errors.password && <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>}
+          </div>
+          
+          <div>
+            <Label>Role</Label>
+            <Controller
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
+                  <SelectContent>
+                    {roles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          <div>
+            <Label>Supervisor</Label>
+            <Controller
+              control={form.control}
+              name="supervisorId"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <SelectTrigger><SelectValue placeholder="Assign a supervisor" /></SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="unassigned">None</SelectItem>
+                      {supervisors.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>

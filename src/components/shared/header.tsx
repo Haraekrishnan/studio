@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, CheckSquare, LogOut, TrendingUp, FileText, User, CalendarDays } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAppContext();
@@ -44,7 +44,7 @@ export default function Header() {
             <div className="p-4 border-b border-sidebar-foreground/20">
                 <Link href="/dashboard" className="flex items-center gap-3">
                     <div className="bg-primary p-2 rounded-lg">
-                        <CheckSquare className="h-6 w-6 text-primary-foreground" />
+                        <Layers className="h-6 w-6 text-primary-foreground" />
                     </div>
                     <h1 className="text-xl font-bold">Task Management System</h1>
                 </Link>

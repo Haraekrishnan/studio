@@ -7,24 +7,29 @@ import { DndContext, type DragEndEvent } from '@dnd-kit/core';
 
 const columns: TaskStatus[] = ['To Do', 'In Progress', 'Completed'];
 
-export default function KanbanBoard() {
-  const { tasks, updateTaskStatus, getVisibleUsers } = useAppContext();
+interface KanbanBoardProps {
+    tasks: Task[];
+}
+
+export default function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps) {
+  const { updateTaskStatus, getVisibleUsers } = useAppContext();
   
   const visibleUserIds = useMemo(() => {
     return getVisibleUsers().map(u => u.id);
   }, [getVisibleUsers]);
   
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(task => visibleUserIds.includes(task.assigneeId));
-  }, [tasks, visibleUserIds]);
+  const tasksToShow = useMemo(() => {
+    // Further filter by visibility on top of props filter
+    return filteredTasks.filter(task => visibleUserIds.includes(task.assigneeId));
+  }, [filteredTasks, visibleUserIds]);
   
   const tasksByStatus = useMemo(() => {
     return {
-      'To Do': filteredTasks.filter(task => task.status === 'To Do'),
-      'In Progress': filteredTasks.filter(task => task.status === 'In Progress'),
-      'Completed': filteredTasks.filter(task => task.status === 'Completed'),
+      'To Do': tasksToShow.filter(task => task.status === 'To Do'),
+      'In Progress': tasksToShow.filter(task => task.status === 'In Progress'),
+      'Completed': tasksToShow.filter(task => task.status === 'Completed'),
     };
-  }, [filteredTasks]);
+  }, [tasksToShow]);
 
   function handleDragEnd(event: DragEndEvent) {
     const { over, active } = event;
