@@ -17,6 +17,7 @@ const employeeSchema = z.object({
   email: z.string().email('Invalid email address'),
   role: z.string().min(1, "Role is required") as z.ZodType<Role>,
   supervisorId: z.string().optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters').optional().or(z.literal('')),
 });
 
 type EmployeeFormValues = z.infer<typeof employeeSchema>;
@@ -34,6 +35,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
   const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE'].includes(u.role));
   const canEditRoles = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
   const canEditEmail = currentUser?.role === 'Admin';
+  const canChangePassword = currentUser?.role === 'Admin';
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
@@ -46,16 +48,24 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
         email: userToEdit.email,
         role: userToEdit.role,
         supervisorId: userToEdit.supervisorId || 'unassigned',
+        password: '',
       });
     }
   }, [userToEdit, isOpen, form]);
 
   const onSubmit = (data: EmployeeFormValues) => {
-    updateUser({
-      ...userToEdit,
-      ...data,
-      supervisorId: (data.supervisorId === 'unassigned' || !data.supervisorId) ? undefined : data.supervisorId,
-    });
+    const finalUserData: User = { ...userToEdit };
+
+    finalUserData.name = data.name;
+    finalUserData.email = data.email;
+    finalUserData.role = data.role;
+    finalUserData.supervisorId = (data.supervisorId === 'unassigned' || !data.supervisorId) ? undefined : data.supervisorId;
+
+    if (data.password) {
+        finalUserData.password = data.password;
+    }
+
+    updateUser(finalUserData);
     toast({
       title: 'Employee Updated',
       description: `${data.name}'s details have been updated.`,
@@ -82,6 +92,14 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
             <Input id="email" type="email" {...form.register('email')} disabled={!canEditEmail} />
             {form.formState.errors.email && <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>}
           </div>
+
+          {canChangePassword && (
+            <div>
+              <Label htmlFor="password">New Password</Label>
+              <Input id="password" type="password" {...form.register('password')} placeholder="Leave blank to keep current" />
+              {form.formState.errors.password && <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>}
+            </div>
+          )}
 
           <div>
             <Label>Role</Label>

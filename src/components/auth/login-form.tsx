@@ -57,20 +57,7 @@ export function LoginForm() {
             {form.formState.errors.email && <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>}
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Button
-                    type="button"
-                    variant="link"
-                    className="p-0 h-auto text-xs"
-                    onClick={() => toast({
-                        title: 'Password Reset',
-                        description: 'A password reset link would be sent to your email in a real application.',
-                    })}
-                >
-                    Forgot Password?
-                </Button>
-            </div>
+            <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" placeholder="••••••••" {...form.register('password')} />
             {form.formState.errors.password && <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>}
           </div>
