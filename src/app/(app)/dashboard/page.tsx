@@ -1,7 +1,7 @@
 'use client';
+import Link from 'next/link';
 import { useAppContext } from '@/context/app-context';
 import StatCard from '@/components/dashboard/stat-card';
-import EmployeePerformanceChart from '@/components/dashboard/employee-performance-chart';
 import TasksCompletedChart from '@/components/dashboard/tasks-completed-chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ export default function DashboardPage() {
   const { tasks, users, user } = useAppContext();
 
   const completedTasks = useMemo(() => tasks.filter(task => task.status === 'Completed').length, [tasks]);
-  const tasksPerPerson = useMemo(() => (tasks.length / users.length).toFixed(1), [tasks, users]);
+  const tasksPerPerson = useMemo(() => users.length > 0 ? (tasks.length / users.length).toFixed(1) : "0", [tasks, users]);
   
   const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager';
 
@@ -25,9 +25,11 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">Here's a summary of your team's activity.</p>
         </div>
         <div className="flex gap-2">
-            <Button variant="outline">
-                <FileText className="mr-2 h-4 w-4" />
-                Generate Report
+            <Button variant="outline" asChild>
+                <Link href="/reports">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generate Report
+                </Link>
             </Button>
             {canManageTasks && <CreateTaskDialog />}
         </div>
@@ -54,18 +56,8 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {canManageTasks && (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Employee Performance</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <EmployeePerformanceChart />
-                </CardContent>
-            </Card>
-        )}
-        <Card className={!canManageTasks ? 'lg:col-span-2' : ''}>
+      <div>
+        <Card>
             <CardHeader>
                 <CardTitle>Tasks Completed per Month</CardTitle>
             </CardHeader>

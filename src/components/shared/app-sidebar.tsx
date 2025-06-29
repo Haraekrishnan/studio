@@ -6,15 +6,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, CheckSquare, LogOut, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, User, LogOut, CheckSquare } from 'lucide-react';
 
 export function AppSidebar() {
   const { user, logout } = useAppContext();
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/tasks', icon: Briefcase, label: 'Tasks' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Tasks Overview' },
+    { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
+    { href: '/performance', icon: TrendingUp, label: 'Performance' },
+    { href: '/reports', icon: FileText, label: 'Reports' },
+    { href: '/account', icon: User, label: 'Account' },
   ];
 
   return (
@@ -33,7 +36,7 @@ export function AppSidebar() {
             <li key={item.href}>
               <Button
                 asChild
-                variant={pathname === item.href ? 'secondary' : 'ghost'}
+                variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
                 className="w-full justify-start"
               >
                 <Link href={item.href} className="flex items-center gap-3">
@@ -56,7 +59,7 @@ export function AppSidebar() {
             <p className="text-sm font-semibold truncate">{user?.name}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.role}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout}>
+          <Button variant="ghost" size="icon" onClick={logout} title="Log Out">
             <LogOut className="h-5 w-5" />
           </Button>
         </div>

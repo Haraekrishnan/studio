@@ -6,21 +6,27 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Menu, LayoutDashboard, Briefcase, CheckSquare, LogOut } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, CheckSquare, LogOut, TrendingUp, FileText, User } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAppContext();
   const pathname = usePathname();
 
   const getPageTitle = () => {
-    if (pathname.startsWith('/dashboard')) return 'Dashboard';
-    if (pathname.startsWith('/tasks')) return 'Tasks';
+    if (pathname.startsWith('/dashboard')) return 'Tasks Overview';
+    if (pathname.startsWith('/tasks')) return 'Manage Tasks';
+    if (pathname.startsWith('/performance')) return 'Performance';
+    if (pathname.startsWith('/reports')) return 'Reports';
+    if (pathname.startsWith('/account')) return 'Account';
     return 'TaskMaster Pro';
   };
   
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/tasks', icon: Briefcase, label: 'Tasks' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Tasks Overview' },
+    { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
+    { href: '/performance', icon: TrendingUp, label: 'Performance' },
+    { href: '/reports', icon: FileText, label: 'Reports' },
+    { href: '/account', icon: User, label: 'Account' },
   ];
 
   return (
@@ -33,8 +39,8 @@ export default function Header() {
               <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="flex flex-col">
-            <div className="p-4">
+          <SheetContent side="left" className="flex flex-col p-0">
+            <div className="p-4 border-b">
                 <Link href="/dashboard" className="flex items-center gap-3">
                     <div className="bg-primary p-2 rounded-lg">
                         <CheckSquare className="h-6 w-6 text-primary-foreground" />
@@ -42,14 +48,14 @@ export default function Header() {
                     <h1 className="text-xl font-bold text-foreground">TaskMaster Pro</h1>
                 </Link>
             </div>
-            <nav className="flex-1 px-4">
+            <nav className="flex-1 p-4">
                 <ul className="space-y-2">
                 {navItems.map(item => (
                     <li key={item.href}>
                         <SheetClose asChild>
                             <Button
                                 asChild
-                                variant={pathname === item.href ? 'secondary' : 'ghost'}
+                                variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
                                 className="w-full justify-start"
                             >
                                 <Link href={item.href} className="flex items-center gap-3">
@@ -62,8 +68,7 @@ export default function Header() {
                 ))}
                 </ul>
             </nav>
-            <div className="p-4 mt-auto">
-                <Separator className="my-4" />
+            <div className="p-4 mt-auto border-t">
                 <div className="flex items-center gap-3">
                 <Avatar>
                     <AvatarImage src={user?.avatar} alt={user?.name} />
@@ -74,7 +79,7 @@ export default function Header() {
                     <p className="text-xs text-muted-foreground truncate">{user?.role}</p>
                 </div>
                 <SheetClose asChild>
-                    <Button variant="ghost" size="icon" onClick={logout}>
+                    <Button variant="ghost" size="icon" onClick={logout} title="Log Out">
                         <LogOut className="h-5 w-5" />
                     </Button>
                 </SheetClose>
