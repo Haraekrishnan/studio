@@ -1,3 +1,28 @@
+export const ALL_PERMISSIONS = [
+  'manage_branding',
+  'manage_users',
+  'manage_roles',
+  'assign_supervisors',
+  'create_tasks',
+  'reassign_tasks',
+  'delete_tasks',
+  'use_ai_tools',
+  'grant_manual_achievements',
+  'approve_manual_achievements',
+  'view_all_activity',
+  'view_subordinates_activity',
+  'view_all_users',
+  'view_subordinates_users',
+] as const;
+export type Permission = (typeof ALL_PERMISSIONS)[number];
+
+export interface RoleDefinition {
+  id: string;
+  name: string;
+  permissions: Permission[];
+  isEditable: boolean;
+}
+
 export type Role = 'Admin' | 'Manager' | 'Supervisor' | 'HSE' | 'Junior Supervisor' | 'Junior HSE' | 'Team Member';
 
 export type TaskStatus = 'To Do' | 'In Progress' | 'Pending Approval' | 'Completed' | 'Overdue';

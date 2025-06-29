@@ -9,10 +9,12 @@ import { useMemo, useState, useEffect } from 'react';
 import type { User as UserType } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Layers } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Layers, ShieldPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AddEmployeeDialog from '@/components/account/add-employee-dialog';
 import EditEmployeeDialog from '@/components/account/edit-employee-dialog';
+import AddRoleDialog from '@/components/account/add-role-dialog';
+import RoleManagementTable from '@/components/account/role-management-table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 export default function AccountPage() {
@@ -21,8 +23,9 @@ export default function AccountPage() {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddEmployeeDialogOpen, setIsAddEmployeeDialogOpen] = useState(false);
+  const [isEditEmployeeDialogOpen, setIsEditEmployeeDialogOpen] = useState(false);
+  const [isAddRoleDialogOpen, setIsAddRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
 
   // State for branding form
@@ -53,6 +56,7 @@ export default function AccountPage() {
   }
   
   const canManageUsers = user.role === 'Admin' || user.role === 'Manager';
+  const canManageRoles = user.role === 'Admin';
   const canManageBranding = user.role === 'Admin';
 
   const handleProfileSave = (e: React.FormEvent) => {
@@ -97,7 +101,7 @@ export default function AccountPage() {
 
   const handleEditClick = (userToEdit: UserType) => {
     setSelectedUser(userToEdit);
-    setIsEditDialogOpen(true);
+    setIsEditEmployeeDialogOpen(true);
   };
   
   const handleDelete = (userId: string) => {
@@ -194,6 +198,24 @@ export default function AccountPage() {
         </Card>
       )}
 
+      {canManageRoles && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Role Management</CardTitle>
+                <CardDescription>Define custom roles and assign granular permissions.</CardDescription>
+              </div>
+              <Button onClick={() => setIsAddRoleDialogOpen(true)}>
+                <ShieldPlus className="mr-2 h-4 w-4" />
+                Add Role
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <RoleManagementTable />
+            </CardContent>
+          </Card>
+      )}
+
       <Card>
           <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -201,7 +223,7 @@ export default function AccountPage() {
                   <CardDescription>View, add, edit, or remove employees.</CardDescription>
               </div>
               {canManageUsers && (
-                <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Button onClick={() => setIsAddEmployeeDialogOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Employee
                 </Button>
@@ -280,10 +302,11 @@ export default function AccountPage() {
           </CardContent>
       </Card>
 
-      <AddEmployeeDialog isOpen={isAddDialogOpen} setIsOpen={setIsAddDialogOpen} />
+      <AddEmployeeDialog isOpen={isAddEmployeeDialogOpen} setIsOpen={setIsAddEmployeeDialogOpen} />
       {selectedUser && (
-        <EditEmployeeDialog isOpen={isEditDialogOpen} setIsOpen={setIsEditDialogOpen} user={selectedUser} />
+        <EditEmployeeDialog isOpen={isEditEmployeeDialogOpen} setIsOpen={setIsEditEmployeeDialogOpen} user={selectedUser} />
       )}
+      <AddRoleDialog isOpen={isAddRoleDialogOpen} setIsOpen={setIsAddRoleDialogOpen} />
     </div>
   );
 }

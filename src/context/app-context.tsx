@@ -2,13 +2,14 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS } from '@/lib/mock-data';
+import type { User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
 interface AppContextType {
   user: User | null;
   users: User[];
+  roles: RoleDefinition[];
   tasks: Task[];
   plannerEvents: PlannerEvent[];
   dailyPlannerComments: DailyPlannerComment[];
@@ -27,6 +28,9 @@ interface AppContextType {
   addUser: (newUser: Omit<User, 'id' | 'avatar'>) => void;
   updateUser: (updatedUser: User) => void;
   deleteUser: (userId: string) => void;
+  addRole: (role: Omit<RoleDefinition, 'id' | 'isEditable'>) => void;
+  updateRole: (updatedRole: RoleDefinition) => void;
+  deleteRole: (roleId: string) => void;
   updateProfile: (name: string, email: string, avatar: string) => void;
   requestTaskStatusChange: (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']) => boolean;
   approveTaskStatusChange: (taskId: string, commentText: string) => void;
@@ -45,6 +49,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppContextProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>(USERS);
+  const [roles, setRoles] = useState<RoleDefinition[]>(MOCK_ROLES);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
   const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
   const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>(DAILY_PLANNER_COMMENTS);
@@ -380,6 +385,27 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Deleted user: ${userName}`);
   };
 
+  const addRole = (roleData: Omit<RoleDefinition, 'id' | 'isEditable'>) => {
+    const newRole: RoleDefinition = {
+      ...roleData,
+      id: `role-${Date.now()}`,
+      isEditable: true,
+    };
+    setRoles(prev => [...prev, newRole]);
+    recordAction(`Added new role: ${newRole.name}`);
+  };
+
+  const updateRole = (updatedRole: RoleDefinition) => {
+    setRoles(prev => prev.map(r => r.id === updatedRole.id ? updatedRole : r));
+    recordAction(`Updated role: ${updatedRole.name}`);
+  };
+
+  const deleteRole = (roleId: string) => {
+    const roleName = roles.find(r => r.id === roleId)?.name;
+    setRoles(prev => prev.filter(r => r.id !== roleId));
+    recordAction(`Deleted role: ${roleName}`);
+  };
+
   const updateProfile = (name: string, email: string, avatar: string) => {
     if (user) {
         const updatedUser = {...user, name, email, avatar};
@@ -437,6 +463,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const value = {
     user,
     users,
+    roles,
     tasks,
     plannerEvents,
     dailyPlannerComments,
@@ -455,6 +482,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addUser,
     updateUser,
     deleteUser,
+    addRole,
+    updateRole,
+    deleteRole,
     updateProfile,
     requestTaskStatusChange,
     approveTaskStatusChange,

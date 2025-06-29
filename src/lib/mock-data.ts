@@ -1,5 +1,63 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition } from './types';
 import { sub } from 'date-fns';
+import { ALL_PERMISSIONS } from './types';
+
+export { ALL_PERMISSIONS };
+
+export const ROLES: RoleDefinition[] = [
+  {
+    id: 'role-admin',
+    name: 'Admin',
+    permissions: [...ALL_PERMISSIONS],
+    isEditable: false,
+  },
+  {
+    id: 'role-manager',
+    name: 'Manager',
+    permissions: [
+      'manage_users', 'assign_supervisors', 'create_tasks', 'reassign_tasks', 'delete_tasks', 
+      'use_ai_tools', 'grant_manual_achievements', 'approve_manual_achievements', 
+      'view_all_activity', 'view_all_users'
+    ],
+    isEditable: false,
+  },
+  {
+    id: 'role-supervisor',
+    name: 'Supervisor',
+    permissions: [
+      'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
+      'view_subordinates_activity', 'view_subordinates_users'
+    ],
+    isEditable: false,
+  },
+  {
+    id: 'role-hse',
+    name: 'HSE',
+    permissions: [
+      'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
+      'view_subordinates_activity', 'view_subordinates_users'
+    ],
+    isEditable: false,
+  },
+  {
+    id: 'role-jr-supervisor',
+    name: 'Junior Supervisor',
+    permissions: ['view_subordinates_activity', 'view_subordinates_users'],
+    isEditable: false,
+  },
+  {
+    id: 'role-jr-hse',
+    name: 'Junior HSE',
+    permissions: ['view_subordinates_activity', 'view_subordinates_users'],
+    isEditable: false,
+  },
+  {
+    id: 'role-team-member',
+    name: 'Team Member',
+    permissions: [],
+    isEditable: false,
+  },
+];
 
 export const USERS: User[] = [
   { id: '1', name: 'Harikrishnan P S', email: 'satanin2013@gmail.com', password: 'password', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=1' },

@@ -12,12 +12,10 @@ import { useToast } from '@/hooks/use-toast';
 import type { Role, User } from '@/lib/types';
 import { Label } from '../ui/label';
 
-const roles: Role[] = ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Team Member'];
-
 const employeeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  role: z.enum(['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Team Member']),
+  role: z.string().min(1, "Role is required") as z.ZodType<Role>,
   supervisorId: z.string().optional(),
 });
 
@@ -30,7 +28,7 @@ interface EditEmployeeDialogProps {
 }
 
 export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit }: EditEmployeeDialogProps) {
-  const { user: currentUser, users, updateUser } = useAppContext();
+  const { user: currentUser, users, roles, updateUser } = useAppContext();
   const { toast } = useToast();
   
   const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE'].includes(u.role));
@@ -94,7 +92,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
                 <Select onValueChange={field.onChange} value={field.value} disabled={!canEditRoles}>
                   <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
                   <SelectContent>
-                    {roles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    {roles.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
