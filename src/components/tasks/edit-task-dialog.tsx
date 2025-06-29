@@ -1,12 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAppContext } from '@/context/app-context';
-import { suggestTaskPriority } from '@/ai/flows/suggest-task-priority';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -15,8 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { PlusCircle, CalendarIcon, Bot } from 'lucide-react';
-import type { Priority, Role } from '@/lib/types';
+import { CalendarIcon } from 'lucide-react';
+import type { Task, Priority, Role } from '@/lib/types';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -28,22 +27,37 @@ const taskSchema = z.object({
 
 type TaskFormValues = z.infer<typeof taskSchema>;
 
-export default function CreateTaskDialog() {
-  const { user, users, addTask } = useAppContext();
+interface EditTaskDialogProps {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  task: Task;
+}
+
+export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDialogProps) {
+  const { user, users, updateTask } = useAppContext();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isSuggesting, setIsSuggesting] = useState(false);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
-      title: '',
-      description: '',
-      assigneeId: '',
-      priority: 'Medium',
+      title: task.title,
+      description: task.description,
+      assigneeId: task.assigneeId,
+      dueDate: new Date(task.dueDate),
+      priority: task.priority,
     },
   });
-  
+
+  useEffect(() => {
+    form.reset({
+      title: task.title,
+      description: task.description,
+      assigneeId: task.assigneeId,
+      dueDate: new Date(task.dueDate),
+      priority: task.priority,
+    });
+  }, [task, form, isOpen]);
+
   const roleHierarchy: Record<Role, number> = {
     'Admin': 3,
     'Manager': 2,
@@ -53,70 +67,23 @@ export default function CreateTaskDialog() {
   const assignableUsers = users.filter(u => roleHierarchy[u.role] <= roleHierarchy[user!.role]);
 
   const onSubmit = (data: TaskFormValues) => {
-    addTask({
+    updateTask({
+      ...task,
       ...data,
       dueDate: data.dueDate.toISOString(),
-      status: 'To Do',
-      creatorId: user!.id,
     });
-    const assignee = users.find(u => u.id === data.assigneeId);
     toast({
-      title: 'Task Created',
-      description: `"${data.title}" assigned to ${assignee?.name} by ${user!.name}.`,
+      title: 'Task Updated',
+      description: `"${data.title}" has been successfully updated.`,
     });
     setIsOpen(false);
-    form.reset();
-  };
-  
-  const handleSuggestPriority = async () => {
-    const { title, description, dueDate } = form.getValues();
-    if (!title || !description || !dueDate) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please fill in title, description, and due date to suggest priority.',
-      });
-      return;
-    }
-    
-    setIsSuggesting(true);
-    try {
-      const result = await suggestTaskPriority({
-        taskDescription: `${title}: ${description}`,
-        deadline: format(dueDate, 'yyyy-MM-dd'),
-        importance: form.getValues('priority'),
-        userRole: user!.role,
-        availableUsers: users.map(u => `${u.name} (${u.role})`),
-      });
-      
-      form.setValue('priority', result.priority as Priority, { shouldValidate: true });
-      toast({
-        title: 'AI Suggestion',
-        description: `Priority set to "${result.priority}" based on AI analysis.`,
-      });
-    } catch (error) {
-      console.error('AI priority suggestion failed:', error);
-      toast({
-        variant: 'destructive',
-        title: 'AI Suggestion Failed',
-        description: 'Could not get a priority suggestion at this time.',
-      });
-    } finally {
-      setIsSuggesting(false);
-    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Task
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <Input {...form.register('title')} placeholder="Task title" />
@@ -129,7 +96,7 @@ export default function CreateTaskDialog() {
             control={form.control}
             name="assigneeId"
             render={({ field }) => (
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger><SelectValue placeholder="Assign to..." /></SelectTrigger>
                 <SelectContent>
                   {assignableUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
@@ -156,30 +123,25 @@ export default function CreateTaskDialog() {
           />
           {form.formState.errors.dueDate && <p className="text-xs text-destructive">{form.formState.errors.dueDate.message}</p>}
 
-          <div className="flex gap-2 items-center">
-            <Controller
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <Button type="button" variant="outline" onClick={handleSuggestPriority} disabled={isSuggesting}>
-                <Bot className="mr-2 h-4 w-4" />
-                {isSuggesting ? 'Suggesting...' : 'Suggest'}
-            </Button>
-          </div>
+          <Controller
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {form.formState.errors.priority && <p className="text-xs text-destructive">{form.formState.errors.priority.message}</p>}
           
           <DialogFooter>
-            <Button type="submit">Create Task</Button>
+            <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button type="submit">Save Changes</Button>
           </DialogFooter>
         </form>
       </DialogContent>

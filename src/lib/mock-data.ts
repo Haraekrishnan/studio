@@ -1,4 +1,4 @@
-import type { User, Task } from './types';
+import type { User, Task, PlannerEvent } from './types';
 
 export const USERS: User[] = [
   { id: '1', name: 'Alex Williams', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=alex' },
@@ -17,6 +17,7 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '3',
+    creatorId: '2',
   },
   {
     id: 'task-2',
@@ -26,6 +27,7 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '4',
+    creatorId: '2',
   },
   {
     id: 'task-3',
@@ -35,6 +37,7 @@ export const TASKS: Task[] = [
     priority: 'Medium',
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '2',
+    creatorId: '1',
   },
   {
     id: 'task-4',
@@ -44,6 +47,7 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '5',
+    creatorId: '2',
   },
   {
     id: 'task-5',
@@ -53,6 +57,7 @@ export const TASKS: Task[] = [
     priority: 'Low',
     dueDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '3',
+    creatorId: '1',
   },
   {
     id: 'task-6',
@@ -62,6 +67,7 @@ export const TASKS: Task[] = [
     priority: 'Medium',
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '2',
+    creatorId: '1',
   },
   {
     id: 'task-7',
@@ -71,6 +77,7 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '4',
+    creatorId: '1',
   },
   {
     id: 'task-8',
@@ -80,5 +87,33 @@ export const TASKS: Task[] = [
     priority: 'Medium',
     dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '5',
+    creatorId: '2',
   },
+];
+
+export const PLANNER_EVENTS: PlannerEvent[] = [
+    {
+        id: 'event-1',
+        title: 'Weekly Team Sync',
+        description: 'Sync up on project progress and blockers.',
+        date: new Date().toISOString(),
+        frequency: 'weekly',
+        creatorId: '1',
+    },
+    {
+        id: 'event-2',
+        title: 'Product Sprint Demo',
+        description: 'Showcase new features developed in the current sprint.',
+        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        frequency: 'once',
+        creatorId: '2',
+    },
+    {
+        id: 'event-3',
+        title: 'Monthly All-Hands',
+        description: 'Company-wide update meeting.',
+        date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        frequency: 'monthly',
+        creatorId: '1',
+    }
 ];

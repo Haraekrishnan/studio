@@ -4,6 +4,8 @@ export type TaskStatus = 'To Do' | 'In Progress' | 'Completed';
 
 export type Priority = 'Low' | 'Medium' | 'High';
 
+export type Frequency = 'once' | 'daily' | 'weekly' | 'weekends' | 'monthly';
+
 export interface User {
   id: string;
   name: string;
@@ -19,4 +21,14 @@ export interface Task {
   priority: Priority;
   dueDate: string; // ISO string date
   assigneeId: string;
+  creatorId: string;
+}
+
+export interface PlannerEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string; // ISO string
+  frequency: Frequency;
+  creatorId: string;
 }

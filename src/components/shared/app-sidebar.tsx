@@ -6,15 +6,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, User, LogOut, CheckSquare } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, User, LogOut, CheckSquare, CalendarDays } from 'lucide-react';
 
 export function AppSidebar() {
   const { user, logout } = useAppContext();
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Tasks Overview' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
+    { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: User, label: 'Account' },

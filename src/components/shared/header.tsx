@@ -5,16 +5,16 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
-import { Menu, LayoutDashboard, Briefcase, CheckSquare, LogOut, TrendingUp, FileText, User } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, CheckSquare, LogOut, TrendingUp, FileText, User, CalendarDays } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAppContext();
   const pathname = usePathname();
 
   const getPageTitle = () => {
-    if (pathname.startsWith('/dashboard')) return 'Tasks Overview';
+    if (pathname.startsWith('/dashboard')) return 'Dashboard';
     if (pathname.startsWith('/tasks')) return 'Manage Tasks';
+    if (pathname.startsWith('/planner')) return 'Planner';
     if (pathname.startsWith('/performance')) return 'Performance';
     if (pathname.startsWith('/reports')) return 'Reports';
     if (pathname.startsWith('/account')) return 'Account';
@@ -22,8 +22,9 @@ export default function Header() {
   };
   
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Tasks Overview' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
+    { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: User, label: 'Account' },
