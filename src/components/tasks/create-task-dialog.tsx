@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { PlusCircle, CalendarIcon, Bot } from 'lucide-react';
-import type { Priority } from '@/lib/types';
+import type { Priority, Role } from '@/lib/types';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -27,6 +27,8 @@ const taskSchema = z.object({
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
+
+const roleHierarchy: Role[] = ['Team Member', 'Junior Supervisor', 'Supervisor', 'Manager', 'Admin'];
 
 export default function CreateTaskDialog() {
   const { user, users, addTask, getVisibleUsers } = useAppContext();
@@ -44,7 +46,22 @@ export default function CreateTaskDialog() {
     },
   });
   
-  const assignableUsers = getVisibleUsers();
+  const allVisibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
+
+  const assignableUsers = useMemo(() => {
+    if (!user) return [];
+    if (user.role === 'Admin' || user.role === 'Manager') {
+      return allVisibleUsers;
+    }
+    
+    const userRoleIndex = roleHierarchy.indexOf(user.role);
+
+    return allVisibleUsers.filter(assignee => {
+      const assigneeRoleIndex = roleHierarchy.indexOf(assignee.role);
+      // Allow assigning to self or to roles lower in the hierarchy
+      return assignee.id === user.id || assigneeRoleIndex < userRoleIndex;
+    });
+  }, [user, allVisibleUsers]);
 
   const onSubmit = (data: TaskFormValues) => {
     addTask({

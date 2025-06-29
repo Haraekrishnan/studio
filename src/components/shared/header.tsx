@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAppContext();
@@ -17,7 +17,7 @@ export default function Header() {
     if (pathname.startsWith('/planner')) return 'Planner';
     if (pathname.startsWith('/performance')) return 'Performance';
     if (pathname.startsWith('/reports')) return 'Reports';
-    if (pathname.startsWith('/account')) return 'Account';
+    if (pathname.startsWith('/account')) return 'Employees';
     return 'Task Management System';
   };
   
@@ -27,7 +27,7 @@ export default function Header() {
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
     { href: '/reports', icon: FileText, label: 'Reports' },
-    { href: '/account', icon: User, label: 'Account' },
+    { href: '/account', icon: Users, label: 'Employees' },
   ];
 
   return (
@@ -35,7 +35,7 @@ export default function Header() {
       <div className="flex items-center gap-4">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden bg-sidebar-background text-sidebar-foreground border-sidebar-foreground/50">
+            <Button variant="outline" size="icon" className="md:hidden bg-transparent text-sidebar-foreground border-sidebar-foreground/50 hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle Menu</span>
             </Button>
@@ -57,7 +57,7 @@ export default function Header() {
                             <Button
                                 asChild
                                 variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
-                                className="w-full justify-start hover:bg-sidebar-accent/80"
+                                className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground data-[state=active]:bg-sidebar-accent data-[state=active]:text-sidebar-accent-foreground"
                             >
                                 <Link href={item.href} className="flex items-center gap-3">
                                 <item.icon className="h-5 w-5" />

@@ -4,7 +4,6 @@ import { useAppContext } from '@/context/app-context';
 import KanbanBoard from '@/components/tasks/kanban-board';
 import CreateTaskDialog from '@/components/tasks/create-task-dialog';
 import TaskFilters, { type TaskFilters as FiltersType } from '@/components/tasks/task-filters';
-import { DateRange } from 'react-day-picker';
 
 export default function TasksPage() {
   const { user, tasks } = useAppContext();
@@ -14,11 +13,17 @@ export default function TasksPage() {
     status: 'all',
     priority: 'all',
     dateRange: undefined,
+    showMyTasksOnly: false,
   });
 
   const filteredTasks = useMemo(() => {
+    if (!user) return [];
     return tasks.filter(task => {
-      const { status, priority, dateRange } = filters;
+      const { status, priority, dateRange, showMyTasksOnly } = filters;
+
+      if (showMyTasksOnly && task.assigneeId !== user.id) {
+        return false;
+      }
       
       const statusMatch = status === 'all' || task.status === status;
       const priorityMatch = priority === 'all' || task.priority === priority;
@@ -33,7 +38,7 @@ export default function TasksPage() {
 
       return statusMatch && priorityMatch && dateMatch;
     });
-  }, [tasks, filters]);
+  }, [tasks, filters, user]);
 
 
   return (

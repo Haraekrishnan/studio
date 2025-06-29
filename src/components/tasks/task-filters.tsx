@@ -10,11 +10,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '../ui/card';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 
 export interface TaskFilters {
   status: string;
   priority: string;
   dateRange: DateRange | undefined;
+  showMyTasksOnly: boolean;
 }
 
 interface TaskFiltersProps {
@@ -29,19 +32,22 @@ export default function TaskFilters({ onApplyFilters, initialFilters }: TaskFilt
   const [status, setStatus] = useState(initialFilters.status);
   const [priority, setPriority] = useState(initialFilters.priority);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(initialFilters.dateRange);
+  const [showMyTasksOnly, setShowMyTasksOnly] = useState(initialFilters.showMyTasksOnly);
 
   const handleApply = () => {
-    onApplyFilters({ status, priority, dateRange });
+    onApplyFilters({ status, priority, dateRange, showMyTasksOnly });
   };
 
   const handleClear = () => {
     setStatus('all');
     setPriority('all');
     setDateRange(undefined);
+    setShowMyTasksOnly(false);
     onApplyFilters({
       status: 'all',
       priority: 'all',
       dateRange: undefined,
+      showMyTasksOnly: false,
     });
   };
 
@@ -108,10 +114,15 @@ export default function TaskFilters({ onApplyFilters, initialFilters }: TaskFilt
                 </PopoverContent>
             </Popover>
 
+            <div className="flex items-center space-x-2">
+                <Switch id="my-tasks-only" checked={showMyTasksOnly} onCheckedChange={setShowMyTasksOnly} />
+                <Label htmlFor="my-tasks-only">My Tasks Only</Label>
+            </div>
+
             <div className="flex gap-2 ml-auto">
                 <Button onClick={handleApply}>Apply</Button>
                 <Button variant="ghost" onClick={handleClear}>
-                <X className="mr-2 h-4 w-4" /> Clear
+                  <X className="mr-2 h-4 w-4" /> Clear
                 </Button>
             </div>
         </div>

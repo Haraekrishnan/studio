@@ -5,9 +5,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMemo, useState } from 'react';
-import type { Role, User as UserType } from '@/lib/types';
+import type { User as UserType } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
@@ -17,7 +16,7 @@ import EditEmployeeDialog from '@/components/account/edit-employee-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 export default function AccountPage() {
-  const { user, users, updateUser, deleteUser, updateProfile } = useAppContext();
+  const { user, users, updateUser, deleteUser, updateProfile, getVisibleUsers } = useAppContext();
   const { toast } = useToast();
   const [name, setName] = useState(user?.name || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
@@ -25,12 +24,11 @@ export default function AccountPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
 
-  const directReports = useMemo(() => {
-    if (!user) {
-      return [];
-    }
-    return users.filter(u => u.supervisorId === user.id);
-  }, [user, users]);
+  const visibleUsers = useMemo(() => {
+    if (!user) return [];
+    // The current user should not appear in the management list
+    return getVisibleUsers().filter(u => u.id !== user.id);
+  }, [user, getVisibleUsers]);
 
   if (!user) {
     return <div>Loading user profile...</div>;
@@ -75,8 +73,8 @@ export default function AccountPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Account Management</h1>
-        <p className="text-muted-foreground">View and manage your profile and team details.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Your Profile</h1>
+        <p className="text-muted-foreground">View and manage your personal profile.</p>
       </div>
       <div className="grid gap-8 md:grid-cols-3">
         <div className="md:col-span-1 space-y-8">
@@ -119,37 +117,34 @@ export default function AccountPage() {
           </form>
         </div>
       </div>
-      {canManageUsers && (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Team Management</CardTitle>
-                    <CardDescription>Add, edit, or remove employees you manage.</CardDescription>
-                </div>
+      
+      <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                  <CardTitle>Employee Management</CardTitle>
+                  <CardDescription>View, add, edit, or remove employees.</CardDescription>
+              </div>
+              {canManageUsers && (
                 <Button onClick={() => setIsAddDialogOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Employee
                 </Button>
-            </CardHeader>
-        </Card>
-      )}
-      {directReports.length > 0 && (
-        <Card>
-            <CardHeader>
-                <CardTitle>Direct Reports</CardTitle>
-                <CardDescription>Employees you directly supervise.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Employee</TableHead>
-                            <TableHead>Role</TableHead>
-                            {canManageUsers && <TableHead className="text-right">Actions</TableHead>}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {directReports.map(report => (
+              )}
+          </CardHeader>
+          <CardContent>
+              <Table>
+                  <TableHeader>
+                      <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Supervisor</TableHead>
+                          {canManageUsers && <TableHead className="text-right">Actions</TableHead>}
+                      </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                      {visibleUsers.map(report => {
+                          const supervisor = users.find(u => u.id === report.supervisorId);
+                          return (
                             <TableRow key={report.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
@@ -161,6 +156,7 @@ export default function AccountPage() {
                                     </div>
                                 </TableCell>
                                 <TableCell>{report.role}</TableCell>
+                                <TableCell>{supervisor?.name || 'N/A'}</TableCell>
                                 {canManageUsers && (
                                     <TableCell className="text-right">
                                         <AlertDialog>
@@ -198,12 +194,13 @@ export default function AccountPage() {
                                     </TableCell>
                                 )}
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-      )}
+                          );
+                      })}
+                  </TableBody>
+              </Table>
+          </CardContent>
+      </Card>
+
       <AddEmployeeDialog isOpen={isAddDialogOpen} setIsOpen={setIsAddDialogOpen} />
       {selectedUser && (
         <EditEmployeeDialog isOpen={isEditDialogOpen} setIsOpen={setIsEditDialogOpen} user={selectedUser} />

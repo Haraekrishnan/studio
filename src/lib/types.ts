@@ -32,6 +32,10 @@ export interface Task {
   assigneeId: string;
   creatorId: string;
   comments?: Comment[];
+  attachment?: {
+    url: string;
+    name: string;
+  };
 }
 
 export interface PlannerEvent {

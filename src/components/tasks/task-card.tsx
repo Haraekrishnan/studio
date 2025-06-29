@@ -39,7 +39,8 @@ export default function TaskCard({ task }: TaskCardProps) {
     'High': 'destructive',
   } as const;
   
-  const canManageTask = user?.role === 'Admin' || user?.role === 'Manager' || user?.id === task.creatorId;
+  const canEditTask = user?.role === 'Admin' || user?.role === 'Manager' || user?.id === task.creatorId || user?.id === task.assigneeId;
+  const canDeleteTask = user?.role === 'Admin' || user?.id === task.creatorId;
   const canUseAiTools = user?.role === 'Admin' || user?.role === 'Manager';
 
   const handleDelete = () => {
@@ -62,25 +63,27 @@ export default function TaskCard({ task }: TaskCardProps) {
             <div {...attributes} {...listeners} className="flex-grow cursor-grab active:cursor-grabbing">
                 <CardTitle className="text-base font-semibold leading-tight">{task.title}</CardTitle>
             </div>
-            {canManageTask && (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
-                           <MoreVertical className="h-5 w-5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+                       <MoreVertical className="h-5 w-5" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    {canEditTask && (
+                      <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
                         <Pencil className="mr-2 h-4 w-4" />
-                        Edit / Reassign
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={handleDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                        Edit / View Details
+                      </DropdownMenuItem>
+                    )}
+                    {canDeleteTask && (
+                      <DropdownMenuItem onSelect={handleDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )}
+                      </DropdownMenuItem>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
         <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
           <p className="line-clamp-2">{task.description}</p>
@@ -107,7 +110,7 @@ export default function TaskCard({ task }: TaskCardProps) {
           {canUseAiTools && <AiToolsDialog task={task} assignee={assignee} />}
         </CardFooter>
       </Card>
-      {canManageTask && (
+      {canEditTask && (
         <EditTaskDialog 
           isOpen={isEditDialogOpen}
           setIsOpen={setIsEditDialogOpen}

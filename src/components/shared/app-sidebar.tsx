@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, User, LogOut, Layers, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays } from 'lucide-react';
 
 export function AppSidebar() {
   const { user, logout } = useAppContext();
@@ -18,7 +18,7 @@ export function AppSidebar() {
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
     { href: '/reports', icon: FileText, label: 'Reports' },
-    { href: '/account', icon: User, label: 'Account' },
+    { href: '/account', icon: Users, label: 'Employees' },
   ];
 
   return (
@@ -38,7 +38,7 @@ export function AppSidebar() {
               <Button
                 asChild
                 variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
-                className="w-full justify-start hover:bg-sidebar-accent/80 data-[state=active]:bg-sidebar-accent"
+                className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground data-[state=active]:bg-sidebar-accent data-[state=active]:text-sidebar-accent-foreground"
               >
                 <Link href={item.href} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
@@ -60,7 +60,7 @@ export function AppSidebar() {
             <p className="text-sm font-semibold truncate">{user?.name}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.role}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} title="Log Out" className="hover:bg-sidebar-accent/80">
+          <Button variant="ghost" size="icon" onClick={logout} title="Log Out" className="text-sidebar-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground">
             <LogOut className="h-5 w-5" />
           </Button>
         </div>
