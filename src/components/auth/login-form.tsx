@@ -63,7 +63,10 @@ export function LoginForm() {
                     type="button"
                     variant="link"
                     className="p-0 h-auto text-xs"
-                    onClick={() => alert('Password reset functionality is not implemented in this prototype.')}
+                    onClick={() => toast({
+                        title: 'Password Reset',
+                        description: 'A password reset link would be sent to your email in a real application.',
+                    })}
                 >
                     Forgot Password?
                 </Button>
