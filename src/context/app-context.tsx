@@ -28,7 +28,7 @@ interface AppContextType {
   approveTaskStatusChange: (taskId: string, commentText: string) => void;
   returnTaskStatusChange: (taskId: string, commentText: string) => void;
   addComment: (taskId: string, commentText: string) => void;
-  addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date'>) => void;
+  addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById'>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -127,7 +127,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       date: new Date().toISOString(),
     };
     setTasks(prevTasks => prevTasks.map(task => 
-      task.id === taskId ? { ...task, comments: [...(task.comments || []), newComment] } : task
+      task.id === taskId ? { ...task, comments: [...(task.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : task
     ));
   };
   
@@ -135,11 +135,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const task = tasks.find(t => t.id === taskId);
     if (!task || !user || !commentText) return false;
 
-    if (newStatus === 'Completed' && task.requiresAttachmentForCompletion && !attachment) {
+    if (newStatus === 'Completed' && task.requiresAttachmentForCompletion && !attachment && !task.attachment) {
       return false; // Prevents completion without attachment
     }
 
-    addComment(taskId, commentText);
+    addComment(taskId, `Status change requested to "${newStatus}": ${commentText}`);
     const updatedTask = {
       ...task,
       pendingStatus: newStatus,
@@ -155,7 +155,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const task = tasks.find(t => t.id === taskId);
     if (!task || !task.pendingStatus) return;
 
-    addComment(taskId, commentText);
+    addComment(taskId, `Request Approved: ${commentText}`);
     const updatedTask = {
       ...task,
       status: task.pendingStatus,
@@ -169,11 +169,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    addComment(taskId, commentText);
-    const originalStatus = tasks.find(t => t.id === taskId)?.status || 'To Do';
+    addComment(taskId, `Request Returned: ${commentText}`);
     const updatedTask = {
       ...task,
-      status: task.status === 'Pending Approval' ? 'In Progress' : task.status, // Revert to a sensible state
+      status: 'In Progress', // Revert to a sensible state
       pendingStatus: undefined,
       approvalState: 'returned' as ApprovalState,
     };
@@ -257,7 +256,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addManualAchievement = (achievement: Omit<Achievement, 'id' | 'type' | 'date'>) => {
+  const addManualAchievement = (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById'>) => {
     if (!user) return;
     const newAchievement: Achievement = {
       ...achievement,
@@ -292,7 +291,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     returnTaskStatusChange,
     addComment,
     addManualAchievement,
-    updateTaskStatus: () => {}, // placeholder to satisfy old components if any
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

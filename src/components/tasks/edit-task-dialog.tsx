@@ -113,11 +113,13 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
             };
             requestTaskStatusChange(task.id, newStatus, newComment, fileData);
             setNewComment('');
+            setIsOpen(false);
         };
         reader.readAsDataURL(attachment);
     } else {
         requestTaskStatusChange(task.id, newStatus, newComment);
         setNewComment('');
+        setIsOpen(false);
     }
     toast({ title: 'Status Change Requested', description: 'Your request has been sent for approval.' });
   };
@@ -135,6 +137,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         toast({ title: 'Status Change Returned', description: 'The task has been returned to the assignee.' });
     }
     setNewComment('');
+    setIsOpen(false);
   };
 
   const onSubmit = (data: TaskFormValues) => {
@@ -155,8 +158,8 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         if (isApprover) {
             return (
                 <div className='flex gap-2'>
-                    <Button onClick={() => handleApprovalAction('approve')} className="w-full bg-green-600 hover:bg-green-700"><ThumbsUp className="mr-2" /> Approve</Button>
-                    <Button onClick={() => handleApprovalAction('return')} className="w-full" variant="destructive"><ThumbsDown className="mr-2" /> Return</Button>
+                    <Button onClick={() => handleApprovalAction('approve')} className="w-full bg-green-600 hover:bg-green-700"><ThumbsUp className="mr-2 h-4 w-4" /> Approve</Button>
+                    <Button onClick={() => handleApprovalAction('return')} className="w-full" variant="destructive"><ThumbsDown className="mr-2 h-4 w-4" /> Return</Button>
                 </div>
             )
         }
