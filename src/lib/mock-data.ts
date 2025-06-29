@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment } from './types';
 import { sub } from 'date-fns';
 
 export const USERS: User[] = [
@@ -177,6 +177,8 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         comments: [],
     }
 ];
+
+export const DAILY_PLANNER_COMMENTS: DailyPlannerComment[] = [];
 
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'ach-1', userId: '19', type: 'manual', title: 'Safety Star', description: 'Maintained a perfect safety record for Q2.', points: 50, date: new Date().toISOString(), awardedById: '11', status: 'approved' },

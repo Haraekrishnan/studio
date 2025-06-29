@@ -62,6 +62,15 @@ export interface PlannerEvent {
   comments?: Comment[];
 }
 
+export interface DailyPlannerComment {
+  id: string;
+  // The user whose planner this comment belongs to
+  plannerUserId: string; 
+  // The specific day the comment is for, in 'yyyy-MM-dd' format
+  day: string; 
+  comments: Comment[];
+}
+
 export interface Achievement {
   id: string;
   userId: string;

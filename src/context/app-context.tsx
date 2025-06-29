@@ -2,15 +2,16 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS } from '@/lib/mock-data';
-import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes } from 'date-fns';
+import type { User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS } from '@/lib/mock-data';
+import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
 interface AppContextType {
   user: User | null;
   users: User[];
   tasks: Task[];
   plannerEvents: PlannerEvent[];
+  dailyPlannerComments: DailyPlannerComment[];
   achievements: Achievement[];
   activityLogs: ActivityLog[];
   appName: string;
@@ -35,6 +36,7 @@ interface AppContextType {
   approveAchievement: (achievementId: string, points: number) => void;
   rejectAchievement: (achievementId: string) => void;
   addPlannerEventComment: (eventId: string, commentText: string) => void;
+  addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
 }
 
@@ -45,6 +47,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>(USERS);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
   const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
+  const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>(DAILY_PLANNER_COMMENTS);
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
@@ -319,6 +322,38 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Commented on event: "${eventTitle}"`);
   };
 
+  const addDailyPlannerComment = (plannerUserId: string, date: Date, commentText: string) => {
+    if (!user) return;
+    const dayKey = format(date, 'yyyy-MM-dd');
+
+    const newComment: Comment = {
+        userId: user.id,
+        text: commentText,
+        date: new Date().toISOString(),
+    };
+
+    setDailyPlannerComments(prev => {
+        const existingEntry = prev.find(dpc => dpc.day === dayKey && dpc.plannerUserId === plannerUserId);
+        if (existingEntry) {
+            return prev.map(dpc => 
+                dpc.id === existingEntry.id 
+                ? { ...dpc, comments: [...dpc.comments, newComment] } 
+                : dpc
+            );
+        } else {
+            const newEntry: DailyPlannerComment = {
+                id: `dpc-${Date.now()}`,
+                plannerUserId,
+                day: dayKey,
+                comments: [newComment],
+            };
+            return [...prev, newEntry];
+        }
+    });
+    const plannerUser = users.find(u => u.id === plannerUserId);
+    recordAction(`Commented on ${plannerUser?.name}'s planner for ${dayKey}`);
+  };
+
   const addUser = (newUser: Omit<User, 'id' | 'avatar'>) => {
     const userToAdd: User = {
       ...newUser,
@@ -404,6 +439,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     users,
     tasks,
     plannerEvents,
+    dailyPlannerComments,
     achievements,
     activityLogs,
     appName,
@@ -428,6 +464,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     approveAchievement,
     rejectAchievement,
     addPlannerEventComment,
+    addDailyPlannerComment,
     updateBranding,
   };
 
