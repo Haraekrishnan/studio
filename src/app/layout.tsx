@@ -1,12 +1,13 @@
+'use client';
 import type { Metadata } from 'next';
 import { AppContextProvider } from '@/context/app-context';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: 'TaskMaster Pro',
-  description: 'A collaborative task management application.',
-};
+// This would typically be in a metadata export, but for client components we can do it this way.
+if (typeof window !== 'undefined') {
+  document.title = 'TaskMaster Pro - Aries Marine';
+}
 
 export default function RootLayout({
   children,
@@ -16,6 +17,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <head>
+        <title>TaskMaster Pro - Aries Marine</title>
+        <meta name="description" content="A collaborative task management application." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

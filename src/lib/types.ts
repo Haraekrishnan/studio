@@ -1,4 +1,4 @@
-export type Role = 'Admin' | 'Manager' | 'Team Member';
+export type Role = 'Admin' | 'Manager' | 'Supervisor' | 'Team Member';
 
 export type TaskStatus = 'To Do' | 'In Progress' | 'Completed';
 
@@ -11,6 +11,13 @@ export interface User {
   name: string;
   role: Role;
   avatar: string; // URL to avatar image
+  supervisorId?: string; // ID of this user's supervisor
+}
+
+export interface Comment {
+    userId: string;
+    text: string;
+    date: string; // ISO string
 }
 
 export interface Task {
@@ -22,13 +29,14 @@ export interface Task {
   dueDate: string; // ISO string date
   assigneeId: string;
   creatorId: string;
+  comments?: Comment[];
 }
 
 export interface PlannerEvent {
   id: string;
   title: string;
   description: string;
-  date: string; // ISO string
+  date: string; // ISO string, represents the start date for recurring events
   frequency: Frequency;
   creatorId: string;
 }

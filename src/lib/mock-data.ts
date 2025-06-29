@@ -3,9 +3,10 @@ import type { User, Task, PlannerEvent } from './types';
 export const USERS: User[] = [
   { id: '1', name: 'Alex Williams', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=alex' },
   { id: '2', name: 'Samantha Jones', role: 'Manager', avatar: 'https://i.pravatar.cc/150?u=samantha' },
-  { id: '3', name: 'Michael Brown', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=michael' },
-  { id: '4', name: 'Jessica Davis', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=jessica' },
-  { id: '5', name: 'Chris Miller', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=chris' },
+  { id: '6', name: 'David Wilson', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=david', supervisorId: '2' },
+  { id: '3', name: 'Michael Brown', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=michael', supervisorId: '6' },
+  { id: '4', name: 'Jessica Davis', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=jessica', supervisorId: '6' },
+  { id: '5', name: 'Chris Miller', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=chris', supervisorId: '2' },
 ];
 
 export const TASKS: Task[] = [
@@ -17,7 +18,10 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '3',
-    creatorId: '2',
+    creatorId: '6',
+    comments: [
+        { userId: '6', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+    ],
   },
   {
     id: 'task-2',
@@ -27,7 +31,8 @@ export const TASKS: Task[] = [
     priority: 'High',
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '4',
-    creatorId: '2',
+    creatorId: '6',
+    comments: [],
   },
   {
     id: 'task-3',
@@ -38,6 +43,7 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '2',
     creatorId: '1',
+    comments: [],
   },
   {
     id: 'task-4',
@@ -48,6 +54,10 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '5',
     creatorId: '2',
+    comments: [
+        { userId: '2', text: 'This is a top priority, please escalate if you run into issues.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+        { userId: '5', text: 'On it. I think I have an idea of what the issue is.', date: new Date().toISOString() }
+    ],
   },
   {
     id: 'task-5',
@@ -57,7 +67,8 @@ export const TASKS: Task[] = [
     priority: 'Low',
     dueDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '3',
-    creatorId: '1',
+    creatorId: '2',
+    comments: [],
   },
   {
     id: 'task-6',
@@ -68,6 +79,7 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '2',
     creatorId: '1',
+    comments: [],
   },
   {
     id: 'task-7',
@@ -78,6 +90,7 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '4',
     creatorId: '1',
+    comments: [],
   },
   {
     id: 'task-8',
@@ -88,16 +101,17 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '5',
     creatorId: '2',
+    comments: [],
   },
 ];
 
 export const PLANNER_EVENTS: PlannerEvent[] = [
     {
         id: 'event-1',
-        title: 'Weekly Team Sync',
+        title: 'Daily Standup',
         description: 'Sync up on project progress and blockers.',
         date: new Date().toISOString(),
-        frequency: 'weekly',
+        frequency: 'daily',
         creatorId: '1',
     },
     {
@@ -112,8 +126,16 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         id: 'event-3',
         title: 'Monthly All-Hands',
         description: 'Company-wide update meeting.',
-        date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        date: new Date(new Date().setDate(15)).toISOString(),
         frequency: 'monthly',
         creatorId: '1',
+    },
+    {
+        id: 'event-4',
+        title: 'Team Retrospective',
+        description: 'Discuss what went well and what could be improved.',
+        date: new Date(new Date().setDate(25)).toISOString(),
+        frequency: 'weekly',
+        creatorId: '6'
     }
 ];

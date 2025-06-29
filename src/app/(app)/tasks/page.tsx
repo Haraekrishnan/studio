@@ -5,7 +5,7 @@ import CreateTaskDialog from '@/components/tasks/create-task-dialog';
 
 export default function TasksPage() {
   const { user } = useAppContext();
-  const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager';
+  const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor';
 
   return (
     <div className="flex flex-col h-full">

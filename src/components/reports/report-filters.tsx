@@ -20,7 +20,8 @@ interface ReportFiltersProps {
 const statuses: TaskStatus[] = ['To Do', 'In Progress', 'Completed'];
 
 export default function ReportFilters({ onApplyFilters, initialFilters }: ReportFiltersProps) {
-  const { users } = useAppContext();
+  const { getVisibleUsers } = useAppContext();
+  const visibleUsers = getVisibleUsers();
   const [assigneeId, setAssigneeId] = useState(initialFilters.assigneeId);
   const [status, setStatus] = useState(initialFilters.status);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(initialFilters.dateRange);
@@ -48,7 +49,7 @@ export default function ReportFilters({ onApplyFilters, initialFilters }: Report
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Employees</SelectItem>
-          {users.map(user => (
+          {visibleUsers.map(user => (
             <SelectItem key={user.id} value={user.id}>
               {user.name}
             </SelectItem>

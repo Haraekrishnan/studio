@@ -2,21 +2,29 @@
 import { useMemo } from 'react';
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { useAppContext } from '@/context/app-context';
-import { format, getMonth, parseISO } from 'date-fns';
+import { getMonth, parseISO } from 'date-fns';
 
 export default function TasksCompletedChart() {
-  const { tasks, user } = useAppContext();
+  const { tasks, user, getVisibleUsers } = useAppContext();
+  
+  const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
+  const visibleUserIds = useMemo(() => visibleUsers.map(u => u.id), [visibleUsers]);
 
   const chartData = useMemo(() => {
-    const relevantTasks = user?.role === 'Team Member'
-        ? tasks.filter(t => t.assigneeId === user.id && t.status === 'Completed')
-        : tasks.filter(t => t.status === 'Completed');
+    const relevantTasks = tasks.filter(t => visibleUserIds.includes(t.assigneeId) && t.status === 'Completed');
 
     const monthlyData: { [key: number]: number } = {};
 
     relevantTasks.forEach(task => {
-      const month = getMonth(parseISO(task.dueDate));
-      monthlyData[month] = (monthlyData[month] || 0) + 1;
+      // Ensure dueDate is a valid date string before parsing
+      if (task.dueDate) {
+        try {
+          const month = getMonth(parseISO(task.dueDate));
+          monthlyData[month] = (monthlyData[month] || 0) + 1;
+        } catch (error) {
+          console.error("Invalid date format for task:", task.id, task.dueDate);
+        }
+      }
     });
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -25,7 +33,7 @@ export default function TasksCompletedChart() {
       name,
       completed: monthlyData[index] || 0,
     }));
-  }, [tasks, user]);
+  }, [tasks, visibleUserIds]);
 
   return (
     <div className="h-[300px]">
@@ -34,6 +42,7 @@ export default function TasksCompletedChart() {
           <XAxis dataKey="name" stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} />
           <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false}/>
           <Tooltip 
+            cursor={{strokeDasharray: '3 3'}}
             contentStyle={{ 
                 backgroundColor: 'hsl(var(--background))',
                 borderColor: 'hsl(var(--border))'

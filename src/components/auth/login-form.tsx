@@ -17,6 +17,7 @@ export function LoginForm() {
     e.preventDefault();
     if (selectedUserId) {
       login(selectedUserId);
+      router.push('/dashboard');
     }
   };
 

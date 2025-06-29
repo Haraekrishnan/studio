@@ -18,7 +18,7 @@ export default function Header() {
     if (pathname.startsWith('/performance')) return 'Performance';
     if (pathname.startsWith('/reports')) return 'Reports';
     if (pathname.startsWith('/account')) return 'Account';
-    return 'TaskMaster Pro';
+    return 'TaskMaster Pro - Aries Marine';
   };
   
   const navItems = [
@@ -31,22 +31,22 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card px-4 md:px-8">
+    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-sidebar text-sidebar-foreground px-4 md:px-8">
       <div className="flex items-center gap-4">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden">
+            <Button variant="outline" size="icon" className="md:hidden bg-sidebar-background text-sidebar-foreground border-sidebar-foreground/50">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="flex flex-col p-0">
-            <div className="p-4 border-b">
+          <SheetContent side="left" className="flex flex-col p-0 bg-sidebar text-sidebar-foreground border-r-0">
+            <div className="p-4 border-b border-sidebar-foreground/20">
                 <Link href="/dashboard" className="flex items-center gap-3">
                     <div className="bg-primary p-2 rounded-lg">
                         <CheckSquare className="h-6 w-6 text-primary-foreground" />
                     </div>
-                    <h1 className="text-xl font-bold text-foreground">TaskMaster Pro</h1>
+                    <h1 className="text-xl font-bold">TaskMaster Pro - Aries Marine</h1>
                 </Link>
             </div>
             <nav className="flex-1 p-4">
@@ -57,7 +57,7 @@ export default function Header() {
                             <Button
                                 asChild
                                 variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
-                                className="w-full justify-start"
+                                className="w-full justify-start hover:bg-sidebar-accent/80"
                             >
                                 <Link href={item.href} className="flex items-center gap-3">
                                 <item.icon className="h-5 w-5" />
@@ -69,7 +69,7 @@ export default function Header() {
                 ))}
                 </ul>
             </nav>
-            <div className="p-4 mt-auto border-t">
+            <div className="p-4 mt-auto border-t border-sidebar-foreground/20">
                 <div className="flex items-center gap-3">
                 <Avatar>
                     <AvatarImage src={user?.avatar} alt={user?.name} />
@@ -80,7 +80,7 @@ export default function Header() {
                     <p className="text-xs text-muted-foreground truncate">{user?.role}</p>
                 </div>
                 <SheetClose asChild>
-                    <Button variant="ghost" size="icon" onClick={logout} title="Log Out">
+                    <Button variant="ghost" size="icon" onClick={logout} title="Log Out" className="hover:bg-sidebar-accent/80">
                         <LogOut className="h-5 w-5" />
                     </Button>
                 </SheetClose>
@@ -88,7 +88,7 @@ export default function Header() {
             </div>
           </SheetContent>
         </Sheet>
-        <h1 className="text-2xl font-bold text-foreground hidden md:block">{getPageTitle()}</h1>
+        <h1 className="text-2xl font-bold text-sidebar-foreground hidden md:block">{getPageTitle()}</h1>
       </div>
       <div className="flex items-center gap-4">
         <Avatar className="hidden md:block">

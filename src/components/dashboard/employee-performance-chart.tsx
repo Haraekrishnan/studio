@@ -4,16 +4,17 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } fro
 import { useAppContext } from '@/context/app-context';
 
 export default function EmployeePerformanceChart() {
-  const { tasks, users } = useAppContext();
+  const { tasks, getVisibleUsers } = useAppContext();
+  const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
 
   const chartData = useMemo(() => {
-    return users.map(user => {
+    return visibleUsers.map(user => {
       const completedTasks = tasks.filter(
         task => task.assigneeId === user.id && task.status === 'Completed'
       ).length;
       return { name: user.name, completed: completedTasks };
     });
-  }, [tasks, users]);
+  }, [tasks, visibleUsers]);
 
   return (
     <div className="h-[300px]">
@@ -22,6 +23,7 @@ export default function EmployeePerformanceChart() {
           <XAxis dataKey="name" stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} />
           <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
           <Tooltip 
+            cursor={{fill: 'hsl(var(--muted))'}}
             contentStyle={{ 
                 backgroundColor: 'hsl(var(--background))',
                 borderColor: 'hsl(var(--border))'

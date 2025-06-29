@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useAppContext } from '@/context/app-context';
 import KanbanColumn from './kanban-column';
 import type { Task, TaskStatus } from '@/lib/types';
@@ -8,14 +8,15 @@ import { DndContext, type DragEndEvent } from '@dnd-kit/core';
 const columns: TaskStatus[] = ['To Do', 'In Progress', 'Completed'];
 
 export default function KanbanBoard() {
-  const { user, tasks, updateTaskStatus } = useAppContext();
+  const { tasks, updateTaskStatus, getVisibleUsers } = useAppContext();
+  
+  const visibleUserIds = useMemo(() => {
+    return getVisibleUsers().map(u => u.id);
+  }, [getVisibleUsers]);
   
   const filteredTasks = useMemo(() => {
-    if (user?.role === 'Team Member') {
-      return tasks.filter(task => task.assigneeId === user.id);
-    }
-    return tasks;
-  }, [tasks, user]);
+    return tasks.filter(task => visibleUserIds.includes(task.assigneeId));
+  }, [tasks, visibleUserIds]);
   
   const tasksByStatus = useMemo(() => {
     return {

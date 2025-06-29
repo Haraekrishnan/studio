@@ -9,7 +9,7 @@ export default function LoginPage() {
             <div className="bg-primary p-3 rounded-lg mb-4 shadow-lg">
                 <CheckSquare className="h-8 w-8 text-primary-foreground" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground">TaskMaster Pro</h1>
+            <h1 className="text-3xl font-bold text-foreground">TaskMaster Pro - Aries Marine</h1>
             <p className="text-muted-foreground mt-1">Welcome back! Please select your profile to log in.</p>
         </div>
         <LoginForm />

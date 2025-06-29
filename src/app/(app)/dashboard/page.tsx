@@ -5,17 +5,27 @@ import StatCard from '@/components/dashboard/stat-card';
 import TasksCompletedChart from '@/components/dashboard/tasks-completed-chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Users, CheckCircle, PlusCircle } from 'lucide-react';
+import { FileText, Users, CheckCircle } from 'lucide-react';
 import CreateTaskDialog from '@/components/tasks/create-task-dialog';
 import { useMemo } from 'react';
+import EmployeePerformanceChart from '@/components/dashboard/employee-performance-chart';
 
 export default function DashboardPage() {
-  const { tasks, users, user } = useAppContext();
+  const { tasks, user, getVisibleUsers } = useAppContext();
 
-  const completedTasks = useMemo(() => tasks.filter(task => task.status === 'Completed').length, [tasks]);
-  const tasksPerPerson = useMemo(() => users.length > 0 ? (tasks.length / users.length).toFixed(1) : "0", [tasks, users]);
+  const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
+
+  const relevantTasks = useMemo(() => {
+    if (!user) return [];
+    const visibleUserIds = visibleUsers.map(u => u.id);
+    return tasks.filter(task => visibleUserIds.includes(task.assigneeId));
+  }, [tasks, user, visibleUsers]);
+
+  const completedTasks = useMemo(() => relevantTasks.filter(task => task.status === 'Completed').length, [relevantTasks]);
+  const openTasks = useMemo(() => relevantTasks.length - completedTasks, [relevantTasks, completedTasks]);
+  const tasksPerPerson = useMemo(() => visibleUsers.length > 0 ? (relevantTasks.length / visibleUsers.length).toFixed(1) : "0", [relevantTasks, visibleUsers]);
   
-  const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager';
+  const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor';
 
   return (
     <div className="space-y-8">
@@ -37,32 +47,40 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 
-          title="Tasks Completed" 
+          title="Completed Tasks" 
           value={completedTasks.toString()} 
           icon={CheckCircle} 
           description="Total tasks marked as done"
         />
         <StatCard 
-          title="Avg. Tasks per Person" 
-          value={tasksPerPerson} 
-          icon={Users} 
-          description="Average tasks across all users"
-        />
-        <StatCard 
           title="Open Tasks" 
-          value={tasks.length - completedTasks}
+          value={openTasks.toString()}
           icon={FileText} 
           description="Tasks currently in-progress or to-do"
         />
+        <StatCard 
+          title="Avg. Tasks per Person" 
+          value={tasksPerPerson} 
+          icon={Users} 
+          description="Average tasks across your team"
+        />
       </div>
 
-      <div>
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
             <CardHeader>
                 <CardTitle>Tasks Completed per Month</CardTitle>
             </CardHeader>
             <CardContent>
                 <TasksCompletedChart />
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Team Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <EmployeePerformanceChart />
             </CardContent>
         </Card>
       </div>

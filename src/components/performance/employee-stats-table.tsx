@@ -13,10 +13,11 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
 export default function EmployeeStatsTable() {
-  const { users, tasks } = useAppContext();
+  const { tasks, getVisibleUsers } = useAppContext();
+  const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
 
   const performanceData = useMemo(() => {
-    return users.map(user => {
+    return visibleUsers.map(user => {
       const userTasks = tasks.filter(task => task.assigneeId === user.id);
       const completed = userTasks.filter(t => t.status === 'Completed').length;
       const inProgress = userTasks.filter(t => t.status === 'In Progress').length;
@@ -36,7 +37,7 @@ export default function EmployeeStatsTable() {
         },
       };
     }).sort((a, b) => b.stats.completed - a.stats.completed);
-  }, [users, tasks]);
+  }, [visibleUsers, tasks]);
 
   return (
     <Table>

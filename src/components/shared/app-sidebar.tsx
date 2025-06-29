@@ -22,13 +22,13 @@ export function AppSidebar() {
   ];
 
   return (
-    <aside className="hidden md:flex w-64 flex-col bg-card border-r border-border h-full">
+    <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-border h-full">
       <div className="p-4">
         <Link href="/dashboard" className="flex items-center gap-3">
             <div className="bg-primary p-2 rounded-lg">
                 <CheckSquare className="h-6 w-6 text-primary-foreground" />
             </div>
-            <h1 className="text-xl font-bold text-foreground">TaskMaster Pro</h1>
+            <h1 className="text-xl font-bold">TaskMaster Pro - Aries Marine</h1>
         </Link>
       </div>
       <nav className="flex-1 px-4">
@@ -38,7 +38,7 @@ export function AppSidebar() {
               <Button
                 asChild
                 variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
-                className="w-full justify-start"
+                className="w-full justify-start hover:bg-sidebar-accent/80 data-[state=active]:bg-sidebar-accent"
               >
                 <Link href={item.href} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
@@ -50,7 +50,7 @@ export function AppSidebar() {
         </ul>
       </nav>
       <div className="p-4 mt-auto">
-        <Separator className="my-4" />
+        <Separator className="my-4 bg-sidebar-foreground/20" />
         <div className="flex items-center gap-3">
           <Avatar>
             <AvatarImage src={user?.avatar} alt={user?.name} />
@@ -60,7 +60,7 @@ export function AppSidebar() {
             <p className="text-sm font-semibold truncate">{user?.name}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.role}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout} title="Log Out">
+          <Button variant="ghost" size="icon" onClick={logout} title="Log Out" className="hover:bg-sidebar-accent/80">
             <LogOut className="h-5 w-5" />
           </Button>
         </div>

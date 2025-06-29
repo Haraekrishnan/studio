@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { PlusCircle, CalendarIcon, Bot } from 'lucide-react';
-import type { Priority, Role } from '@/lib/types';
+import type { Priority } from '@/lib/types';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -29,7 +29,7 @@ const taskSchema = z.object({
 type TaskFormValues = z.infer<typeof taskSchema>;
 
 export default function CreateTaskDialog() {
-  const { user, users, addTask } = useAppContext();
+  const { user, users, addTask, getVisibleUsers } = useAppContext();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -44,13 +44,7 @@ export default function CreateTaskDialog() {
     },
   });
   
-  const roleHierarchy: Record<Role, number> = {
-    'Admin': 3,
-    'Manager': 2,
-    'Team Member': 1,
-  };
-
-  const assignableUsers = users.filter(u => roleHierarchy[u.role] <= roleHierarchy[user!.role]);
+  const assignableUsers = getVisibleUsers();
 
   const onSubmit = (data: TaskFormValues) => {
     addTask({
@@ -62,7 +56,7 @@ export default function CreateTaskDialog() {
     const assignee = users.find(u => u.id === data.assigneeId);
     toast({
       title: 'Task Created',
-      description: `"${data.title}" assigned to ${assignee?.name} by ${user!.name}.`,
+      description: `"${data.title}" assigned to ${assignee?.name}.`,
     });
     setIsOpen(false);
     form.reset();
@@ -132,7 +126,7 @@ export default function CreateTaskDialog() {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <SelectTrigger><SelectValue placeholder="Assign to..." /></SelectTrigger>
                 <SelectContent>
-                  {assignableUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                  {assignableUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name} ({u.role})</SelectItem>)}
                 </SelectContent>
               </Select>
             )}
