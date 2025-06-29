@@ -5,24 +5,33 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { User as UserType } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Layers } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AddEmployeeDialog from '@/components/account/add-employee-dialog';
 import EditEmployeeDialog from '@/components/account/edit-employee-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 export default function AccountPage() {
-  const { user, users, updateUser, deleteUser, updateProfile, getVisibleUsers } = useAppContext();
+  const { user, users, updateUser, deleteUser, updateProfile, getVisibleUsers, appName, appLogo, updateBranding } = useAppContext();
   const { toast } = useToast();
   const [name, setName] = useState(user?.name || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
+
+  // State for branding form
+  const [newAppName, setNewAppName] = useState(appName);
+  const [newAppLogo, setNewAppLogo] = useState<string | null>(appLogo);
+
+  useEffect(() => {
+    setNewAppName(appName);
+    setNewAppLogo(appLogo);
+  }, [appName, appLogo]);
 
   const visibleUsers = useMemo(() => {
     if (!user) return [];
@@ -35,6 +44,7 @@ export default function AccountPage() {
   }
   
   const canManageUsers = user.role === 'Admin' || user.role === 'Manager';
+  const canManageBranding = user.role === 'Admin';
 
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +64,26 @@ export default function AccountPage() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewAppLogo(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBrandingSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateBranding(newAppName, newAppLogo);
+    toast({
+      title: 'Branding Updated',
+      description: 'The application name and logo have been updated.',
+    });
   };
 
   const handleEditClick = (userToEdit: UserType) => {
@@ -118,6 +148,38 @@ export default function AccountPage() {
         </div>
       </div>
       
+      {canManageBranding && (
+        <Card>
+          <form onSubmit={handleBrandingSave}>
+            <CardHeader>
+              <CardTitle>Branding Settings</CardTitle>
+              <CardDescription>Customize the application's logo and title. Changes will apply across the application.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="appName">Application Name</Label>
+                <Input id="appName" value={newAppName} onChange={e => setNewAppName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="logo-upload">Application Logo</Label>
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16 rounded-md">
+                    <AvatarImage src={newAppLogo || undefined} alt="App Logo" />
+                    <AvatarFallback className="rounded-md bg-muted">
+                      <Layers className="h-8 w-8 text-muted-foreground" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <Input id="logo-upload" type="file" onChange={handleLogoFileChange} accept="image/*" />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit">Save Branding</Button>
+            </CardFooter>
+          </form>
+        </Card>
+      )}
+
       <Card>
           <CardHeader className="flex flex-row items-center justify-between">
               <div>

@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock } from 'lucide-react';
 
 export default function Header() {
-  const { user, logout } = useAppContext();
+  const { user, logout, appName, appLogo } = useAppContext();
   const pathname = usePathname();
 
   const getPageTitle = () => {
@@ -47,10 +47,14 @@ export default function Header() {
           <SheetContent side="left" className="flex flex-col p-0 bg-sidebar text-sidebar-foreground border-r-0">
             <div className="p-4 border-b border-sidebar-foreground/20">
                 <Link href="/dashboard" className="flex items-center gap-3">
-                    <div className="bg-primary p-2 rounded-lg">
-                        <Layers className="h-6 w-6 text-primary-foreground" />
+                    <div className="bg-primary p-2 rounded-lg flex items-center justify-center">
+                        {appLogo ? (
+                          <img src={appLogo} alt={appName} className="h-6 w-6 object-contain" />
+                        ) : (
+                          <Layers className="h-6 w-6 text-primary-foreground" />
+                        )}
                     </div>
-                    <h1 className="text-xl font-bold">Task Management System</h1>
+                    <h1 className="text-xl font-bold">{appName}</h1>
                 </Link>
             </div>
             <nav className="flex-1 p-4">

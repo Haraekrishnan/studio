@@ -1,12 +1,15 @@
 'use client';
-import type { Metadata } from 'next';
-import { AppContextProvider } from '@/context/app-context';
+import { AppContextProvider, useAppContext } from '@/context/app-context';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
+import { useEffect } from 'react';
 
-// This would typically be in a metadata export, but for client components we can do it this way.
-if (typeof window !== 'undefined') {
-  document.title = 'Task Management System';
+function AppTitleUpdater() {
+  const { appName } = useAppContext();
+  useEffect(() => {
+    document.title = appName;
+  }, [appName]);
+  return null;
 }
 
 export default function RootLayout({
@@ -17,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <head>
-        <title>Task Management System</title>
+        {/* Title is set dynamically by AppTitleUpdater */}
         <meta name="description" content="A collaborative task management application." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -28,6 +31,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased h-full bg-background">
         <AppContextProvider>
+          <AppTitleUpdater />
           {children}
           <Toaster />
         </AppContextProvider>

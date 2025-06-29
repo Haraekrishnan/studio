@@ -13,6 +13,8 @@ interface AppContextType {
   plannerEvents: PlannerEvent[];
   achievements: Achievement[];
   activityLogs: ActivityLog[];
+  appName: string;
+  appLogo: string | null;
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
@@ -33,6 +35,7 @@ interface AppContextType {
   approveAchievement: (achievementId: string, points: number) => void;
   rejectAchievement: (achievementId: string) => void;
   addPlannerEventComment: (eventId: string, commentText: string) => void;
+  updateBranding: (name: string, logo: string | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -45,9 +48,21 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
+  const [appName, setAppName] = useState('Task Management System');
+  const [appLogo, setAppLogo] = useState<string | null>(null);
   const router = useRouter();
   
-  // Logic to automatically update tasks to "Overdue"
+  useEffect(() => {
+    const storedAppName = localStorage.getItem('appName');
+    const storedAppLogo = localStorage.getItem('appLogo');
+    if (storedAppName) {
+      setAppName(storedAppName);
+    }
+    if (storedAppLogo) {
+      setAppLogo(storedAppLogo);
+    }
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
         setTasks(prevTasks =>
@@ -371,6 +386,19 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Rejected achievement: "${achTitle}"`);
   };
 
+  const updateBranding = (name: string, logo: string | null) => {
+    setAppName(name);
+    localStorage.setItem('appName', name);
+    if (logo) {
+      setAppLogo(logo);
+      localStorage.setItem('appLogo', logo);
+    } else {
+      setAppLogo(null);
+      localStorage.removeItem('appLogo');
+    }
+    recordAction(`Updated app branding.`);
+  };
+
   const value = {
     user,
     users,
@@ -378,6 +406,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     plannerEvents,
     achievements,
     activityLogs,
+    appName,
+    appLogo,
     login,
     logout,
     addTask,
@@ -397,7 +427,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addManualAchievement,
     approveAchievement,
     rejectAchievement,
-    addPlannerEventComment
+    addPlannerEventComment,
+    updateBranding,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

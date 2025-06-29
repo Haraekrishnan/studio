@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, Clock } from 'lucide-react';
 
 export function AppSidebar() {
-  const { user, logout } = useAppContext();
+  const { user, logout, appName, appLogo } = useAppContext();
   const pathname = usePathname();
 
   const navItems = [
@@ -27,10 +27,14 @@ export function AppSidebar() {
     <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-border h-full">
       <div className="p-4">
         <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="bg-primary p-2 rounded-lg">
-                <Layers className="h-6 w-6 text-primary-foreground" />
+            <div className="bg-primary p-2 rounded-lg flex items-center justify-center">
+                {appLogo ? (
+                  <img src={appLogo} alt={appName} className="h-6 w-6 object-contain" />
+                ) : (
+                  <Layers className="h-6 w-6 text-primary-foreground" />
+                )}
             </div>
-            <h1 className="text-xl font-bold">Task Management System</h1>
+            <h1 className="text-xl font-bold">{appName}</h1>
         </Link>
       </div>
       <nav className="flex-1 px-4">
