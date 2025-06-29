@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAppContext();
@@ -19,6 +19,7 @@ export default function Header() {
     if (pathname.startsWith('/achievements')) return 'Achievements';
     if (pathname.startsWith('/reports')) return 'Reports';
     if (pathname.startsWith('/account')) return 'Employees';
+    if (pathname.startsWith('/activity-tracker')) return 'Activity Tracker';
     return 'Task Management System';
   };
   
@@ -30,6 +31,7 @@ export default function Header() {
     { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
+    { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
   ];
 
   return (
@@ -75,7 +77,7 @@ export default function Header() {
                 <div className="flex items-center gap-3">
                 <Avatar>
                     <AvatarImage src={user?.avatar} alt={user?.name} />
-                    <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
                     <p className="text-sm font-semibold truncate">{user?.name}</p>
@@ -95,7 +97,7 @@ export default function Header() {
       <div className="flex items-center gap-4">
         <Avatar className="hidden md:block">
             <AvatarImage src={user?.avatar} alt={user?.name} />
-            <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+            <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
         </Avatar>
       </div>
     </header>

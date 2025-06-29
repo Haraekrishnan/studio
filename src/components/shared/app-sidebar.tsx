@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, Clock } from 'lucide-react';
 
 export function AppSidebar() {
   const { user, logout } = useAppContext();
@@ -20,6 +20,7 @@ export function AppSidebar() {
     { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
+    { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
   ];
 
   return (
@@ -55,7 +56,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-3">
           <Avatar>
             <AvatarImage src={user?.avatar} alt={user?.name} />
-            <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+            <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex-1 overflow-hidden">
             <p className="text-sm font-semibold truncate">{user?.name}</p>

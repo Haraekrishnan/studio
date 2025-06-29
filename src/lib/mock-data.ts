@@ -1,4 +1,5 @@
-import type { User, Task, PlannerEvent, Achievement } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog } from './types';
+import { sub } from 'date-fns';
 
 export const USERS: User[] = [
   { id: '1', name: 'Alex Williams', email: 'alex@taskmaster.pro', password: 'password', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=alex' },
@@ -168,4 +169,32 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'ach-1', userId: '3', type: 'manual', title: 'Safety Star', description: 'Maintained a perfect safety record for Q2.', points: 50, date: new Date().toISOString(), awardedById: '6', status: 'approved' },
   { id: 'ach-2', userId: '4', type: 'manual', title: 'Innovation Award', description: 'Proposed a new workflow that saved 10 hours per week.', points: 100, date: new Date().toISOString(), awardedById: '2', status: 'approved' },
+];
+
+const now = new Date();
+export const ACTIVITY_LOGS: ActivityLog[] = [
+  {
+    id: 'log-1',
+    userId: '3',
+    loginTime: sub(now, { days: 1, hours: 8 }).toISOString(),
+    logoutTime: sub(now, { days: 1, hours: 3 }).toISOString(),
+    duration: 300, // 5 hours
+    actions: ['Updated task: "Develop new homepage design"', 'Commented on task: "Update brand style guide"'],
+  },
+  {
+    id: 'log-2',
+    userId: '4',
+    loginTime: sub(now, { days: 1, hours: 7 }).toISOString(),
+    logoutTime: sub(now, { days: 1, hours: 1 }).toISOString(),
+    duration: 360, // 6 hours
+    actions: ['Created task: "Set up CI/CD pipeline"', 'Completed task: "User testing for new feature"'],
+  },
+    {
+    id: 'log-3',
+    userId: '2',
+    loginTime: sub(now, { days: 2, hours: 8 }).toISOString(),
+    logoutTime: sub(now, { days: 2, hours: 0 }).toISOString(),
+    duration: 480, // 8 hours
+    actions: ['Conducted performance review prep', 'Planned team offsite event details'],
+  },
 ];

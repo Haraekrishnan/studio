@@ -73,3 +73,12 @@ export interface Achievement {
   awardedById?: string;
   status: 'pending' | 'approved';
 }
+
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  loginTime: string; // ISO
+  logoutTime: string | null; // ISO or null if active
+  duration: number | null; // in minutes
+  actions: string[];
+}

@@ -2,9 +2,9 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS } from '@/lib/mock-data';
-import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth } from 'date-fns';
+import type { User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS } from '@/lib/mock-data';
+import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes } from 'date-fns';
 
 interface AppContextType {
   user: User | null;
@@ -12,6 +12,7 @@ interface AppContextType {
   tasks: Task[];
   plannerEvents: PlannerEvent[];
   achievements: Achievement[];
+  activityLogs: ActivityLog[];
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
@@ -42,6 +43,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(TASKS);
   const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
+  const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const router = useRouter();
   
   // Logic to automatically update tasks to "Overdue"
@@ -63,10 +66,35 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
+  const recordAction = useCallback((actionText: string) => {
+    if (!currentLogId) return;
+
+    setActivityLogs(prevLogs => {
+      return prevLogs.map(log => {
+        if (log.id === currentLogId) {
+          return { ...log, actions: [...log.actions, actionText] };
+        }
+        return log;
+      });
+    });
+  }, [currentLogId]);
+
   const login = (email: string, password: string): boolean => {
     const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (foundUser) {
       setUser(foundUser);
+      
+      const newLog: ActivityLog = {
+        id: `log-${Date.now()}`,
+        userId: foundUser.id,
+        loginTime: new Date().toISOString(),
+        logoutTime: null,
+        duration: null,
+        actions: ['User logged in.'],
+      };
+      setActivityLogs(prev => [newLog, ...prev]);
+      setCurrentLogId(newLog.id);
+
       router.push('/dashboard');
       return true;
     }
@@ -74,6 +102,24 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    if (currentLogId) {
+      const logoutTime = new Date();
+      setActivityLogs(prevLogs => 
+        prevLogs.map(log => {
+          if (log.id === currentLogId) {
+            const loginTime = new Date(log.loginTime);
+            return {
+              ...log,
+              logoutTime: logoutTime.toISOString(),
+              duration: differenceInMinutes(logoutTime, loginTime),
+              actions: [...log.actions, 'User logged out.'],
+            };
+          }
+          return log;
+        })
+      );
+      setCurrentLogId(null);
+    }
     setUser(null);
     router.push('/login');
   };
@@ -111,6 +157,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         approvalState: 'none'
     };
     setTasks(prevTasks => [newTask, ...prevTasks]);
+    recordAction(`Created task: "${task.title}"`);
   };
 
   const updateTask = (updatedTask: Task) => {
@@ -119,6 +166,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         task.id === updatedTask.id ? updatedTask : task
       )
     );
+    recordAction(`Updated task details for: "${updatedTask.title}"`);
   };
 
   const addComment = (taskId: string, commentText: string) => {
@@ -128,9 +176,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       text: commentText,
       date: new Date().toISOString(),
     };
-    setTasks(prevTasks => prevTasks.map(task => 
-      task.id === taskId ? { ...task, comments: [...(task.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : task
+    const task = tasks.find(t => t.id === taskId);
+    setTasks(prevTasks => prevTasks.map(t => 
+      t.id === taskId ? { ...t, comments: [...(t.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : t
     ));
+    recordAction(`Commented on task: "${task?.title}"`);
   };
   
   const requestTaskStatusChange = (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']): boolean => {
@@ -151,6 +201,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       attachment: attachment || task.attachment,
     };
     updateTask(updatedTask);
+    recordAction(`Requested status change to "${newStatus}" for task: "${task.title}"`);
     return true;
   };
   
@@ -167,6 +218,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       approvalState: 'approved' as ApprovalState,
     };
     updateTask(updatedTask);
+    recordAction(`Approved status change for task: "${task.title}"`);
   };
   
   const returnTaskStatusChange = (taskId: string, commentText: string) => {
@@ -182,10 +234,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       approvalState: 'returned' as ApprovalState,
     };
     updateTask(updatedTask);
+    recordAction(`Returned task "${task.title}" to status "${updatedTask.status}"`);
   };
 
   const deleteTask = (taskId: string) => {
+    const taskTitle = tasks.find(t => t.id === taskId)?.title;
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    recordAction(`Deleted task: "${taskTitle}"`);
   };
 
   const addPlannerEvent = (event: Omit<PlannerEvent, 'id' | 'comments'>) => {
@@ -195,6 +250,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       comments: [],
     };
     setPlannerEvents(prevEvents => [newEvent, ...prevEvents]);
+    recordAction(`Created planner event: "${event.title}"`);
   };
   
   const getExpandedPlannerEvents = useCallback((date: Date, userId: string) => {
@@ -244,6 +300,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setPlannerEvents(prevEvents => prevEvents.map(event => 
       event.id === eventId ? { ...event, comments: [...(event.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : event
     ));
+    const eventTitle = plannerEvents.find(e => e.id === eventId)?.title;
+    recordAction(`Commented on event: "${eventTitle}"`);
   };
 
   const addUser = (newUser: Omit<User, 'id' | 'avatar'>) => {
@@ -253,6 +311,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       avatar: `https://i.pravatar.cc/150?u=${Date.now()}`
     };
     setUsers(prev => [...prev, userToAdd]);
+    recordAction(`Added new user: ${newUser.name}`);
   };
 
   const updateUser = (updatedUser: User) => {
@@ -260,12 +319,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (user?.id === updatedUser.id) {
         setUser(updatedUser);
     }
+    recordAction(`Updated user profile: ${updatedUser.name}`);
   };
   
   const deleteUser = (userId: string) => {
+    const userName = users.find(u => u.id === userId)?.name;
     setUsers(prev => prev.filter(u => u.id !== userId));
     // Also consider un-assigning tasks or re-assigning them
     setTasks(prev => prev.map(t => t.assigneeId === userId ? {...t, assigneeId: ''} : t));
+    recordAction(`Deleted user: ${userName}`);
   };
 
   const updateProfile = (name: string, avatar: string) => {
@@ -273,6 +335,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         const updatedUser = {...user, name, avatar};
         setUser(updatedUser);
         setUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
+        recordAction(`Updated own profile name`);
     }
   };
 
@@ -287,6 +350,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       status: (user.role === 'Admin' || user.role === 'Manager') ? 'approved' : 'pending',
     };
     setAchievements(prev => [...prev, newAchievement]);
+    const userName = users.find(u => u.id === achievement.userId)?.name;
+    recordAction(`Awarded manual achievement "${achievement.title}" to ${userName}`);
   };
   
   const approveAchievement = (achievementId: string, points: number) => {
@@ -296,12 +361,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       }
       return ach;
     }));
+    const achTitle = achievements.find(a => a.id === achievementId)?.title;
+    recordAction(`Approved achievement: "${achTitle}"`);
   };
 
   const rejectAchievement = (achievementId: string) => {
+    const achTitle = achievements.find(a => a.id === achievementId)?.title;
     setAchievements(prev => prev.filter(ach => ach.id !== achievementId));
+    recordAction(`Rejected achievement: "${achTitle}"`);
   };
-
 
   const value = {
     user,
@@ -309,6 +377,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     tasks,
     plannerEvents,
     achievements,
+    activityLogs,
     login,
     logout,
     addTask,
