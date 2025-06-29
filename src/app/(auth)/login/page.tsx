@@ -17,8 +17,8 @@ export default function LoginPage() {
                   <Layers className="h-8 w-8 text-primary-foreground" />
                 )}
             </div>
-            <h1 className="text-3xl font-bold text-foreground">{appName}</h1>
-            <p className="text-muted-foreground mt-1">Welcome back! Please enter your credentials to log in.</p>
+            <h1 className="text-3xl font-bold text-foreground text-center">{appName}</h1>
+            <p className="text-muted-foreground mt-1 text-center">Welcome back! Please enter your credentials to log in.</p>
         </div>
         <LoginForm />
       </div>

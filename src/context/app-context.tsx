@@ -48,7 +48,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
-  const [appName, setAppName] = useState('Task Management System');
+  const [appName, setAppName] = useState('Aries Marine - Task Management System');
   const [appLogo, setAppLogo] = useState<string | null>(null);
   const router = useRouter();
   

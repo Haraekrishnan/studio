@@ -30,7 +30,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AchievementsPage() {
   const { user, users, tasks, achievements, getVisibleUsers, approveAchievement, rejectAchievement } = useAppContext();
@@ -38,6 +39,7 @@ export default function AchievementsPage() {
 
   const [achievementToApprove, setAchievementToApprove] = useState<Achievement | null>(null);
   const [newPoints, setNewPoints] = useState(0);
+  const [rankingFilter, setRankingFilter] = useState('all-time');
 
   const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
   const visibleUserIds = useMemo(() => visibleUsers.map(u => u.id), [visibleUsers]);
@@ -46,15 +48,35 @@ export default function AchievementsPage() {
   const canApprove = user?.role === 'Admin' || user?.role === 'Manager';
 
   const performanceData = useMemo(() => {
+    const now = new Date();
+    let dateRange: { start: Date; end: Date } | null = null;
+
+    if (rankingFilter === 'this-month') {
+      dateRange = { start: startOfMonth(now), end: endOfMonth(now) };
+    } else if (rankingFilter === 'last-month') {
+      const lastMonth = subMonths(now, 1);
+      dateRange = { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth) };
+    } else if (rankingFilter === 'this-year') {
+      dateRange = { start: startOfYear(now), end: endOfYear(now) };
+    }
+    
+    const tasksInPeriod = dateRange
+      ? tasks.filter(t => isWithinInterval(new Date(t.dueDate), { start: dateRange!.start, end: dateRange!.end }))
+      : tasks;
+      
+    const achievementsInPeriod = dateRange
+      ? achievements.filter(a => isWithinInterval(new Date(a.date), { start: dateRange!.start, end: dateRange!.end }))
+      : achievements;
+
     return visibleUsers
       .filter(u => u.role !== 'Admin' && u.role !== 'Manager') // Filter out top-level roles from ranking
       .map(u => {
-        const userTasks = tasks.filter(t => t.assigneeId === u.id);
+        const userTasks = tasksInPeriod.filter(t => t.assigneeId === u.id);
         const completedCount = userTasks.filter(t => t.status === 'Completed').length;
         const overdueCount = userTasks.filter(t => t.status === 'Overdue').length;
         const performanceScore = (completedCount * 10) - (overdueCount * 5);
         
-        const manualAchievements = achievements.filter(a => a.userId === u.id && a.type === 'manual' && a.status === 'approved');
+        const manualAchievements = achievementsInPeriod.filter(a => a.userId === u.id && a.type === 'manual' && a.status === 'approved');
         const manualPoints = manualAchievements.reduce((sum, a) => sum + a.points, 0);
 
         return {
@@ -65,7 +87,7 @@ export default function AchievementsPage() {
         };
       })
       .sort((a, b) => b.score - a.score);
-  }, [visibleUsers, tasks, achievements]);
+  }, [visibleUsers, tasks, achievements, rankingFilter]);
 
   const manualAchievements = useMemo(() => {
     return achievements.filter(ach => ach.type === 'manual' && ach.status === 'approved' && visibleUserIds.includes(ach.userId));
@@ -166,8 +188,23 @@ export default function AchievementsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Performance Index Ranking</CardTitle>
-          <CardDescription>Employees ranked by their overall performance score.</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Performance Index Ranking</CardTitle>
+              <CardDescription>Employees ranked by their overall performance score.</CardDescription>
+            </div>
+            <Select value={rankingFilter} onValueChange={setRankingFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-time">All Time</SelectItem>
+                <SelectItem value="this-month">This Month</SelectItem>
+                <SelectItem value="last-month">Last Month</SelectItem>
+                <SelectItem value="this-year">This Year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <AchievementsTable data={performanceData} type="performance" />
