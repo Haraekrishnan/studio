@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Flag, MoreVertical, Pencil, Trash2 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import AiToolsDialog from './ai-tools-dialog';
@@ -27,6 +27,7 @@ export default function TaskCard({ task }: TaskCardProps) {
 
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: task.id,
+    disabled: user?.id !== task.assigneeId, // Only assignee can drag
   });
 
   const style = {
@@ -38,6 +39,8 @@ export default function TaskCard({ task }: TaskCardProps) {
     'Medium': 'default',
     'High': 'destructive',
   } as const;
+
+  const isOverdue = isPast(new Date(task.dueDate)) && task.status !== 'Completed';
   
   const canEditTask = user?.role === 'Admin' || user?.role === 'Manager' || user?.id === task.creatorId || user?.id === task.assigneeId;
   const canDeleteTask = user?.role === 'Admin' || user?.id === task.creatorId;
@@ -60,7 +63,7 @@ export default function TaskCard({ task }: TaskCardProps) {
           className="shadow-md hover:shadow-lg transition-shadow bg-background/80 touch-none"
       >
         <div className="p-4 flex items-start justify-between">
-            <div {...attributes} {...listeners} className="flex-grow cursor-grab active:cursor-grabbing">
+            <div {...attributes} {...listeners} className={cn("flex-grow", user?.id === task.assigneeId ? "cursor-grab active:cursor-grabbing" : "cursor-default")}>
                 <CardTitle className="text-base font-semibold leading-tight">{task.title}</CardTitle>
             </div>
             <DropdownMenu>
@@ -88,8 +91,8 @@ export default function TaskCard({ task }: TaskCardProps) {
         <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
           <p className="line-clamp-2">{task.description}</p>
           <div className="flex items-center gap-2 mt-4">
-              <Calendar className="h-4 w-4" />
-              <span>{format(new Date(task.dueDate), 'MMM d, yyyy')} ({formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })})</span>
+              <Calendar className={cn("h-4 w-4", isOverdue && "text-destructive")} />
+              <span className={cn(isOverdue && "text-destructive font-semibold")}>{format(new Date(task.dueDate), 'MMM d, yyyy')} ({formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })})</span>
           </div>
           <div className="flex items-center gap-2 mt-2">
               <Flag className="h-4 w-4" />

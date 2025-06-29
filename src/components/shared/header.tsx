@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAppContext();
@@ -16,6 +16,7 @@ export default function Header() {
     if (pathname.startsWith('/tasks')) return 'Manage Tasks';
     if (pathname.startsWith('/planner')) return 'Planner';
     if (pathname.startsWith('/performance')) return 'Performance';
+    if (pathname.startsWith('/achievements')) return 'Achievements';
     if (pathname.startsWith('/reports')) return 'Reports';
     if (pathname.startsWith('/account')) return 'Employees';
     return 'Task Management System';
@@ -26,12 +27,13 @@ export default function Header() {
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
+    { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
   ];
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-sidebar text-sidebar-foreground px-4 md:px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-sidebar text-sidebar-foreground px-4 md:px-8">
       <div className="flex items-center gap-4">
         <Sheet>
           <SheetTrigger asChild>

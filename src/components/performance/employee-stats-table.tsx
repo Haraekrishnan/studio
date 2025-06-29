@@ -22,9 +22,8 @@ export default function EmployeeStatsTable() {
       const completed = userTasks.filter(t => t.status === 'Completed').length;
       const inProgress = userTasks.filter(t => t.status === 'In Progress').length;
       const todo = userTasks.filter(t => t.status === 'To Do').length;
-      const overdue = userTasks.filter(
-        t => new Date(t.dueDate) < new Date() && t.status !== 'Completed'
-      ).length;
+      const pending = userTasks.filter(t => t.status === 'Pending Approval').length;
+      const overdue = userTasks.filter(t => t.status === 'Overdue').length;
 
       return {
         ...user,
@@ -32,6 +31,7 @@ export default function EmployeeStatsTable() {
           completed,
           inProgress,
           todo,
+          pending,
           overdue,
           total: userTasks.length,
         },
@@ -44,9 +44,10 @@ export default function EmployeeStatsTable() {
       <TableHeader>
         <TableRow>
           <TableHead>Employee</TableHead>
-          <TableHead className="text-center">Completed</TableHead>
-          <TableHead className="text-center">In Progress</TableHead>
           <TableHead className="text-center">To Do</TableHead>
+          <TableHead className="text-center">In Progress</TableHead>
+          <TableHead className="text-center">Pending</TableHead>
+          <TableHead className="text-center">Completed</TableHead>
           <TableHead className="text-center">Overdue</TableHead>
           <TableHead className="text-center">Total Assigned</TableHead>
         </TableRow>
@@ -66,9 +67,10 @@ export default function EmployeeStatsTable() {
                 </div>
               </div>
             </TableCell>
-            <TableCell className="text-center font-medium">{user.stats.completed}</TableCell>
-            <TableCell className="text-center">{user.stats.inProgress}</TableCell>
             <TableCell className="text-center">{user.stats.todo}</TableCell>
+            <TableCell className="text-center">{user.stats.inProgress}</TableCell>
+            <TableCell className="text-center">{user.stats.pending}</TableCell>
+            <TableCell className="text-center font-medium">{user.stats.completed}</TableCell>
             <TableCell className="text-center">
               {user.stats.overdue > 0 ? (
                 <Badge variant="destructive">{user.stats.overdue}</Badge>

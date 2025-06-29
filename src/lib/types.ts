@@ -1,10 +1,12 @@
 export type Role = 'Admin' | 'Manager' | 'Supervisor' | 'Junior Supervisor' | 'Team Member';
 
-export type TaskStatus = 'To Do' | 'In Progress' | 'Completed';
+export type TaskStatus = 'To Do' | 'In Progress' | 'Pending Approval' | 'Completed' | 'Overdue';
 
 export type Priority = 'Low' | 'Medium' | 'High';
 
 export type Frequency = 'once' | 'daily' | 'weekly' | 'weekends' | 'monthly';
+
+export type ApprovalState = 'none' | 'pending' | 'approved' | 'returned';
 
 export interface User {
   id: string;
@@ -32,9 +34,20 @@ export interface Task {
   assigneeId: string;
   creatorId: string;
   comments?: Comment[];
+  
+  // New workflow fields
+  requiresAttachmentForCompletion: boolean;
+  completionDateIsMandatory: boolean;
+  
+  // Approval flow
+  pendingStatus?: TaskStatus; 
+  approvalState: ApprovalState;
+  
+  // Attachment
   attachment?: {
     url: string;
     name: string;
+    data?: string; // base64 data for new uploads
   };
 }
 
@@ -45,4 +58,15 @@ export interface PlannerEvent {
   date: string; // ISO string, represents the start date for recurring events
   frequency: Frequency;
   creatorId: string;
+}
+
+export interface Achievement {
+  id: string;
+  userId: string;
+  type: 'performance' | 'manual';
+  title: string;
+  description: string;
+  points: number;
+  date: string; // ISO string
+  awardedById?: string;
 }

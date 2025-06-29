@@ -1,9 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Task, TaskStatus, PlannerEvent, Comment, Role } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS } from '@/lib/mock-data';
+import type { User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth } from 'date-fns';
 
 interface AppContextType {
@@ -11,11 +11,11 @@ interface AppContextType {
   users: User[];
   tasks: Task[];
   plannerEvents: PlannerEvent[];
+  achievements: Achievement[];
   login: (email: string, password: string) => boolean;
   logout: () => void;
-  updateTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
-  addTask: (task: Omit<Task, 'id' | 'comments'>) => void;
   updateTask: (updatedTask: Task) => void;
+  addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState'>) => void;
   deleteTask: (taskId: string) => void;
   addPlannerEvent: (event: Omit<PlannerEvent, 'id'>) => void;
   getExpandedPlannerEvents: (date: Date) => (PlannerEvent & { eventDate: Date })[];
@@ -24,6 +24,11 @@ interface AppContextType {
   updateUser: (updatedUser: User) => void;
   deleteUser: (userId: string) => void;
   updateProfile: (name: string, avatar: string) => void;
+  requestTaskStatusChange: (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']) => boolean;
+  approveTaskStatusChange: (taskId: string, commentText: string) => void;
+  returnTaskStatusChange: (taskId: string, commentText: string) => void;
+  addComment: (taskId: string, commentText: string) => void;
+  addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date'>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -33,7 +38,28 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>(USERS);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
   const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
+  const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
   const router = useRouter();
+  
+  // Logic to automatically update tasks to "Overdue"
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setTasks(prevTasks =>
+            prevTasks.map(task => {
+                if (
+                    task.completionDateIsMandatory &&
+                    new Date(task.dueDate) < new Date() &&
+                    task.status !== 'Completed' &&
+                    task.status !== 'Overdue'
+                ) {
+                    return { ...task, status: 'Overdue' };
+                }
+                return task;
+            })
+        );
+    }, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, []);
 
   const login = (email: string, password: string): boolean => {
     const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
@@ -73,24 +99,16 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
     return users.filter(u => u.id === user.id);
   }, [user, users, getSubordinates]);
-
-  const updateTaskStatus = (taskId: string, newStatus: TaskStatus) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === taskId ? { ...task, status: newStatus } : task
-      )
-    );
-  };
   
-  const addTask = (task: Omit<Task, 'id' | 'comments'>) => {
+  const addTask = (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState'>) => {
     const newTask: Task = {
         ...task,
         id: `task-${Date.now()}`,
         comments: [],
+        status: 'To Do',
+        approvalState: 'none'
     };
     setTasks(prevTasks => [newTask, ...prevTasks]);
-    const assignee = users.find(u => u.id === task.assigneeId);
-    alert(`New task "${task.title}" has been assigned to ${assignee?.name} by ${user?.name}.`);
   };
 
   const updateTask = (updatedTask: Task) => {
@@ -99,6 +117,67 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         task.id === updatedTask.id ? updatedTask : task
       )
     );
+  };
+
+  const addComment = (taskId: string, commentText: string) => {
+    if (!user) return;
+    const newComment: Comment = {
+      userId: user.id,
+      text: commentText,
+      date: new Date().toISOString(),
+    };
+    setTasks(prevTasks => prevTasks.map(task => 
+      task.id === taskId ? { ...task, comments: [...(task.comments || []), newComment] } : task
+    ));
+  };
+  
+  const requestTaskStatusChange = (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']): boolean => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !user || !commentText) return false;
+
+    if (newStatus === 'Completed' && task.requiresAttachmentForCompletion && !attachment) {
+      return false; // Prevents completion without attachment
+    }
+
+    addComment(taskId, commentText);
+    const updatedTask = {
+      ...task,
+      pendingStatus: newStatus,
+      approvalState: 'pending' as ApprovalState,
+      status: 'Pending Approval' as TaskStatus,
+      attachment: attachment || task.attachment,
+    };
+    updateTask(updatedTask);
+    return true;
+  };
+  
+  const approveTaskStatusChange = (taskId: string, commentText: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !task.pendingStatus) return;
+
+    addComment(taskId, commentText);
+    const updatedTask = {
+      ...task,
+      status: task.pendingStatus,
+      pendingStatus: undefined,
+      approvalState: 'approved' as ApprovalState,
+    };
+    updateTask(updatedTask);
+  };
+  
+  const returnTaskStatusChange = (taskId: string, commentText: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    addComment(taskId, commentText);
+    const originalStatus = tasks.find(t => t.id === taskId)?.status || 'To Do';
+    const updatedTask = {
+      ...task,
+      status: task.status === 'Pending Approval' ? 'In Progress' : task.status, // Revert to a sensible state
+      pendingStatus: undefined,
+      approvalState: 'returned' as ApprovalState,
+    };
+    updateTask(updatedTask);
   };
 
   const deleteTask = (taskId: string) => {
@@ -178,15 +257,26 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addManualAchievement = (achievement: Omit<Achievement, 'id' | 'type' | 'date'>) => {
+    if (!user) return;
+    const newAchievement: Achievement = {
+      ...achievement,
+      id: `ach-${Date.now()}`,
+      type: 'manual',
+      date: new Date().toISOString(),
+      awardedById: user.id,
+    };
+    setAchievements(prev => [...prev, newAchievement]);
+  };
 
   const value = {
     user,
     users,
     tasks,
     plannerEvents,
+    achievements,
     login,
     logout,
-    updateTaskStatus,
     addTask,
     updateTask,
     deleteTask,
@@ -197,6 +287,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     updateUser,
     deleteUser,
     updateProfile,
+    requestTaskStatusChange,
+    approveTaskStatusChange,
+    returnTaskStatusChange,
+    addComment,
+    addManualAchievement,
+    updateTaskStatus: () => {}, // placeholder to satisfy old components if any
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

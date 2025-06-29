@@ -1,5 +1,5 @@
 'use client';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import EmployeePerformanceChart from '@/components/dashboard/employee-performance-chart';
 import EmployeeStatsTable from '@/components/performance/employee-stats-table';
 
@@ -13,7 +13,8 @@ export default function PerformancePage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Tasks Completed by Employee</CardTitle>
+                    <CardTitle>Task Status Distribution by Employee</CardTitle>
+                    <CardDescription>A stacked bar chart showing the current workload and status for each employee.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <EmployeePerformanceChart />

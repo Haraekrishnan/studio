@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award } from 'lucide-react';
 
 export function AppSidebar() {
   const { user, logout } = useAppContext();
@@ -17,6 +17,7 @@ export function AppSidebar() {
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
+    { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
   ];
@@ -38,7 +39,7 @@ export function AppSidebar() {
               <Button
                 asChild
                 variant={pathname.startsWith(item.href) ? 'secondary' : 'ghost'}
-                className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground data-[state=active]:bg-sidebar-accent data-[state=active]:text-sidebar-accent-foreground"
+                className="w-full justify-start text-base py-6 text-sidebar-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground data-[state=active]:bg-sidebar-accent data-[state=active]:text-sidebar-accent-foreground"
               >
                 <Link href={item.href} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />

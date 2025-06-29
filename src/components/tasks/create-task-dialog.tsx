@@ -6,12 +6,14 @@ import { z } from 'zod';
 import { useAppContext } from '@/context/app-context';
 import { suggestTaskPriority } from '@/ai/flows/suggest-task-priority';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -24,6 +26,8 @@ const taskSchema = z.object({
   assigneeId: z.string().min(1, 'Assignee is required'),
   dueDate: z.date({ required_error: 'Due date is required' }),
   priority: z.enum(['Low', 'Medium', 'High']),
+  requiresAttachmentForCompletion: z.boolean().default(false),
+  completionDateIsMandatory: z.boolean().default(false),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -43,6 +47,8 @@ export default function CreateTaskDialog() {
       description: '',
       assigneeId: '',
       priority: 'Medium',
+      requiresAttachmentForCompletion: false,
+      completionDateIsMandatory: false,
     },
   });
   
@@ -67,7 +73,6 @@ export default function CreateTaskDialog() {
     addTask({
       ...data,
       dueDate: data.dueDate.toISOString(),
-      status: 'To Do',
       creatorId: user!.id,
     });
     const assignee = users.find(u => u.id === data.assigneeId);
@@ -125,9 +130,10 @@ export default function CreateTaskDialog() {
           New Task
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
+          <DialogDescription>Fill in the details below to create and assign a new task.</DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <Input {...form.register('title')} placeholder="Task title" />
@@ -189,6 +195,29 @@ export default function CreateTaskDialog() {
           </div>
           {form.formState.errors.priority && <p className="text-xs text-destructive">{form.formState.errors.priority.message}</p>}
           
+          <div className="space-y-3 pt-2">
+            <Controller
+              control={form.control}
+              name="requiresAttachmentForCompletion"
+              render={({ field }) => (
+                <div className="flex items-center space-x-2">
+                    <Switch id="requires-attachment" checked={field.value} onCheckedChange={field.onChange} />
+                    <Label htmlFor="requires-attachment">Require file attachment for completion</Label>
+                </div>
+              )}
+            />
+             <Controller
+              control={form.control}
+              name="completionDateIsMandatory"
+              render={({ field }) => (
+                <div className="flex items-center space-x-2">
+                    <Switch id="mandatory-date" checked={field.value} onCheckedChange={field.onChange} />
+                    <Label htmlFor="mandatory-date">Due date is mandatory (task becomes overdue)</Label>
+                </div>
+              )}
+            />
+          </div>
+
           <DialogFooter>
             <Button type="submit">Create Task</Button>
           </DialogFooter>

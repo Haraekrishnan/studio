@@ -10,15 +10,17 @@ interface KanbanColumnProps {
   tasks: Task[];
 }
 
-export default function KanbanColumn({ status, tasks }: KanbanColumnProps) {
+export default function KanbanColumn({ status, tasks = [] }: KanbanColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: status,
   });
 
   const statusColors = {
-    'To Do': 'bg-blue-100 dark:bg-blue-900/20 border-blue-500',
-    'In Progress': 'bg-yellow-100 dark:bg-yellow-900/20 border-yellow-500',
-    'Completed': 'bg-green-100 dark:bg-green-900/20 border-green-500',
+    'To Do': 'border-blue-500',
+    'In Progress': 'border-yellow-500',
+    'Pending Approval': 'border-orange-500',
+    'Completed': 'border-green-500',
+    'Overdue': 'border-red-500',
   };
 
   return (
@@ -27,7 +29,7 @@ export default function KanbanColumn({ status, tasks }: KanbanColumnProps) {
         className={cn(
             'flex flex-col h-full bg-card rounded-lg border-t-4 shadow-sm transition-colors', 
             statusColors[status],
-            isOver ? 'bg-primary/10' : ''
+            isOver ? 'bg-primary/10' : 'bg-muted/30'
         )}
     >
       <div className="p-4 border-b">

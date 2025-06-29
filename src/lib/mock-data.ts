@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent } from './types';
+import type { User, Task, PlannerEvent, Achievement } from './types';
 
 export const USERS: User[] = [
   { id: '1', name: 'Alex Williams', email: 'alex@taskmaster.pro', password: 'password', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=alex' },
@@ -23,6 +23,9 @@ export const TASKS: Task[] = [
     comments: [
         { userId: '7', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
     ],
+    requiresAttachmentForCompletion: true,
+    completionDateIsMandatory: true,
+    approvalState: 'none'
   },
   {
     id: 'task-2',
@@ -34,6 +37,9 @@ export const TASKS: Task[] = [
     assigneeId: '4',
     creatorId: '7',
     comments: [],
+    requiresAttachmentForCompletion: false,
+    completionDateIsMandatory: false,
+    approvalState: 'none'
   },
   {
     id: 'task-3',
@@ -45,6 +51,9 @@ export const TASKS: Task[] = [
     assigneeId: '2',
     creatorId: '1',
     comments: [],
+    requiresAttachmentForCompletion: false,
+    completionDateIsMandatory: false,
+    approvalState: 'none'
   },
   {
     id: 'task-4',
@@ -59,6 +68,9 @@ export const TASKS: Task[] = [
         { userId: '6', text: 'This is a top priority, please escalate if you run into issues.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
         { userId: '5', text: 'On it. I think I have an idea of what the issue is.', date: new Date().toISOString() }
     ],
+    requiresAttachmentForCompletion: false,
+    completionDateIsMandatory: true,
+    approvalState: 'none'
   },
   {
     id: 'task-5',
@@ -70,6 +82,9 @@ export const TASKS: Task[] = [
     assigneeId: '3',
     creatorId: '7',
     comments: [],
+    requiresAttachmentForCompletion: false,
+    completionDateIsMandatory: false,
+    approvalState: 'approved'
   },
   {
     id: 'task-6',
@@ -81,6 +96,9 @@ export const TASKS: Task[] = [
     assigneeId: '2',
     creatorId: '1',
     comments: [],
+    requiresAttachmentForCompletion: false,
+    completionDateIsMandatory: false,
+    approvalState: 'none'
   },
   {
     id: 'task-7',
@@ -92,6 +110,9 @@ export const TASKS: Task[] = [
     assigneeId: '4',
     creatorId: '7',
     comments: [],
+    requiresAttachmentForCompletion: true,
+    completionDateIsMandatory: true,
+    approvalState: 'none'
   },
   {
     id: 'task-8',
@@ -103,6 +124,9 @@ export const TASKS: Task[] = [
     assigneeId: '5',
     creatorId: '6',
     comments: [],
+    requiresAttachmentForCompletion: false,
+    completionDateIsMandatory: false,
+    approvalState: 'approved'
   },
 ];
 
@@ -139,4 +163,9 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         frequency: 'weekly',
         creatorId: '6'
     }
+];
+
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: 'ach-1', userId: '3', type: 'manual', title: 'Safety Star', description: 'Maintained a perfect safety record for Q2.', points: 50, date: new Date().toISOString(), awardedById: '6' },
+  { id: 'ach-2', userId: '4', type: 'manual', title: 'Innovation Award', description: 'Proposed a new workflow that saved 10 hours per week.', points: 100, date: new Date().toISOString(), awardedById: '2' },
 ];
