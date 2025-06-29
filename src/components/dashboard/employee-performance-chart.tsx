@@ -28,11 +28,11 @@ export default function EmployeePerformanceChart() {
   }, [tasks, visibleUsers]);
 
   return (
-    <div className="h-[350px]">
+    <div className="h-[450px]">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+        <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 80 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="name" stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} />
+          <XAxis dataKey="name" stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} interval={0} angle={-45} textAnchor="end" />
           <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
           <Tooltip 
             cursor={{fill: 'hsl(var(--muted))'}}
