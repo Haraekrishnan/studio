@@ -30,13 +30,15 @@ export default function ReportDownloads({ tasks }: ReportDownloadsProps) {
 
   const handleDownloadPdf = async () => {
     const jsPDF = (await import('jspdf')).default;
-    const autoTable = (await import('jspdf-autotable')).default;
+    // Import for side-effects to attach `autoTable` to the jsPDF prototype
+    await import('jspdf-autotable');
 
     const doc = new jsPDF();
     
     doc.text('TaskMaster Pro - Report', 14, 16);
     
-    autoTable(doc, {
+    // This requires a type assertion because TypeScript doesn't know about the dynamically added method
+    (doc as any).autoTable({
       head: [['Task Title', 'Assignee', 'Status', 'Priority', 'Due Date']],
       body: tasks.map(task => [
         task.title,
