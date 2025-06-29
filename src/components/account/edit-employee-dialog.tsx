@@ -51,7 +51,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user }: EditEmpl
     updateUser({
       ...user,
       ...data,
-      supervisorId: data.supervisorId || undefined,
+      supervisorId: (data.supervisorId === 'unassigned' || !data.supervisorId) ? undefined : data.supervisorId,
     });
     toast({
       title: 'Employee Updated',
@@ -88,10 +88,10 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user }: EditEmpl
             control={form.control}
             name="supervisorId"
             render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
                 <SelectTrigger><SelectValue placeholder="Assign a supervisor" /></SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="unassigned">None</SelectItem>
                     {supervisors.filter(s => s.id !== user.id).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>

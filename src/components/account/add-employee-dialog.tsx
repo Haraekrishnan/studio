@@ -41,7 +41,10 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
   });
 
   const onSubmit = (data: EmployeeFormValues) => {
-    addUser(data);
+    addUser({
+      ...data,
+      supervisorId: (data.supervisorId === 'unassigned' || !data.supervisorId) ? undefined : data.supervisorId,
+    });
     toast({
       title: 'Employee Added',
       description: `${data.name} has been added to the system.`,
@@ -85,10 +88,10 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
             control={form.control}
             name="supervisorId"
             render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
                 <SelectTrigger><SelectValue placeholder="Assign a supervisor" /></SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="unassigned">None</SelectItem>
                     {supervisors.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
