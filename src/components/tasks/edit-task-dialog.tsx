@@ -14,13 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
-import { CalendarIcon, Send, ThumbsUp, ThumbsDown, Paperclip, Upload, X } from 'lucide-react';
+import { CalendarIcon, Send, ThumbsUp, ThumbsDown, Paperclip, Upload, X, BellRing } from 'lucide-react';
 import type { Task, Priority, TaskStatus, Role, Comment, ApprovalState } from '@/lib/types';
 import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -185,6 +186,15 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
             Assigned by <span className='font-semibold'>{creator?.name}</span> to <span className='font-semibold'>{assignee?.name}</span>. 
             Due {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}.
           </DialogDescription>
+          {task.status === 'Pending Approval' && task.previousStatus && task.pendingStatus && (
+            <Alert variant="default" className="mt-2">
+                <BellRing className="h-4 w-4" />
+                <AlertTitle>Approval Request</AlertTitle>
+                <AlertDescription>
+                    {assignee?.name} requests to change status from <Badge variant="secondary">{task.previousStatus}</Badge> to <Badge variant="secondary">{task.pendingStatus}</Badge>. Please review the comments.
+                </AlertDescription>
+            </Alert>
+          )}
         </DialogHeader>
         <div className="grid md:grid-cols-2 gap-8 py-4 overflow-y-auto max-h-[70vh]">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pr-4 border-r">
@@ -258,8 +268,9 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                     <div className="space-y-4">
                         {(task.comments || []).map((comment, index) => {
                             const commentUser = users.find(u => u.id === comment.userId);
+                            const isApprovalComment = index === 0 && task.status === 'Pending Approval';
                             return (
-                                <div key={index} className="flex items-start gap-3">
+                                <div key={index} className={cn("flex items-start gap-3", isApprovalComment && "p-2 rounded-lg bg-amber-100 dark:bg-amber-900/20")}>
                                     <Avatar className="h-8 w-8"><AvatarImage src={commentUser?.avatar} /><AvatarFallback>{commentUser?.name.charAt(0)}</AvatarFallback></Avatar>
                                     <div className="bg-muted p-3 rounded-lg w-full">
                                         <div className="flex justify-between items-center"><p className="font-semibold text-sm">{commentUser?.name}</p><p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(comment.date), { addSuffix: true })}</p></div>
@@ -267,7 +278,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                                     </div>
                                 </div>
                             )
-                        }).reverse()}
+                        })}
                         {(task.comments || []).length === 0 && <p className="text-sm text-center text-muted-foreground py-4">No comments yet.</p>}
                     </div>
                 </ScrollArea>

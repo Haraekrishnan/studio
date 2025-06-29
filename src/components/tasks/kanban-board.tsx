@@ -5,7 +5,7 @@ import KanbanColumn from './kanban-column';
 import type { Task, TaskStatus } from '@/lib/types';
 import { DndContext, type DragEndEvent } from '@dnd-kit/core';
 
-const columns: TaskStatus[] = ['To Do', 'In Progress', 'Pending Approval', 'Completed', 'Overdue'];
+const columns: TaskStatus[] = ['To Do', 'In Progress', 'Completed', 'Overdue'];
 
 interface KanbanBoardProps {
     tasks: Task[];
@@ -23,13 +23,13 @@ export default function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps) 
   }, [filteredTasks, visibleUserIds]);
   
   const tasksByStatus = useMemo(() => {
-    const grouped = {
+    const grouped: Record<string, Task[]> = {
       'To Do': [],
       'In Progress': [],
       'Pending Approval': [],
       'Completed': [],
       'Overdue': [],
-    } as Record<TaskStatus, Task[]>;
+    };
     
     tasksToShow.forEach(task => {
         if(grouped[task.status]) {
@@ -61,7 +61,7 @@ export default function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps) 
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 items-start">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
             {columns.map(status => (
                 <KanbanColumn key={status} status={status} tasks={tasksByStatus[status]} />
             ))}

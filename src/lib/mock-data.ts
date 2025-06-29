@@ -24,7 +24,6 @@ export const TASKS: Task[] = [
         { userId: '7', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
     ],
     requiresAttachmentForCompletion: true,
-    completionDateIsMandatory: true,
     approvalState: 'none'
   },
   {
@@ -38,7 +37,6 @@ export const TASKS: Task[] = [
     creatorId: '7',
     comments: [],
     requiresAttachmentForCompletion: false,
-    completionDateIsMandatory: false,
     approvalState: 'none'
   },
   {
@@ -52,7 +50,6 @@ export const TASKS: Task[] = [
     creatorId: '1',
     comments: [],
     requiresAttachmentForCompletion: false,
-    completionDateIsMandatory: false,
     approvalState: 'none'
   },
   {
@@ -69,7 +66,6 @@ export const TASKS: Task[] = [
         { userId: '5', text: 'On it. I think I have an idea of what the issue is.', date: new Date().toISOString() }
     ],
     requiresAttachmentForCompletion: false,
-    completionDateIsMandatory: true,
     approvalState: 'none'
   },
   {
@@ -83,7 +79,6 @@ export const TASKS: Task[] = [
     creatorId: '7',
     comments: [],
     requiresAttachmentForCompletion: false,
-    completionDateIsMandatory: false,
     approvalState: 'approved'
   },
   {
@@ -97,7 +92,6 @@ export const TASKS: Task[] = [
     creatorId: '1',
     comments: [],
     requiresAttachmentForCompletion: false,
-    completionDateIsMandatory: false,
     approvalState: 'none'
   },
   {
@@ -111,7 +105,6 @@ export const TASKS: Task[] = [
     creatorId: '7',
     comments: [],
     requiresAttachmentForCompletion: true,
-    completionDateIsMandatory: true,
     approvalState: 'none'
   },
   {
@@ -125,7 +118,6 @@ export const TASKS: Task[] = [
     creatorId: '6',
     comments: [],
     requiresAttachmentForCompletion: false,
-    completionDateIsMandatory: false,
     approvalState: 'approved'
   },
 ];
@@ -166,6 +158,6 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
 ];
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'ach-1', userId: '3', type: 'manual', title: 'Safety Star', description: 'Maintained a perfect safety record for Q2.', points: 50, date: new Date().toISOString(), awardedById: '6' },
-  { id: 'ach-2', userId: '4', type: 'manual', title: 'Innovation Award', description: 'Proposed a new workflow that saved 10 hours per week.', points: 100, date: new Date().toISOString(), awardedById: '2' },
+  { id: 'ach-1', userId: '3', type: 'manual', title: 'Safety Star', description: 'Maintained a perfect safety record for Q2.', points: 50, date: new Date().toISOString(), awardedById: '6', status: 'approved' },
+  { id: 'ach-2', userId: '4', type: 'manual', title: 'Innovation Award', description: 'Proposed a new workflow that saved 10 hours per week.', points: 100, date: new Date().toISOString(), awardedById: '2', status: 'approved' },
 ];

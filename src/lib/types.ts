@@ -37,9 +37,9 @@ export interface Task {
   
   // New workflow fields
   requiresAttachmentForCompletion: boolean;
-  completionDateIsMandatory: boolean;
   
   // Approval flow
+  previousStatus?: TaskStatus;
   pendingStatus?: TaskStatus; 
   approvalState: ApprovalState;
   
@@ -69,4 +69,5 @@ export interface Achievement {
   points: number;
   date: string; // ISO string
   awardedById?: string;
+  status: 'pending' | 'approved';
 }

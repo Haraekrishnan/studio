@@ -15,7 +15,7 @@ interface AppContextType {
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
-  addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState'>) => void;
+  addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'completionDateIsMandatory'>) => void;
   deleteTask: (taskId: string) => void;
   addPlannerEvent: (event: Omit<PlannerEvent, 'id'>) => void;
   getExpandedPlannerEvents: (date: Date) => (PlannerEvent & { eventDate: Date })[];
@@ -28,7 +28,9 @@ interface AppContextType {
   approveTaskStatusChange: (taskId: string, commentText: string) => void;
   returnTaskStatusChange: (taskId: string, commentText: string) => void;
   addComment: (taskId: string, commentText: string) => void;
-  addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById'>) => void;
+  addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => void;
+  approveAchievement: (achievementId: string, points: number) => void;
+  rejectAchievement: (achievementId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -47,7 +49,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         setTasks(prevTasks =>
             prevTasks.map(task => {
                 if (
-                    task.completionDateIsMandatory &&
                     new Date(task.dueDate) < new Date() &&
                     task.status !== 'Completed' &&
                     task.status !== 'Overdue'
@@ -142,6 +143,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addComment(taskId, `Status change requested to "${newStatus}": ${commentText}`);
     const updatedTask = {
       ...task,
+      previousStatus: task.status,
       pendingStatus: newStatus,
       approvalState: 'pending' as ApprovalState,
       status: 'Pending Approval' as TaskStatus,
@@ -160,6 +162,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       ...task,
       status: task.pendingStatus,
       pendingStatus: undefined,
+      previousStatus: undefined,
       approvalState: 'approved' as ApprovalState,
     };
     updateTask(updatedTask);
@@ -172,8 +175,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addComment(taskId, `Request Returned: ${commentText}`);
     const updatedTask = {
       ...task,
-      status: 'In Progress', // Revert to a sensible state
+      status: task.previousStatus || 'In Progress', // Revert to a sensible state
       pendingStatus: undefined,
+      previousStatus: undefined,
       approvalState: 'returned' as ApprovalState,
     };
     updateTask(updatedTask);
@@ -256,7 +260,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addManualAchievement = (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById'>) => {
+  const addManualAchievement = (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => {
     if (!user) return;
     const newAchievement: Achievement = {
       ...achievement,
@@ -264,9 +268,24 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       type: 'manual',
       date: new Date().toISOString(),
       awardedById: user.id,
+      status: (user.role === 'Admin' || user.role === 'Manager') ? 'approved' : 'pending',
     };
     setAchievements(prev => [...prev, newAchievement]);
   };
+  
+  const approveAchievement = (achievementId: string, points: number) => {
+    setAchievements(prev => prev.map(ach => {
+      if (ach.id === achievementId) {
+        return { ...ach, status: 'approved', points };
+      }
+      return ach;
+    }));
+  };
+
+  const rejectAchievement = (achievementId: string) => {
+    setAchievements(prev => prev.filter(ach => ach.id !== achievementId));
+  };
+
 
   const value = {
     user,
@@ -291,6 +310,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     returnTaskStatusChange,
     addComment,
     addManualAchievement,
+    approveAchievement,
+    rejectAchievement
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

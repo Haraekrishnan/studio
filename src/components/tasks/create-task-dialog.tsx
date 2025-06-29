@@ -27,7 +27,6 @@ const taskSchema = z.object({
   dueDate: z.date({ required_error: 'Due date is required' }),
   priority: z.enum(['Low', 'Medium', 'High']),
   requiresAttachmentForCompletion: z.boolean().default(false),
-  completionDateIsMandatory: z.boolean().default(false),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -48,7 +47,6 @@ export default function CreateTaskDialog() {
       assigneeId: '',
       priority: 'Medium',
       requiresAttachmentForCompletion: false,
-      completionDateIsMandatory: false,
     },
   });
   
@@ -203,16 +201,6 @@ export default function CreateTaskDialog() {
                 <div className="flex items-center space-x-2">
                     <Switch id="requires-attachment" checked={field.value} onCheckedChange={field.onChange} />
                     <Label htmlFor="requires-attachment">Require file attachment for completion</Label>
-                </div>
-              )}
-            />
-             <Controller
-              control={form.control}
-              name="completionDateIsMandatory"
-              render={({ field }) => (
-                <div className="flex items-center space-x-2">
-                    <Switch id="mandatory-date" checked={field.value} onCheckedChange={field.onChange} />
-                    <Label htmlFor="mandatory-date">Due date is mandatory (task becomes overdue)</Label>
                 </div>
               )}
             />
