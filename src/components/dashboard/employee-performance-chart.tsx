@@ -43,10 +43,10 @@ export default function EmployeePerformanceChart() {
             }}
           />
           <Legend wrapperStyle={{fontSize: "14px"}}/>
-          <Bar dataKey="todo" stackId="a" fill="hsl(var(--chart-1))" name="To Do" />
-          <Bar dataKey="inProgress" stackId="a" fill="hsl(var(--chart-2))" name="In Progress" />
-          <Bar dataKey="completed" stackId="a" fill="hsl(var(--chart-3))" name="Completed" />
-          <Bar dataKey="overdue" stackId="a" fill="hsl(var(--destructive))" name="Overdue" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="todo" fill="hsl(var(--chart-1))" name="To Do" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="inProgress" fill="hsl(var(--chart-2))" name="In Progress" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="completed" fill="hsl(var(--chart-3))" name="Completed" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="overdue" fill="hsl(var(--destructive))" name="Overdue" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

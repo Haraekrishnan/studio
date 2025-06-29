@@ -14,7 +14,7 @@ export default function PerformancePage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Task Status Distribution by Employee</CardTitle>
-                    <CardDescription>A stacked bar chart showing the current workload and status for each employee.</CardDescription>
+                    <CardDescription>A column chart showing the current workload and status for each employee.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <EmployeePerformanceChart />
