@@ -2,13 +2,25 @@ import type { User, Task, PlannerEvent, Achievement, ActivityLog } from './types
 import { sub } from 'date-fns';
 
 export const USERS: User[] = [
-  { id: '1', name: 'Alex Williams', email: 'alex@taskmaster.pro', password: 'password', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=alex' },
-  { id: '2', name: 'Samantha Jones', email: 'samantha@taskmaster.pro', password: 'password', role: 'Manager', avatar: 'https://i.pravatar.cc/150?u=samantha' },
-  { id: '6', name: 'David Wilson', email: 'david@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=david', supervisorId: '2' },
-  { id: '7', name: 'Laura Green', email: 'laura@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=laura', supervisorId: '6' },
-  { id: '3', name: 'Michael Brown', email: 'michael@taskmaster.pro', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=michael', supervisorId: '7' },
-  { id: '4', name: 'Jessica Davis', email: 'jessica@taskmaster.pro', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=jessica', supervisorId: '7' },
-  { id: '5', name: 'Chris Miller', email: 'chris@taskmaster.pro', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=chris', supervisorId: '6' },
+  { id: '1', name: 'Harikrishnan P S', email: 'harikrishnan@taskmaster.pro', password: 'password', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=1' },
+  { id: '2', name: 'Manu M G', email: 'manu@taskmaster.pro', password: 'password', role: 'Manager', avatar: 'https://i.pravatar.cc/150?u=2', supervisorId: '1' },
+  { id: '3', name: 'Mujeeb', email: 'mujeeb@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=3', supervisorId: '2' },
+  { id: '4', name: 'Albin Raju', email: 'albin@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=4', supervisorId: '2' },
+  { id: '5', name: 'Arjun P', email: 'arjun@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=5', supervisorId: '2' },
+  { id: '6', name: 'Sreehari', email: 'sreehari@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=6', supervisorId: '2' },
+  { id: '7', name: 'Vishnu H', email: 'vishnu.h@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=7', supervisorId: '2' },
+  { id: '8', name: 'Akhil A', email: 'akhil.a@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=8', supervisorId: '2' },
+  { id: '9', name: 'Dhaneesh Kumar', email: 'dhaneesh@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=9', supervisorId: '2' },
+  { id: '10', name: 'Rakhil Raj', email: 'rakhil@taskmaster.pro', password: 'password', role: 'Supervisor', avatar: 'https://i.pravatar.cc/150?u=10', supervisorId: '2' },
+  { id: '11', name: 'Akhil Pillai', email: 'akhil.pillai@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=11', supervisorId: '3' },
+  { id: '12', name: 'Athul Kumar', email: 'athul@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=12', supervisorId: '3' },
+  { id: '13', name: 'Rinu Sam', email: 'rinu@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=13', supervisorId: '4' },
+  { id: '14', name: 'Syam Kumar', email: 'syam@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=14', supervisorId: '4' },
+  { id: '15', name: 'Vishnu S', email: 'vishnu.s@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=15', supervisorId: '5' },
+  { id: '16', name: 'Vishnu J', email: 'vishnu.j@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=16', supervisorId: '5' },
+  { id: '17', name: 'Amaldas M', email: 'amaldas@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=17', supervisorId: '6' },
+  { id: '18', name: 'Sajin Soman', email: 'sajin@taskmaster.pro', password: 'password', role: 'Junior Supervisor', avatar: 'https://i.pravatar.cc/150?u=18', supervisorId: '6' },
+  { id: '19', name: 'Aparana M R', email: 'aparana@taskmaster.pro', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=19', supervisorId: '11' },
 ];
 
 export const TASKS: Task[] = [
@@ -19,10 +31,10 @@ export const TASKS: Task[] = [
     status: 'In Progress',
     priority: 'High',
     dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '3',
-    creatorId: '7',
+    assigneeId: '19', // Aparana M R
+    creatorId: '11', // Akhil Pillai
     comments: [
-        { userId: '7', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+        { userId: '11', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
     ],
     requiresAttachmentForCompletion: true,
     approvalState: 'none'
@@ -34,8 +46,8 @@ export const TASKS: Task[] = [
     status: 'To Do',
     priority: 'High',
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '4',
-    creatorId: '7',
+    assigneeId: '12', // Athul Kumar
+    creatorId: '3', // Mujeeb
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'none'
@@ -47,8 +59,8 @@ export const TASKS: Task[] = [
     status: 'To Do',
     priority: 'Medium',
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '2',
-    creatorId: '1',
+    assigneeId: '2', // Manu M G
+    creatorId: '1', // Harikrishnan P S
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'none'
@@ -60,11 +72,11 @@ export const TASKS: Task[] = [
     status: 'In Progress',
     priority: 'High',
     dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '5',
-    creatorId: '6',
+    assigneeId: '15', // Vishnu S
+    creatorId: '5', // Arjun P
     comments: [
-        { userId: '6', text: 'This is a top priority, please escalate if you run into issues.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-        { userId: '5', text: 'On it. I think I have an idea of what the issue is.', date: new Date().toISOString() }
+        { userId: '5', text: 'This is a top priority, please escalate if you run into issues.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+        { userId: '15', text: 'On it. I think I have an idea of what the issue is.', date: new Date().toISOString() }
     ],
     requiresAttachmentForCompletion: false,
     approvalState: 'none'
@@ -76,8 +88,8 @@ export const TASKS: Task[] = [
     status: 'Completed',
     priority: 'Low',
     dueDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '3',
-    creatorId: '7',
+    assigneeId: '19', // Aparana M R
+    creatorId: '11', // Akhil Pillai
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'approved'
@@ -89,8 +101,8 @@ export const TASKS: Task[] = [
     status: 'To Do',
     priority: 'Medium',
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '2',
-    creatorId: '1',
+    assigneeId: '2', // Manu M G
+    creatorId: '1', // Harikrishnan P S
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'none'
@@ -102,8 +114,8 @@ export const TASKS: Task[] = [
     status: 'To Do',
     priority: 'High',
     dueDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '4',
-    creatorId: '7',
+    assigneeId: '12', // Athul Kumar
+    creatorId: '3', // Mujeeb
     comments: [],
     requiresAttachmentForCompletion: true,
     approvalState: 'none'
@@ -115,8 +127,8 @@ export const TASKS: Task[] = [
     status: 'Completed',
     priority: 'Medium',
     dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '5',
-    creatorId: '6',
+    assigneeId: '16', // Vishnu J
+    creatorId: '5', // Arjun P
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'approved'
@@ -130,8 +142,8 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         description: 'Sync up on project progress and blockers.',
         date: new Date().toISOString(),
         frequency: 'daily',
-        creatorId: '7',
-        userId: '3',
+        creatorId: '11', // Akhil Pillai
+        userId: '19', // Aparana M R
         comments: [],
     },
     {
@@ -140,8 +152,8 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         description: 'Showcase new features developed in the current sprint.',
         date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
         frequency: 'once',
-        creatorId: '2',
-        userId: '2',
+        creatorId: '2', // Manu M G
+        userId: '2', // Manu M G
         comments: [],
     },
     {
@@ -150,8 +162,8 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         description: 'Company-wide update meeting.',
         date: new Date(new Date().setDate(15)).toISOString(),
         frequency: 'monthly',
-        creatorId: '1',
-        userId: '1',
+        creatorId: '1', // Harikrishnan P S
+        userId: '1', // Harikrishnan P S
         comments: [],
     },
     {
@@ -160,22 +172,22 @@ export const PLANNER_EVENTS: PlannerEvent[] = [
         description: 'Discuss what went well and what could be improved.',
         date: new Date(new Date().setDate(25)).toISOString(),
         frequency: 'weekly',
-        creatorId: '6',
-        userId: '5',
+        creatorId: '3', // Mujeeb
+        userId: '12', // Athul Kumar
         comments: [],
     }
 ];
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'ach-1', userId: '3', type: 'manual', title: 'Safety Star', description: 'Maintained a perfect safety record for Q2.', points: 50, date: new Date().toISOString(), awardedById: '6', status: 'approved' },
-  { id: 'ach-2', userId: '4', type: 'manual', title: 'Innovation Award', description: 'Proposed a new workflow that saved 10 hours per week.', points: 100, date: new Date().toISOString(), awardedById: '2', status: 'approved' },
+  { id: 'ach-1', userId: '19', type: 'manual', title: 'Safety Star', description: 'Maintained a perfect safety record for Q2.', points: 50, date: new Date().toISOString(), awardedById: '11', status: 'approved' },
+  { id: 'ach-2', userId: '12', type: 'manual', title: 'Innovation Award', description: 'Proposed a new workflow that saved 10 hours per week.', points: 100, date: new Date().toISOString(), awardedById: '2', status: 'approved' },
 ];
 
 const now = new Date();
 export const ACTIVITY_LOGS: ActivityLog[] = [
   {
     id: 'log-1',
-    userId: '3',
+    userId: '19',
     loginTime: sub(now, { days: 1, hours: 8 }).toISOString(),
     logoutTime: sub(now, { days: 1, hours: 3 }).toISOString(),
     duration: 300, // 5 hours
@@ -183,7 +195,7 @@ export const ACTIVITY_LOGS: ActivityLog[] = [
   },
   {
     id: 'log-2',
-    userId: '4',
+    userId: '12',
     loginTime: sub(now, { days: 1, hours: 7 }).toISOString(),
     logoutTime: sub(now, { days: 1, hours: 1 }).toISOString(),
     duration: 360, // 6 hours
