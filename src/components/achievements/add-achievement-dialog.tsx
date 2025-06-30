@@ -23,10 +23,9 @@ const achievementSchema = z.object({
 type AchievementFormValues = z.infer<typeof achievementSchema>;
 
 export default function AddAchievementDialog() {
-  const { users, addManualAchievement, getVisibleUsers } = useAppContext();
+  const { users, addManualAchievement } = useAppContext();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const visibleUsers = getVisibleUsers();
 
   const form = useForm<AchievementFormValues>({
     resolver: zodResolver(achievementSchema),
@@ -70,7 +69,7 @@ export default function AddAchievementDialog() {
                 <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger><SelectValue placeholder="Select an employee" /></SelectTrigger>
                   <SelectContent>
-                    {visibleUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                    {users.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}

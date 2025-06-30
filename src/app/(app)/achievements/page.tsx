@@ -34,15 +34,12 @@ import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, is
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AchievementsPage() {
-  const { user, users, tasks, achievements, getVisibleUsers, approveAchievement, rejectAchievement } = useAppContext();
+  const { user, users, tasks, achievements, approveAchievement, rejectAchievement } = useAppContext();
   const { toast } = useToast();
 
   const [achievementToApprove, setAchievementToApprove] = useState<Achievement | null>(null);
   const [newPoints, setNewPoints] = useState(0);
   const [rankingFilter, setRankingFilter] = useState('all-time');
-
-  const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
-  const visibleUserIds = useMemo(() => visibleUsers.map(u => u.id), [visibleUsers]);
 
   const canAddManualAchievement = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE';
   const canApprove = user?.role === 'Admin' || user?.role === 'Manager';
@@ -68,7 +65,7 @@ export default function AchievementsPage() {
       ? achievements.filter(a => isWithinInterval(new Date(a.date), { start: dateRange!.start, end: dateRange!.end }))
       : achievements;
 
-    return visibleUsers
+    return users
       .filter(u => u.role !== 'Admin' && u.role !== 'Manager') // Filter out top-level roles from ranking
       .map(u => {
         const userTasks = tasksInPeriod.filter(t => t.assigneeId === u.id);
@@ -87,11 +84,11 @@ export default function AchievementsPage() {
         };
       })
       .sort((a, b) => b.score - a.score);
-  }, [visibleUsers, tasks, achievements, rankingFilter]);
+  }, [users, tasks, achievements, rankingFilter]);
 
   const manualAchievements = useMemo(() => {
-    return achievements.filter(ach => ach.type === 'manual' && ach.status === 'approved' && visibleUserIds.includes(ach.userId));
-  }, [achievements, visibleUserIds]);
+    return achievements.filter(ach => ach.type === 'manual' && ach.status === 'approved');
+  }, [achievements]);
 
   const pendingAchievements = useMemo(() => {
     if (!canApprove) return [];
