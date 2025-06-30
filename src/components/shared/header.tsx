@@ -33,8 +33,11 @@ export default function Header() {
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
-    { href: '/file-explorer', icon: FileCode, label: 'File Explorer' },
   ];
+
+  if (user?.role === 'Admin') {
+    navItems.push({ href: '/file-explorer', icon: FileCode, label: 'File Explorer' });
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-sidebar text-sidebar-foreground px-4 md:px-8">

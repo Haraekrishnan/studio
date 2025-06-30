@@ -2,9 +2,10 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Folder, File, ChevronRight, Download } from "lucide-react";
+import { Folder, File, ChevronRight, Download, AlertTriangle } from "lucide-react";
 import { fileContents } from '@/lib/file-contents';
 import { Button } from "@/components/ui/button";
+import { useAppContext } from "@/context/app-context";
 
 interface FileItemProps {
   name: string;
@@ -61,6 +62,22 @@ const FolderItem = ({ name, children, level = 0 }: FolderItemProps) => (
 );
 
 export default function FileExplorerPage() {
+  const { user } = useAppContext();
+
+  if (user?.role !== 'Admin') {
+    return (
+        <Card className="w-full max-w-md mx-auto mt-20">
+            <CardHeader className="text-center items-center">
+                <div className="mx-auto bg-destructive/10 p-3 rounded-full w-fit mb-4">
+                    <AlertTriangle className="h-10 w-10 text-destructive" />
+                </div>
+                <CardTitle>Access Denied</CardTitle>
+                <CardDescription>You must be an administrator to view the file explorer.</CardDescription>
+            </CardHeader>
+        </Card>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -222,5 +239,3 @@ export default function FileExplorerPage() {
     </div>
   );
 }
-
-    
