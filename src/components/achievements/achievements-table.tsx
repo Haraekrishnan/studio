@@ -9,9 +9,16 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Trophy, Award, Medal } from 'lucide-react';
+import { Trophy, Award, Medal, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import type { User, Achievement } from '@/lib/types';
 import { format } from 'date-fns';
+import { useState } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import EditAchievementDialog from './edit-achievement-dialog';
+
 
 interface PerformanceData {
   user: User;
@@ -26,7 +33,10 @@ interface AchievementsTableProps {
 }
 
 export default function AchievementsTable({ data, type }: AchievementsTableProps) {
-  const { users } = useAppContext();
+  const { user, users, deleteManualAchievement } = useAppContext();
+  const { toast } = useToast();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
 
   const getRankIcon = (index: number) => {
     if (index === 0) return <Trophy className="h-5 w-5 text-yellow-500" />;
@@ -81,7 +91,22 @@ export default function AchievementsTable({ data, type }: AchievementsTableProps
     );
   }
 
+  const handleDelete = (achievementId: string) => {
+    deleteManualAchievement(achievementId);
+    toast({
+        variant: 'destructive',
+        title: 'Achievement Deleted',
+        description: 'The manual achievement has been removed.',
+    });
+  };
+
+  const handleEditClick = (achievement: Achievement) => {
+      setSelectedAchievement(achievement);
+      setIsEditDialogOpen(true);
+  };
+
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -90,21 +115,24 @@ export default function AchievementsTable({ data, type }: AchievementsTableProps
           <TableHead>Awarded By</TableHead>
           <TableHead>Date</TableHead>
           <TableHead className="text-right">Points</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {(data as Achievement[]).map((item) => {
-            const user = users.find(u => u.id === item.userId);
+            const achievementUser = users.find(u => u.id === item.userId);
             const awardedBy = users.find(u => u.id === item.awardedById);
+            const canManage = user?.role === 'Admin' || user?.role === 'Manager' || user?.id === item.awardedById;
+
             return (
                 <TableRow key={item.id}>
                 <TableCell>
                     <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
-                            <AvatarImage src={user?.avatar} alt={user?.name} />
-                            <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={achievementUser?.avatar} alt={achievementUser?.name} />
+                            <AvatarFallback>{achievementUser?.name.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <p className="font-medium">{user?.name}</p>
+                        <p className="font-medium">{achievementUser?.name}</p>
                     </div>
                 </TableCell>
                 <TableCell>
@@ -114,10 +142,54 @@ export default function AchievementsTable({ data, type }: AchievementsTableProps
                 <TableCell>{awardedBy?.name || 'System'}</TableCell>
                 <TableCell>{format(new Date(item.date), 'MMM dd, yyyy')}</TableCell>
                 <TableCell className="text-right font-semibold">{item.points}</TableCell>
+                <TableCell className="text-right">
+                    {canManage && (
+                         <AlertDialog>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <span className="sr-only">Open menu</span>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onSelect={() => handleEditClick(item)}>
+                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the "{item.title}" achievement.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                </TableCell>
                 </TableRow>
             )
         })}
       </TableBody>
     </Table>
+    {selectedAchievement && (
+        <EditAchievementDialog
+            isOpen={isEditDialogOpen}
+            setIsOpen={setIsEditDialogOpen}
+            achievement={selectedAchievement}
+        />
+    )}
+    </>
   );
 }

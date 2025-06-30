@@ -39,6 +39,8 @@ interface AppContextType {
   addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => void;
   approveAchievement: (achievementId: string, points: number) => void;
   rejectAchievement: (achievementId: string) => void;
+  updateManualAchievement: (achievement: Achievement) => void;
+  deleteManualAchievement: (achievementId: string) => void;
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
@@ -450,6 +452,21 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Rejected achievement: "${achTitle}"`);
   };
 
+  const updateManualAchievement = (updatedAchievement: Achievement) => {
+    setAchievements(prev => prev.map(ach => ach.id === updatedAchievement.id ? updatedAchievement : ach));
+    const userName = users.find(u => u.id === updatedAchievement.userId)?.name;
+    recordAction(`Updated manual achievement "${updatedAchievement.title}" for ${userName}`);
+  };
+
+  const deleteManualAchievement = (achievementId: string) => {
+    const achievement = achievements.find(a => a.id === achievementId);
+    if (achievement) {
+        const userName = users.find(u => u.id === achievement.userId)?.name;
+        recordAction(`Deleted manual achievement "${achievement.title}" for ${userName}`);
+    }
+    setAchievements(prev => prev.filter(ach => ach.id !== achievementId));
+  };
+
   const updateBranding = (name: string, logo: string | null) => {
     setAppName(name);
     localStorage.setItem('appName', name);
@@ -496,6 +513,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addManualAchievement,
     approveAchievement,
     rejectAchievement,
+    updateManualAchievement,
+    deleteManualAchievement,
     addPlannerEventComment,
     addDailyPlannerComment,
     updateBranding,
