@@ -11,7 +11,6 @@ import { Calendar, Flag, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import AiToolsDialog from './ai-tools-dialog';
 import EditTaskDialog from './edit-task-dialog';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
@@ -45,7 +44,6 @@ export default function TaskCard({ task }: TaskCardProps) {
   
   const canEditTask = user?.role === 'Admin' || user?.role === 'Manager' || user?.id === task.creatorId || user?.id === task.assigneeId;
   const canDeleteTask = user?.role === 'Admin' || user?.id === task.creatorId;
-  const canUseAiTools = user?.role === 'Admin' || user?.role === 'Manager';
 
   const handleDelete = () => {
     deleteTask(task.id);
@@ -111,7 +109,6 @@ export default function TaskCard({ task }: TaskCardProps) {
                   <p className="text-xs text-muted-foreground">{assignee?.role}</p>
               </div>
           </div>
-          {canUseAiTools && <AiToolsDialog task={task} assignee={assignee} />}
         </CardFooter>
       </Card>
       {canEditTask && (

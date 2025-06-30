@@ -6,7 +6,6 @@ export const ALL_PERMISSIONS = [
   'create_tasks',
   'reassign_tasks',
   'delete_tasks',
-  'use_ai_tools',
   'grant_manual_achievements',
   'approve_manual_achievements',
   'view_all_activity',

@@ -4,7 +4,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAppContext } from '@/context/app-context';
-import { suggestTaskPriority } from '@/ai/flows/suggest-task-priority';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -17,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { PlusCircle, CalendarIcon, Bot } from 'lucide-react';
+import { PlusCircle, CalendarIcon } from 'lucide-react';
 import type { Priority, Role } from '@/lib/types';
 
 const taskSchema = z.object({
@@ -45,7 +44,6 @@ export default function CreateTaskDialog() {
   const { user, users, addTask, getVisibleUsers } = useAppContext();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [isSuggesting, setIsSuggesting] = useState(false);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -90,44 +88,6 @@ export default function CreateTaskDialog() {
     form.reset();
   };
   
-  const handleSuggestPriority = async () => {
-    const { title, description, dueDate } = form.getValues();
-    if (!title || !description || !dueDate) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please fill in title, description, and due date to suggest priority.',
-      });
-      return;
-    }
-    
-    setIsSuggesting(true);
-    try {
-      const result = await suggestTaskPriority({
-        taskDescription: `${title}: ${description}`,
-        deadline: format(dueDate, 'yyyy-MM-dd'),
-        importance: form.getValues('priority'),
-        userRole: user!.role,
-        availableUsers: users.map(u => `${u.name} (${u.role})`),
-      });
-      
-      form.setValue('priority', result.priority as Priority, { shouldValidate: true });
-      toast({
-        title: 'AI Suggestion',
-        description: `Priority set to "${result.priority}" based on AI analysis.`,
-      });
-    } catch (error) {
-      console.error('AI priority suggestion failed:', error);
-      toast({
-        variant: 'destructive',
-        title: 'AI Suggestion Failed',
-        description: 'Could not get a priority suggestion at this time.',
-      });
-    } finally {
-      setIsSuggesting(false);
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -179,26 +139,20 @@ export default function CreateTaskDialog() {
           />
           {form.formState.errors.dueDate && <p className="text-xs text-destructive">{form.formState.errors.dueDate.message}</p>}
 
-          <div className="flex gap-2 items-center">
-            <Controller
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <Button type="button" variant="outline" onClick={handleSuggestPriority} disabled={isSuggesting}>
-                <Bot className="mr-2 h-4 w-4" />
-                {isSuggesting ? 'Suggesting...' : 'Suggest'}
-            </Button>
-          </div>
+          <Controller
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {form.formState.errors.priority && <p className="text-xs text-destructive">{form.formState.errors.priority.message}</p>}
           
           <div className="space-y-3 pt-2">

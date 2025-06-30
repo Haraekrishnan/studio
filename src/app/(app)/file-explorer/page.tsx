@@ -102,15 +102,6 @@ export default function FileExplorerPage() {
             <FileItem name="tsconfig.json" path="tsconfig.json" />
             
             <FolderItem name="src">
-              <FolderItem name="ai" level={1}>
-                <FileItem name="dev.ts" path="src/ai/dev.ts" level={2} />
-                <FileItem name="genkit.ts" path="src/ai/genkit.ts" level={2} />
-                <FolderItem name="flows" level={2}>
-                  <FileItem name="ai-task-suggestions.ts" path="src/ai/flows/ai-task-suggestions.ts" level={3} />
-                  <FileItem name="suggest-task-priority.ts" path="src/ai/flows/suggest-task-priority.ts" level={3} />
-                </FolderItem>
-              </FolderItem>
-
               <FolderItem name="app" level={1}>
                  <FolderItem name="(app)" level={2}>
                     <FileItem name="layout.tsx" path="src/app/(app)/layout.tsx" level={3} />
@@ -173,7 +164,6 @@ export default function FileExplorerPage() {
                     <FileItem name="header.tsx" path="src/components/shared/header.tsx" level={3} />
                 </FolderItem>
                 <FolderItem name="tasks" level={2}>
-                    <FileItem name="ai-tools-dialog.tsx" path="src/components/tasks/ai-tools-dialog.tsx" level={3} />
                     <FileItem name="create-task-dialog.tsx" path="src/components/tasks/create-task-dialog.tsx" level={3} />
                     <FileItem name="edit-task-dialog.tsx" path="src/components/tasks/edit-task-dialog.tsx" level={3} />
                     <FileItem name="kanban-board.tsx" path="src/components/tasks/kanban-board.tsx" level={3} />
