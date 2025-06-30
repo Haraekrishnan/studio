@@ -295,6 +295,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
           case 'daily':
             if (day >= eventStartDate) shouldAdd = true;
             break;
+          case 'daily-except-sundays':
+            if (day >= eventStartDate && day.getDay() !== 0) shouldAdd = true;
+            break;
           case 'weekly':
             if (day >= eventStartDate && day.getDay() === eventStartDate.getDay()) shouldAdd = true;
             break;

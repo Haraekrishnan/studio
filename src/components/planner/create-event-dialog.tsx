@@ -22,7 +22,7 @@ const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string(),
   date: z.date({ required_error: 'Date is required' }),
-  frequency: z.enum(['once', 'daily', 'weekly', 'weekends', 'monthly']),
+  frequency: z.enum(['once', 'daily', 'weekly', 'weekends', 'monthly', 'daily-except-sundays']),
   userId: z.string().min(1, 'Please select an employee for this event'),
 });
 
@@ -144,6 +144,7 @@ export default function CreateEventDialog() {
                   <SelectContent>
                     <SelectItem value="once">Once</SelectItem>
                     <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="daily-except-sundays">Daily (Except Sundays)</SelectItem>
                     <SelectItem value="weekly">Weekly</SelectItem>
                     <SelectItem value="weekends">Weekends</SelectItem>
                     <SelectItem value="monthly">Monthly</SelectItem>

@@ -29,7 +29,7 @@ export type TaskStatus = 'To Do' | 'In Progress' | 'Pending Approval' | 'Complet
 
 export type Priority = 'Low' | 'Medium' | 'High';
 
-export type Frequency = 'once' | 'daily' | 'weekly' | 'weekends' | 'monthly';
+export type Frequency = 'once' | 'daily' | 'weekly' | 'weekends' | 'monthly' | 'daily-except-sundays';
 
 export type ApprovalState = 'none' | 'pending' | 'approved' | 'returned';
 
