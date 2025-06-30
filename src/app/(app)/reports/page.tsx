@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import type { Task } from '@/lib/types';
+import type { Task, Priority } from '@/lib/types';
 import type { DateRange } from 'react-day-picker';
 import { useAppContext } from '@/context/app-context';
 import ReportFilters from '@/components/reports/report-filters';
@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export interface Filters {
   assigneeId: string;
   status: string;
+  priority: string;
   dateRange: DateRange | undefined;
 }
 
@@ -19,6 +20,7 @@ export default function ReportsPage() {
   const [filters, setFilters] = useState<Filters>({
     assigneeId: 'all',
     status: 'all',
+    priority: 'all',
     dateRange: undefined,
   });
 
@@ -32,10 +34,11 @@ export default function ReportsPage() {
         return false;
       }
 
-      const { assigneeId, status, dateRange } = filters;
+      const { assigneeId, status, priority, dateRange } = filters;
       
       const assigneeMatch = assigneeId === 'all' || task.assigneeId === assigneeId;
       const statusMatch = status === 'all' || task.status === status;
+      const priorityMatch = priority === 'all' || task.priority === priority;
       
       let dateMatch = true;
       if (dateRange?.from) {
@@ -46,7 +49,7 @@ export default function ReportsPage() {
         dateMatch = taskDate >= fromDate && taskDate <= toDate;
       }
 
-      return assigneeMatch && statusMatch && dateMatch;
+      return assigneeMatch && statusMatch && priorityMatch && dateMatch;
     });
   }, [tasks, filters, visibleUserIds]);
 

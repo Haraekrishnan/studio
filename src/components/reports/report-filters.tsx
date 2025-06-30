@@ -10,33 +10,37 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import type { TaskStatus } from '@/lib/types';
+import type { Priority, TaskStatus } from '@/lib/types';
 
 interface ReportFiltersProps {
   onApplyFilters: (filters: Filters) => void;
   initialFilters: Filters;
 }
 
-const statuses: TaskStatus[] = ['To Do', 'In Progress', 'Completed'];
+const statuses: TaskStatus[] = ['To Do', 'In Progress', 'Completed', 'Overdue', 'Pending Approval'];
+const priorities: Priority[] = ['Low', 'Medium', 'High'];
 
 export default function ReportFilters({ onApplyFilters, initialFilters }: ReportFiltersProps) {
   const { getVisibleUsers } = useAppContext();
   const visibleUsers = getVisibleUsers();
   const [assigneeId, setAssigneeId] = useState(initialFilters.assigneeId);
   const [status, setStatus] = useState(initialFilters.status);
+  const [priority, setPriority] = useState(initialFilters.priority);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(initialFilters.dateRange);
 
   const handleApply = () => {
-    onApplyFilters({ assigneeId, status, dateRange });
+    onApplyFilters({ assigneeId, status, priority, dateRange });
   };
 
   const handleClear = () => {
     setAssigneeId('all');
     setStatus('all');
+    setPriority('all');
     setDateRange(undefined);
     onApplyFilters({
       assigneeId: 'all',
       status: 'all',
+      priority: 'all',
       dateRange: undefined,
     });
   };
@@ -65,6 +69,18 @@ export default function ReportFilters({ onApplyFilters, initialFilters }: Report
           <SelectItem value="all">All Statuses</SelectItem>
           {statuses.map(s => (
             <SelectItem key={s} value={s}>{s}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      
+      <Select value={priority} onValueChange={setPriority}>
+        <SelectTrigger className="w-full md:w-[180px]">
+          <SelectValue placeholder="Filter by priority..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Priorities</SelectItem>
+          {priorities.map(p => (
+            <SelectItem key={p} value={p}>{p}</SelectItem>
           ))}
         </SelectContent>
       </Select>
