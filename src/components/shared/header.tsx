@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, FileCode } from 'lucide-react';
 
 export default function Header() {
   const { user, logout, appName, appLogo } = useAppContext();
@@ -20,6 +20,7 @@ export default function Header() {
     if (pathname.startsWith('/reports')) return 'Reports';
     if (pathname.startsWith('/account')) return 'Employees';
     if (pathname.startsWith('/activity-tracker')) return 'Activity Tracker';
+    if (pathname.startsWith('/file-explorer')) return 'File Explorer';
     return 'Task Management System';
   };
   
@@ -32,6 +33,7 @@ export default function Header() {
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
+    { href: '/file-explorer', icon: FileCode, label: 'File Explorer' },
   ];
 
   return (
