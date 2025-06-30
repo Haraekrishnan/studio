@@ -3,7 +3,7 @@
  * It is used by the FileExplorer component to make files downloadable.
  */
 export const fileContents: Record<string, string> = {
-  ".env": `GOOGLE_API_KEY="YOUR_API_KEY_HERE"
+  ".env": `GOOGLE_API_KEY="PASTE_YOUR_GOOGLE_AI_API_KEY_HERE"
 `,
   "README.md": `# Aries Marine - Task Management System
 
@@ -17,7 +17,6 @@ This is a comprehensive task management application built with Next.js and Fireb
 - **Performance Tracking:** Analyze individual and team performance with detailed charts and statistics.
 - **User Management:** Admins can add, edit, and manage user accounts and roles.
 - **Reporting:** Generate and download task reports in Excel or PDF format.
-- **AI-Powered Suggestions:** Leverage Genkit to get AI suggestions for task priority and optimal assignees.
 
 ## Getting Started
 
@@ -40,7 +39,6 @@ The application will be available at \`http://localhost:9002\`.
 - **Framework:** Next.js (with App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS with ShadCN UI components
-- **AI:** Google Genkit
 - **State Management:** React Context API
 - **Forms:** React Hook Form with Zod for validation
 `,
@@ -104,8 +102,6 @@ export default nextConfig;
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -114,8 +110,6 @@ export default nextConfig;
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@genkit-ai/googleai": "^1.13.0",
-    "@genkit-ai/next": "^1.13.0",
     "@hookform/resolvers": "^4.1.3",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -141,10 +135,8 @@ export default nextConfig;
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
-    "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^11.9.1",
-    "genkit": "^1.13.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "lucide-react": "^0.475.0",
@@ -164,7 +156,6 @@ export default nextConfig;
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "genkit-cli": "^1.13.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
@@ -298,156 +289,6 @@ export default {
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }
-`,
-  "src/ai/dev.ts": `import { config } from 'dotenv';
-config();
-
-import '@/ai/flows/ai-task-suggestions.ts';
-import '@/ai/flows/suggest-task-priority.ts';
-`,
-  "src/ai/genkit.ts": `import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
-
-export const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-2.0-flash',
-});
-`,
-  "src/ai/flows/ai-task-suggestions.ts": `'use server';
-
-/**
- * @fileOverview This file defines a Genkit flow for providing AI-powered task suggestions,
- * including actions and assignee recommendations, to enhance task management efficiency.
- *
- * - aiTaskSuggestions - A function that triggers the AI task suggestion flow.
- * - AiTaskSuggestionsInput - The input type for the aiTaskSuggestions function.
- * - AiTaskSuggestionsOutput - The return type for the aiTaskSuggestions function.
- */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-const AiTaskSuggestionsInputSchema = z.object({
-  taskDescription: z.string().describe('Detailed description of the task.'),
-  currentAssigneeRole: z.string().describe('Role of the current task assignee.'),
-  availableAssignees: z.array(z.object({
-    name: z.string(),
-    role: z.string(),
-  })).describe('List of available assignees with their roles.'),
-  taskStatus: z.string().describe('The current status of the task (e.g., To Do, In Progress).'),
-  taskDeadline: z.string().describe('The deadline for the task.'),
-});
-export type AiTaskSuggestionsInput = z.infer<typeof AiTaskSuggestionsInputSchema>;
-
-const AiTaskSuggestionsOutputSchema = z.object({
-  suggestedActions: z.array(z.string()).describe('AI-suggested actions to move the task forward.'),
-  optimalAssignee: z.string().describe('AI-recommended assignee based on role and task requirements.'),
-  reasoning: z.string().describe('Explanation of why the suggested actions and assignee are optimal.'),
-});
-export type AiTaskSuggestionsOutput = z.infer<typeof AiTaskSuggestionsOutputSchema>;
-
-export async function aiTaskSuggestions(input: AiTaskSuggestionsInput): Promise<AiTaskSuggestionsOutput> {
-  return aiTaskSuggestionsFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'aiTaskSuggestionsPrompt',
-  input: {schema: AiTaskSuggestionsInputSchema},
-  output: {schema: AiTaskSuggestionsOutputSchema},
-  prompt: \`You are an AI assistant designed to provide suggestions for task management.
-
-Given the following task description, current assignee role, list of available assignees with their roles, task status, and task deadline, suggest actions to move the task forward and recommend an optimal assignee.
-
-Task Description: {{{taskDescription}}}
-Current Assignee Role: {{{currentAssigneeRole}}}
-Available Assignees: {{#each availableAssignees}}{{{name}}} ({{{role}}}) {{/each}}
-Task Status: {{{taskStatus}}}
-Task Deadline: {{{taskDeadline}}}
-
-Consider the task requirements, assignee roles and availability, and task status when generating suggestions. Explain your reasoning for the suggested actions and assignee.
-
-Output the suggested actions, optimal assignee, and your reasoning in the format specified by the schema.
-\`,
-});
-
-const aiTaskSuggestionsFlow = ai.defineFlow(
-  {
-    name: 'aiTaskSuggestionsFlow',
-    inputSchema: AiTaskSuggestionsInputSchema,
-    outputSchema: AiTaskSuggestionsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
-`,
-  "src/ai/flows/suggest-task-priority.ts": `'use server';
-
-/**
- * @fileOverview An AI agent for suggesting task priorities based on deadlines, importance, and user roles.
- *
- * - suggestTaskPriority - A function that suggests task priorities.
- * - SuggestTaskPriorityInput - The input type for the suggestTaskPriority function.
- * - SuggestTaskPriorityOutput - The return type for the suggestTaskPriority function.
- */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-const SuggestTaskPriorityInputSchema = z.object({
-  taskDescription: z.string().describe('The description of the task.'),
-  deadline: z.string().describe('The deadline for the task (YYYY-MM-DD).'),
-  importance: z.enum(['High', 'Medium', 'Low']).describe('The importance level of the task.'),
-  userRole: z.string().describe('The role of the user assigned to the task.'),
-  availableUsers: z
-    .array(z.string())
-    .describe('List of available users and their roles. Example: ["User A (Manager)", "User B (Team Member)"]'),
-});
-export type SuggestTaskPriorityInput = z.infer<typeof SuggestTaskPriorityInputSchema>;
-
-const SuggestTaskPriorityOutputSchema = z.object({
-  priority: z.enum(['High', 'Medium', 'Low']).describe('The suggested priority for the task.'),
-  reasoning: z.string().describe('The reasoning behind the suggested priority.'),
-});
-export type SuggestTaskPriorityOutput = z.infer<typeof SuggestTaskPriorityOutputSchema>;
-
-export async function suggestTaskPriority(input: SuggestTaskPriorityInput): Promise<SuggestTaskPriorityOutput> {
-  return suggestTaskPriorityFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'suggestTaskPriorityPrompt',
-  input: {schema: SuggestTaskPriorityInputSchema},
-  output: {schema: SuggestTaskPriorityOutputSchema},
-  prompt: \`You are an expert at task management and prioritization.
-Analyze the task details provided below to suggest a priority level (High, Medium, or Low).
-
-Task Description: {{{taskDescription}}}
-Current Importance: {{{importance}}}
-Deadline: {{{deadline}}}
-User Role of creator/assigner: {{{userRole}}}
-List of available users:
-{{#each availableUsers}}
-- {{{this}}}
-{{/each}}
-
-Consider the deadline, the stated importance, and the roles of users involved. A closer deadline usually means a higher priority. A task assigned by a manager might be more important. Your primary goal is to provide a sensible priority.
-Explain your reasoning for the suggested priority.
-\`,
-});
-
-const suggestTaskPriorityFlow = ai.defineFlow(
-  {
-    name: 'suggestTaskPriorityFlow',
-    inputSchema: SuggestTaskPriorityInputSchema,
-    outputSchema: SuggestTaskPriorityOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
 `,
   "src/app/globals.css": `@tailwind base;
 @tailwind components;
@@ -3827,128 +3668,12 @@ export default function Header() {
   );
 }
 `,
-  "src/components/tasks/ai-tools-dialog.tsx": `'use client';
-import { useState } from 'react';
-import type { Task, User } from '@/lib/types';
-import { useAppContext } from '@/context/app-context';
-import { aiTaskSuggestions } from '@/ai/flows/ai-task-suggestions';
-import type { AiTaskSuggestionsOutput } from '@/ai/flows/ai-task-suggestions';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { Bot, Lightbulb, UserCheck, Loader2 } from 'lucide-react';
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
-
-interface AiToolsDialogProps {
-  task: Task;
-  assignee: User | undefined;
-}
-
-export default function AiToolsDialog({ task, assignee }: AiToolsDialogProps) {
-  const { users } = useAppContext();
-  const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [suggestion, setSuggestion] = useState<AiTaskSuggestionsOutput | null>(null);
-
-  const handleGetSuggestions = async () => {
-    setIsLoading(true);
-    setSuggestion(null);
-    try {
-      const result = await aiTaskSuggestions({
-        taskDescription: \`\${task.title}: \${task.description}\`,
-        currentAssigneeRole: assignee?.role || 'N/A',
-        availableAssignees: users.map(u => ({ name: u.name, role: u.role })),
-        taskStatus: task.status,
-        taskDeadline: task.dueDate,
-      });
-      setSuggestion(result);
-    } catch (error) {
-      console.error('AI suggestion failed:', error);
-      toast({
-        variant: 'destructive',
-        title: 'AI Suggestion Failed',
-        description: 'Could not get suggestions at this time.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Bot className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>AI Task Assistant</DialogTitle>
-        </DialogHeader>
-        <div className="py-4 space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Get AI-powered suggestions for this task to improve efficiency.
-          </p>
-          {!suggestion && (
-            <Button onClick={handleGetSuggestions} disabled={isLoading} className="w-full">
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Lightbulb className="mr-2 h-4 w-4" />
-              )}
-              {isLoading ? 'Analyzing...' : 'Get Suggestions'}
-            </Button>
-          )}
-          {suggestion && (
-            <div className="space-y-4 rounded-lg border p-4">
-              <div>
-                <h3 className="font-semibold flex items-center mb-2"><UserCheck className="mr-2 h-4 w-4 text-primary" />Optimal Assignee</h3>
-                <Badge>{suggestion.optimalAssignee}</Badge>
-              </div>
-              <Separator />
-              <div>
-                <h3 className="font-semibold flex items-center mb-2"><Lightbulb className="mr-2 h-4 w-4 text-primary" />Suggested Actions</h3>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  {suggestion.suggestedActions.map((action, index) => (
-                    <li key={index}>{action}</li>
-                  ))}
-                </ul>
-              </div>
-              <Separator />
-               <div>
-                <h3 className="font-semibold mb-2">Reasoning</h3>
-                <p className="text-sm text-muted-foreground italic">"{suggestion.reasoning}"</p>
-              </div>
-            </div>
-          )}
-        </div>
-        <DialogFooter>
-          {suggestion && (
-            <Button onClick={handleGetSuggestions} disabled={isLoading} variant="secondary">
-                 {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <Lightbulb className="mr-2 h-4 w-4" />
-                )}
-                {isLoading ? 'Re-analyzing...' : 'Regenerate'}
-            </Button>
-          )}
-          <Button onClick={() => setIsOpen(false)}>Close</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-`,
   "src/components/tasks/create-task-dialog.tsx": `'use client';
 import { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAppContext } from '@/context/app-context';
-import { suggestTaskPriority } from '@/ai/flows/suggest-task-priority';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -3961,7 +3686,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { PlusCircle, CalendarIcon, Bot } from 'lucide-react';
+import { PlusCircle, CalendarIcon } from 'lucide-react';
 import type { Priority, Role } from '@/lib/types';
 
 const taskSchema = z.object({
@@ -3989,7 +3714,6 @@ export default function CreateTaskDialog() {
   const { user, users, addTask, getVisibleUsers } = useAppContext();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [isSuggesting, setIsSuggesting] = useState(false);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -4034,44 +3758,6 @@ export default function CreateTaskDialog() {
     form.reset();
   };
   
-  const handleSuggestPriority = async () => {
-    const { title, description, dueDate } = form.getValues();
-    if (!title || !description || !dueDate) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please fill in title, description, and due date to suggest priority.',
-      });
-      return;
-    }
-    
-    setIsSuggesting(true);
-    try {
-      const result = await suggestTaskPriority({
-        taskDescription: \`\${title}: \${description}\`,
-        deadline: format(dueDate, 'yyyy-MM-dd'),
-        importance: form.getValues('priority'),
-        userRole: user!.role,
-        availableUsers: users.map(u => \`\${u.name} (\${u.role})\`),
-      });
-      
-      form.setValue('priority', result.priority as Priority, { shouldValidate: true });
-      toast({
-        title: 'AI Suggestion',
-        description: \`Priority set to "\${result.priority}" based on AI analysis.\`,
-      });
-    } catch (error) {
-      console.error('AI priority suggestion failed:', error);
-      toast({
-        variant: 'destructive',
-        title: 'AI Suggestion Failed',
-        description: 'Could not get a priority suggestion at this time.',
-      });
-    } finally {
-      setIsSuggesting(false);
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -4123,26 +3809,20 @@ export default function CreateTaskDialog() {
           />
           {form.formState.errors.dueDate && <p className="text-xs text-destructive">{form.formState.errors.dueDate.message}</p>}
 
-          <div className="flex gap-2 items-center">
-            <Controller
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <Button type="button" variant="outline" onClick={handleSuggestPriority} disabled={isSuggesting}>
-                <Bot className="mr-2 h-4 w-4" />
-                {isSuggesting ? 'Suggesting...' : 'Suggest'}
-            </Button>
-          </div>
+          <Controller
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {form.formState.errors.priority && <p className="text-xs text-destructive">{form.formState.errors.priority.message}</p>}
           
           <div className="space-y-3 pt-2">
@@ -4634,7 +4314,6 @@ import { Calendar, Flag, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import AiToolsDialog from './ai-tools-dialog';
 import EditTaskDialog from './edit-task-dialog';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
@@ -4668,7 +4347,6 @@ export default function TaskCard({ task }: TaskCardProps) {
   
   const canEditTask = user?.role === 'Admin' || user?.role === 'Manager' || user?.id === task.creatorId || user?.id === task.assigneeId;
   const canDeleteTask = user?.role === 'Admin' || user?.id === task.creatorId;
-  const canUseAiTools = user?.role === 'Admin' || user?.role === 'Manager';
 
   const handleDelete = () => {
     deleteTask(task.id);
@@ -4734,7 +4412,6 @@ export default function TaskCard({ task }: TaskCardProps) {
                   <p className="text-xs text-muted-foreground">{assignee?.role}</p>
               </div>
           </div>
-          {canUseAiTools && <AiToolsDialog task={task} assignee={assignee} />}
         </CardFooter>
       </Card>
       {canEditTask && (
@@ -9388,7 +9065,7 @@ export const ROLES: RoleDefinition[] = [
     name: 'Manager',
     permissions: [
       'manage_users', 'assign_supervisors', 'create_tasks', 'reassign_tasks', 'delete_tasks', 
-      'use_ai_tools', 'grant_manual_achievements', 'approve_manual_achievements', 
+      'grant_manual_achievements', 'approve_manual_achievements', 
       'view_all_activity', 'view_all_users'
     ],
     isEditable: false,
@@ -9653,7 +9330,6 @@ export const ACTIVITY_LOGS: ActivityLog[] = [
   'create_tasks',
   'reassign_tasks',
   'delete_tasks',
-  'use_ai_tools',
   'grant_manual_achievements',
   'approve_manual_achievements',
   'view_all_activity',
