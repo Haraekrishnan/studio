@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES } from '@/lib/mock-data';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
 interface AppContextType {
@@ -17,6 +17,7 @@ interface AppContextType {
   activityLogs: ActivityLog[];
   appName: string;
   appLogo: string | null;
+  internalRequests: InternalRequest[];
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
@@ -44,6 +45,10 @@ interface AppContextType {
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
+  addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments'>) => void;
+  updateInternalRequest: (updatedRequest: InternalRequest) => void;
+  deleteInternalRequest: (requestId: string) => void;
+  addInternalRequestComment: (requestId: string, commentText: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -57,6 +62,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>(DAILY_PLANNER_COMMENTS);
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
+  const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const [appName, setAppName] = useState('Aries Marine - Task Management System');
   const [appLogo, setAppLogo] = useState<string | null>(null);
@@ -480,6 +486,45 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Updated app branding.`);
   };
 
+  const addInternalRequest = (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments'>) => {
+    if (!user) return;
+    const newRequest: InternalRequest = {
+      ...request,
+      id: `ireq-${Date.now()}`,
+      requesterId: user.id,
+      date: new Date().toISOString(),
+      status: 'Pending',
+      comments: [{ userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
+    };
+    setInternalRequests(prev => [newRequest, ...prev]);
+    recordAction(`Created internal request for ${request.category}`);
+  };
+
+  const updateInternalRequest = (updatedRequest: InternalRequest) => {
+    setInternalRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
+    recordAction(`Updated internal request ID: ${updatedRequest.id}`);
+  };
+
+  const deleteInternalRequest = (requestId: string) => {
+    setInternalRequests(prev => prev.filter(r => r.id !== requestId));
+    recordAction(`Deleted internal request ID: ${requestId}`);
+  };
+
+  const addInternalRequestComment = (requestId: string, commentText: string) => {
+    if (!user) return;
+    const newComment: Comment = {
+      userId: user.id,
+      text: commentText,
+      date: new Date().toISOString(),
+    };
+    const request = internalRequests.find(r => r.id === requestId);
+    setInternalRequests(prev => prev.map(r => 
+      r.id === requestId ? { ...r, comments: [(r.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : r
+    ));
+    recordAction(`Commented on internal request ID: ${request?.id}`);
+  };
+
+
   const value = {
     user,
     users,
@@ -491,6 +536,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     activityLogs,
     appName,
     appLogo,
+    internalRequests,
     login,
     logout,
     addTask,
@@ -518,6 +564,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addPlannerEventComment,
     addDailyPlannerComment,
     updateBranding,
+    addInternalRequest,
+    updateInternalRequest,
+    deleteInternalRequest,
+    addInternalRequestComment,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

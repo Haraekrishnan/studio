@@ -1,21 +1,29 @@
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import TaskCard from '@/components/tasks/task-card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ExternalLink, GanttChartSquare } from 'lucide-react';
+import { ExternalLink, GanttChartSquare, PlusCircle } from 'lucide-react';
+import NewInternalRequestDialog from '@/components/requests/new-internal-request-dialog';
+import InternalRequestTable from '@/components/requests/internal-request-table';
 
 export default function MyRequestsPage() {
-    const { user, tasks } = useAppContext();
+    const { user, internalRequests } = useAppContext();
+    const [isNewRequestDialogOpen, setIsNewRequestDialogOpen] = useState(false);
 
-    const mySubmittedTasks = useMemo(() => {
+    const isApprover = useMemo(() => {
+        if (!user) return false;
+        return ['Admin', 'Manager', 'Store in Charge', 'Assistant Store Incharge'].includes(user.role);
+    }, [user]);
+
+    const visibleRequests = useMemo(() => {
         if (!user) return [];
-        return tasks.filter(task => {
-            return task.status === 'Pending Approval' && task.assigneeId === user.id;
-        });
-    }, [tasks, user]);
+        if (isApprover) {
+            return internalRequests.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        }
+        return internalRequests.filter(req => req.requesterId === user.id).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [internalRequests, user, isApprover]);
 
     return (
         <div className="space-y-8">
@@ -23,7 +31,7 @@ export default function MyRequestsPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">My Requests</h1>
                     <p className="text-muted-foreground">
-                        Track your submitted requests or create a new PPE request.
+                        Track your submitted internal requests or create a new PPE request.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -42,24 +50,24 @@ export default function MyRequestsPage() {
                 </div>
             </div>
             <Card>
-                <CardHeader>
-                    <CardTitle>Internal Requests Submitted for Approval ({mySubmittedTasks.length})</CardTitle>
-                    <CardDescription>
-                        These are your internal requests that are currently awaiting approval.
-                    </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Internal Store Requests</CardTitle>
+                        <CardDescription>
+                            {isApprover ? "Review and manage all internal store requests." : "Track your submitted requests."}
+                        </CardDescription>
+                    </div>
+                    <Button onClick={() => setIsNewRequestDialogOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        New Request
+                    </Button>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    {mySubmittedTasks.length > 0 ? (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {mySubmittedTasks.map(task => (
-                                <TaskCard key={task.id} task={task} />
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-muted-foreground text-center py-8">You have no pending internal requests.</p>
-                    )}
+                <CardContent>
+                    <InternalRequestTable requests={visibleRequests} />
                 </CardContent>
             </Card>
+
+            <NewInternalRequestDialog isOpen={isNewRequestDialogOpen} setIsOpen={setIsNewRequestDialogOpen} />
         </div>
     );
 }

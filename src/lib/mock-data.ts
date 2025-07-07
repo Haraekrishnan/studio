@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest } from './types';
 import { sub } from 'date-fns';
 import { ALL_PERMISSIONS } from './types';
 
@@ -9,7 +9,7 @@ export const ROLES: RoleDefinition[] = [
     id: 'role-admin',
     name: 'Admin',
     permissions: [...ALL_PERMISSIONS],
-    isEditable: true,
+    isEditable: false,
   },
   {
     id: 'role-manager',
@@ -19,7 +19,7 @@ export const ROLES: RoleDefinition[] = [
       'grant_manual_achievements', 'approve_manual_achievements', 
       'view_all_activity', 'view_all_users'
     ],
-    isEditable: true,
+    isEditable: false,
   },
   {
     id: 'role-supervisor',
@@ -28,7 +28,7 @@ export const ROLES: RoleDefinition[] = [
       'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
       'view_subordinates_activity', 'view_subordinates_users'
     ],
-    isEditable: true,
+    isEditable: false,
   },
   {
     id: 'role-hse',
@@ -37,40 +37,40 @@ export const ROLES: RoleDefinition[] = [
       'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
       'view_subordinates_activity', 'view_subordinates_users'
     ],
-    isEditable: true,
+    isEditable: false,
   },
   {
     id: 'role-jr-supervisor',
     name: 'Junior Supervisor',
     permissions: ['view_subordinates_activity', 'view_subordinates_users'],
-    isEditable: true,
+    isEditable: false,
   },
   {
     id: 'role-jr-hse',
     name: 'Junior HSE',
     permissions: ['view_subordinates_activity', 'view_subordinates_users'],
-    isEditable: true,
+    isEditable: false,
   },
-  {
-    id: 'role-team-member',
-    name: 'Team Member',
-    permissions: [],
-    isEditable: true,
-  },
-  {
+    {
     id: 'role-store-in-charge',
     name: 'Store in Charge',
     permissions: [
       'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
       'view_subordinates_activity', 'view_subordinates_users'
     ],
-    isEditable: true,
+    isEditable: false,
   },
   {
     id: 'role-asst-store-incharge',
     name: 'Assistant Store Incharge',
     permissions: ['view_subordinates_activity', 'view_subordinates_users'],
-    isEditable: true,
+    isEditable: false,
+  },
+  {
+    id: 'role-team-member',
+    name: 'Team Member',
+    permissions: [],
+    isEditable: false,
   },
 ];
 
@@ -96,6 +96,8 @@ export const USERS: User[] = [
   { id: '19', name: 'Aparna M R', email: 'aparna@ariesmarine.com', password: 'password', role: 'Team Member', avatar: 'https://i.pravatar.cc/150?u=19', supervisorId: '11' },
   { id: '20', name: 'John Safety', email: 'john.safety@ariesmarine.com', password: 'password', role: 'HSE', avatar: 'https://i.pravatar.cc/150?u=20', supervisorId: '2' },
   { id: '21', name: 'Peter Hazard', email: 'peter.hazard@ariesmarine.com', password: 'password', role: 'Junior HSE', avatar: 'https://i.pravatar.cc/150?u=21', supervisorId: '20' },
+  { id: '22', name: 'Store Keeper', email: 'store@ariesmarine.com', password: 'password', role: 'Store in Charge', avatar: 'https://i.pravatar.cc/150?u=22', supervisorId: '2' },
+  { id: '23', name: 'Asst. Store Keeper', email: 'asst.store@ariesmarine.com', password: 'password', role: 'Assistant Store Incharge', avatar: 'https://i.pravatar.cc/150?u=23', supervisorId: '22' },
 ];
 
 export const TASKS: Task[] = [
@@ -208,22 +210,34 @@ export const TASKS: Task[] = [
     requiresAttachmentForCompletion: false,
     approvalState: 'approved'
   },
-  {
-    id: 'task-9',
-    title: 'Request new safety equipment',
-    description: 'The team needs new safety helmets and gloves. Please approve this procurement request.',
-    status: 'Pending Approval',
-    priority: 'Medium',
-    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    assigneeId: '13',
-    creatorId: '4',
-    comments: [
-        { userId: '13', text: 'Submitting request for new PPE.', date: new Date().toISOString() }
-    ],
-    requiresAttachmentForCompletion: false,
-    approvalState: 'pending',
-    previousStatus: 'In Progress'
-  },
+];
+
+export const INTERNAL_REQUESTS: InternalRequest[] = [
+    {
+        id: 'ireq-1',
+        requesterId: '19', // Aparna M R
+        category: 'Stationery',
+        description: 'A4 paper ream, 5 nos. Blue and black pens, 1 box each.',
+        quantity: 7,
+        location: 'Head Office',
+        status: 'Pending',
+        date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        comments: [{ userId: '19', text: 'Requesting stationery for the design team.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() }]
+    },
+    {
+        id: 'ireq-2',
+        requesterId: '12', // Athul Kumar
+        category: 'RA Equipments',
+        description: 'Need 2 new multimeters (Fluke brand preferred).',
+        quantity: 2,
+        location: 'Sharjah Site',
+        status: 'Approved',
+        date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        comments: [
+            { userId: '12', text: 'The old ones are malfunctioning.', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+            { userId: '1', text: 'Approved. Please collect from the main store.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+        ]
+    }
 ];
 
 export const PLANNER_EVENTS: PlannerEvent[] = [

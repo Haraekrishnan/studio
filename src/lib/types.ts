@@ -32,6 +32,9 @@ export type Frequency = 'once' | 'daily' | 'weekly' | 'weekends' | 'monthly' | '
 
 export type ApprovalState = 'none' | 'pending' | 'approved' | 'returned';
 
+export type InternalRequestStatus = 'Pending' | 'Approved' | 'On Hold' | 'Allotted' | 'Rejected';
+export type InternalRequestCategory = 'Site Items' | 'RA Equipments' | 'Stationery' | 'Other';
+
 export interface User {
   id: string;
   name: string;
@@ -73,6 +76,18 @@ export interface Task {
     name: string;
     data?: string; // base64 data for new uploads
   };
+}
+
+export interface InternalRequest {
+  id: string;
+  requesterId: string;
+  category: InternalRequestCategory;
+  description: string;
+  quantity: number;
+  location: string; // Project location/site
+  status: InternalRequestStatus;
+  date: string; // ISO string
+  comments?: Comment[];
 }
 
 export interface PlannerEvent {
