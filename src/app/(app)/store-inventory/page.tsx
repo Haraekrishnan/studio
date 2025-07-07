@@ -16,7 +16,7 @@ import ViewCertificateRequestDialog from '@/components/inventory/ViewCertificate
 import InventorySummary from '@/components/inventory/InventorySummary';
 
 export default function StoreInventoryPage() {
-    const { user, roles, inventoryItems, projects, inventoryTransferRequests, certificateRequests } = useAppContext();
+    const { user, users, roles, inventoryItems, projects, inventoryTransferRequests, certificateRequests } = useAppContext();
     const [isAddItemOpen, setIsAddItemOpen] = useState(false);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [isTransferOpen, setIsTransferOpen] = useState(false);
