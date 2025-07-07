@@ -9,7 +9,7 @@ export const ROLES: RoleDefinition[] = [
     id: 'role-admin',
     name: 'Admin',
     permissions: [...ALL_PERMISSIONS],
-    isEditable: false,
+    isEditable: true,
   },
   {
     id: 'role-manager',
@@ -19,7 +19,7 @@ export const ROLES: RoleDefinition[] = [
       'grant_manual_achievements', 'approve_manual_achievements', 
       'view_all_activity', 'view_all_users'
     ],
-    isEditable: false,
+    isEditable: true,
   },
   {
     id: 'role-supervisor',
@@ -28,7 +28,7 @@ export const ROLES: RoleDefinition[] = [
       'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
       'view_subordinates_activity', 'view_subordinates_users'
     ],
-    isEditable: false,
+    isEditable: true,
   },
   {
     id: 'role-hse',
@@ -37,25 +37,25 @@ export const ROLES: RoleDefinition[] = [
       'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
       'view_subordinates_activity', 'view_subordinates_users'
     ],
-    isEditable: false,
+    isEditable: true,
   },
   {
     id: 'role-jr-supervisor',
     name: 'Junior Supervisor',
     permissions: ['view_subordinates_activity', 'view_subordinates_users'],
-    isEditable: false,
+    isEditable: true,
   },
   {
     id: 'role-jr-hse',
     name: 'Junior HSE',
     permissions: ['view_subordinates_activity', 'view_subordinates_users'],
-    isEditable: false,
+    isEditable: true,
   },
   {
     id: 'role-team-member',
     name: 'Team Member',
     permissions: [],
-    isEditable: false,
+    isEditable: true,
   },
   {
     id: 'role-store-in-charge',
@@ -207,6 +207,22 @@ export const TASKS: Task[] = [
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'approved'
+  },
+  {
+    id: 'task-9',
+    title: 'Request new safety equipment',
+    description: 'The team needs new safety helmets and gloves. Please approve this procurement request.',
+    status: 'Pending Approval',
+    priority: 'Medium',
+    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    assigneeId: '13',
+    creatorId: '4',
+    comments: [
+        { userId: '13', text: 'Submitting request for new PPE.', date: new Date().toISOString() }
+    ],
+    requiresAttachmentForCompletion: false,
+    approvalState: 'pending',
+    previousStatus: 'In Progress'
   },
 ];
 

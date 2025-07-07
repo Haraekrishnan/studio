@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, Clock, FileCode, History, Archive } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, Clock, History, Archive } from 'lucide-react';
 
 export function AppSidebar() {
   const { user, logout, appName, appLogo } = useAppContext();
@@ -24,10 +24,6 @@ export function AppSidebar() {
     { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory' },
   ];
-  
-  if (user?.role === 'Admin') {
-    navItems.push({ href: '/file-explorer', icon: FileCode, label: 'File Explorer' });
-  }
 
   return (
     <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-border h-full">

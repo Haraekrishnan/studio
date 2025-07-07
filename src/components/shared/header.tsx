@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, FileCode, History, Archive } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive } from 'lucide-react';
 
 export default function Header() {
   const { user, logout, appName, appLogo } = useAppContext();
@@ -22,7 +22,6 @@ export default function Header() {
     if (pathname.startsWith('/account')) return 'Employees';
     if (pathname.startsWith('/activity-tracker')) return 'Activity Tracker';
     if (pathname.startsWith('/store-inventory')) return 'Store Inventory';
-    if (pathname.startsWith('/file-explorer')) return 'File Explorer';
     return 'Task Management System';
   };
   
@@ -38,10 +37,6 @@ export default function Header() {
     { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory' },
   ];
-
-  if (user?.role === 'Admin') {
-    navItems.push({ href: '/file-explorer', icon: FileCode, label: 'File Explorer' });
-  }
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-sidebar text-sidebar-foreground px-4 md:px-8">
