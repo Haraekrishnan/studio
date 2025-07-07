@@ -2,9 +2,19 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition } from '@/lib/types';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
+
+interface PpeRequestData {
+    title: string;
+    description: string;
+    department: string;
+    items: string;
+    expectedDate: Date;
+    priority: Priority;
+    remarks: string;
+}
 
 interface AppContextType {
   user: User | null;
@@ -44,7 +54,7 @@ interface AppContextType {
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
-  createPpeRequestTask: (title: string, description: string) => void;
+  createPpeRequestTask: (data: PpeRequestData) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -481,25 +491,28 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Updated app branding.`);
   };
 
-  const createPpeRequestTask = (title: string, description: string) => {
+  const createPpeRequestTask = (data: PpeRequestData) => {
     if (!user) return;
 
     const newTask: Task = {
       id: `task-${Date.now()}`,
-      title,
-      description,
+      title: data.title,
+      description: data.description,
       status: 'Pending Approval',
-      priority: 'Medium', // Default priority for requests
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default due date, e.g., 7 days from now
+      priority: data.priority,
+      dueDate: data.expectedDate.toISOString(),
       assigneeId: user.id,
       creatorId: user.id, // User is creating it for themselves
       comments: [],
       requiresAttachmentForCompletion: false,
       approvalState: 'pending',
       previousStatus: 'To Do', // The state before pending
+      department: data.department,
+      items: data.items,
+      remarks: data.remarks,
     };
     setTasks(prevTasks => [newTask, ...prevTasks]);
-    recordAction(`Created PPE Request: "${title}"`);
+    recordAction(`Created PPE Request: "${data.title}"`);
   };
 
   const value = {

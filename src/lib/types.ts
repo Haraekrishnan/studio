@@ -73,6 +73,11 @@ export interface Task {
     name: string;
     data?: string; // base64 data for new uploads
   };
+
+  // PPE Request fields
+  department?: string;
+  items?: string;
+  remarks?: string;
 }
 
 export interface PlannerEvent {

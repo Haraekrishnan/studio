@@ -186,12 +186,14 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     }
     return null;
   }
+  
+  const isPpeRequest = task.items || task.department;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-4xl grid-rows-[auto,1fr,auto]">
         <DialogHeader>
-          <DialogTitle>Edit Task: {task.title}</DialogTitle>
+          <DialogTitle>Task Details: {task.title}</DialogTitle>
           <DialogDescription>
             Assigned by <span className='font-semibold'>{creator?.name}</span> to <span className='font-semibold'>{assignee?.name}</span>. 
             Due {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}.
@@ -207,70 +209,92 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
           )}
         </DialogHeader>
         <div className="grid md:grid-cols-2 gap-8 py-4 overflow-y-auto max-h-[70vh]">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pr-4 border-r">
-              <div>
-                <Label>Title</Label>
-                <Input {...form.register('title')} placeholder="Task title" />
-              </div>
-              
-              <div>
-                <Label>Description</Label>
-                <Textarea {...form.register('description')} placeholder="Task description" rows={5}/>
-              </div>
-
-              <div>
-                <Label>Assignee</Label>
-                <Controller
-                    control={form.control}
-                    name="assigneeId"
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value} disabled={!canReassign}>
-                          <SelectTrigger><SelectValue placeholder="Assign to..." /></SelectTrigger>
-                          <SelectContent>
-                          {assignableUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                          </SelectContent>
-                      </Select>
-                    )}
-                />
-              </div>
-              
-              <div className='grid grid-cols-2 gap-4'>
+            <div className="space-y-4 pr-4 border-r">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div>
-                  <Label>Due Date</Label>
-                  <Controller control={form.control} name="dueDate"
-                      render={({ field }) => (
-                      <Popover>
-                          <PopoverTrigger asChild>
-                          <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                          </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
-                      </Popover>
-                      )}
-                  />
+                  <Label>Title</Label>
+                  <Input {...form.register('title')} placeholder="Task title" />
+                </div>
+                
+                <div>
+                  <Label>Description</Label>
+                  <Textarea {...form.register('description')} placeholder="Task description" rows={3}/>
                 </div>
 
                 <div>
-                  <Label>Priority</Label>
-                  <Controller control={form.control} name="priority"
+                  <Label>Assignee</Label>
+                  <Controller
+                      control={form.control}
+                      name="assigneeId"
                       render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                          <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Low">Low</SelectItem>
-                            <SelectItem value="Medium">Medium</SelectItem>
-                            <SelectItem value="High">High</SelectItem>
-                          </SelectContent>
-                      </Select>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!canReassign}>
+                            <SelectTrigger><SelectValue placeholder="Assign to..." /></SelectTrigger>
+                            <SelectContent>
+                            {assignableUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                       )}
                   />
                 </div>
-              </div>
-              
-              <Button type="submit" className="w-full">Save Changes</Button>
-            </form>
+                
+                <div className='grid grid-cols-2 gap-4'>
+                  <div>
+                    <Label>Due Date</Label>
+                    <Controller control={form.control} name="dueDate"
+                        render={({ field }) => (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                            </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
+                        </Popover>
+                        )}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Priority</Label>
+                    <Controller control={form.control} name="priority"
+                        render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Low">Low</SelectItem>
+                              <SelectItem value="Medium">Medium</SelectItem>
+                              <SelectItem value="High">High</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        )}
+                    />
+                  </div>
+                </div>
+                
+                <Button type="submit" className="w-full">Save Changes</Button>
+              </form>
+
+              {isPpeRequest && (
+                  <div className="space-y-4 pt-4 border-t">
+                      <h3 className="font-semibold">PPE Request Details</h3>
+                      <div>
+                          <Label>Department</Label>
+                          <p className="text-sm p-2 bg-muted rounded-md">{task.department}</p>
+                      </div>
+                      <div>
+                          <Label>Items Required</Label>
+                          <p className="text-sm p-2 bg-muted rounded-md whitespace-pre-wrap">{task.items}</p>
+                      </div>
+                       {task.remarks && (
+                        <div>
+                          <Label>Remarks</Label>
+                          <p className="text-sm p-2 bg-muted rounded-md whitespace-pre-wrap">{task.remarks}</p>
+                        </div>
+                       )}
+                  </div>
+              )}
+            </div>
 
             <div className="flex flex-col gap-4">
                 <h3 className="text-lg font-semibold">Comments & Activity</h3>
