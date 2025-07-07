@@ -18,23 +18,22 @@ export default function MyRequestsPage() {
     }, [tasks, user]);
 
     const handleCreatePpeRequest = (task: Task) => {
-        // IMPORTANT: Replace this with the actual link to your Google Form
-        const googleFormUrl = "https://docs.google.com/forms/d/e/YOUR_FORM_ID_HERE/viewform";
+        // This link is now connected to your specific Google Form.
+        const googleFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSeH2T0V1NnZrIs_3e2j6g9n8qI8lP3bV1jV7lB0iX8uOqM_qQ/viewform";
         
-        // IMPORTANT: Replace these with the actual entry IDs from your Google Form.
-        // You can find these by inspecting the form fields in your browser.
-        const taskTitleEntryId = "entry.123456789"; // Placeholder for Task Title
-        const taskDescriptionEntryId = "entry.987654321"; // Placeholder for Task Description
-        const requesterNameEntryId = "entry.555555555"; // Placeholder for Requester Name
+        // These are the actual entry IDs for your form's fields.
+        const requesterNameEntryId = "entry.1759454944";
+        const taskTitleEntryId = "entry.1018919637";
+        const taskDescriptionEntryId = "entry.1517458215";
 
         const requester = users.find(u => u.id === task.assigneeId);
 
         const params = new URLSearchParams();
-        params.append(taskTitleEntryId, task.title);
-        params.append(taskDescriptionEntryId, task.description);
         if (requester) {
             params.append(requesterNameEntryId, requester.name);
         }
+        params.append(taskTitleEntryId, task.title);
+        params.append(taskDescriptionEntryId, task.description);
         
         const prefilledUrl = `${googleFormUrl}?${params.toString()}`;
         
