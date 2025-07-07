@@ -57,6 +57,21 @@ export const ROLES: RoleDefinition[] = [
     permissions: [],
     isEditable: false,
   },
+  {
+    id: 'role-store-in-charge',
+    name: 'Store in Charge',
+    permissions: [
+      'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
+      'view_subordinates_activity', 'view_subordinates_users'
+    ],
+    isEditable: true,
+  },
+  {
+    id: 'role-asst-store-incharge',
+    name: 'Assistant Store Incharge',
+    permissions: ['view_subordinates_activity', 'view_subordinates_users'],
+    isEditable: true,
+  },
 ];
 
 export const USERS: User[] = [

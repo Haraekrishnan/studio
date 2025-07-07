@@ -43,8 +43,10 @@ const roleHierarchy: Record<Role, number> = {
   'Team Member': 0,
   'Junior Supervisor': 1,
   'Junior HSE': 1,
+  'Assistant Store Incharge': 1,
   'Supervisor': 2,
   'HSE': 2,
+  'Store in Charge': 2,
   'Manager': 3,
   'Admin': 4,
 };
@@ -158,7 +160,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     toast({ title: 'Task Updated', description: `"${data.title}" has been successfully updated.` });
   };
   
-  const canReassign = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE';
+  const canReassign = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE' || user?.role === 'Store in Charge';
   const isApprover = user?.id === task.creatorId || user?.id === assignee?.supervisorId;
   const isAssignee = user?.id === task.assigneeId;
 

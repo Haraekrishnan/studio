@@ -12,7 +12,7 @@ import EditRoleDialog from './edit-role-dialog';
 import type { RoleDefinition } from '@/lib/types';
 
 export default function RoleManagementTable() {
-    const { roles, deleteRole } = useAppContext();
+    const { user, roles, deleteRole } = useAppContext();
     const { toast } = useToast();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedRole, setSelectedRole] = useState<RoleDefinition | null>(null);
@@ -56,7 +56,7 @@ export default function RoleManagementTable() {
                                 </div>
                             </TableCell>
                             <TableCell className="text-right">
-                                {role.isEditable ? (
+                                {user?.role === 'Admin' || role.isEditable ? (
                                     <AlertDialog>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -69,11 +69,13 @@ export default function RoleManagementTable() {
                                                 <DropdownMenuItem onSelect={() => handleEditClick(role)}>
                                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                                 </DropdownMenuItem>
-                                                <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                    </DropdownMenuItem>
-                                                </AlertDialogTrigger>
+                                                {role.isEditable && (
+                                                    <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </AlertDialogTrigger>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                         <AlertDialogContent>

@@ -5,7 +5,7 @@ import KanbanBoard from '@/components/tasks/kanban-board';
 import CreateTaskDialog from '@/components/tasks/create-task-dialog';
 import TaskFilters, { type TaskFilters as FiltersType } from '@/components/tasks/task-filters';
 import { Button } from '@/components/ui/button';
-import { Bell, History } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import TaskCard from '@/components/tasks/task-card';
 
 export default function TasksPage() {
   const { user, tasks, users } = useAppContext();
-  const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE';
+  const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE' || user?.role === 'Store in Charge';
 
   const [filters, setFilters] = useState<FiltersType>({
     status: 'all',
@@ -28,7 +28,6 @@ export default function TasksPage() {
   });
 
   const [isPendingApprovalDialogOpen, setIsPendingApprovalDialogOpen] = useState(false);
-  const [isMyRequestsDialogOpen, setIsMyRequestsDialogOpen] = useState(false);
 
   const tasksAwaitingMyApproval = useMemo(() => {
     if (!user) return [];
@@ -50,14 +49,6 @@ export default function TasksPage() {
     });
   }, [tasks, user, users]);
   
-  const mySubmittedTasks = useMemo(() => {
-    if (!user) return [];
-    return tasks.filter(task => {
-        return task.status === 'Pending Approval' && task.assigneeId === user.id;
-    });
-  }, [tasks, user]);
-
-
   const filteredTasks = useMemo(() => {
     if (!user) return [];
     return tasks.filter(task => {
@@ -97,15 +88,6 @@ export default function TasksPage() {
             <p className="text-muted-foreground">Drag and drop tasks to change their status.</p>
           </div>
           <div className="flex items-center gap-2">
-              {mySubmittedTasks.length > 0 && (
-                <Button variant="outline" onClick={() => setIsMyRequestsDialogOpen(true)}>
-                    <History className="mr-2 h-4 w-4" />
-                    My Requests
-                    <span className="ml-2 bg-primary text-primary-foreground h-6 w-6 rounded-full flex items-center justify-center text-xs">
-                        {mySubmittedTasks.length}
-                    </span>
-                </Button>
-              )}
               {tasksAwaitingMyApproval.length > 0 && (
                 <Button variant="outline" onClick={() => setIsPendingApprovalDialogOpen(true)}>
                     <Bell className="mr-2 h-4 w-4" />
@@ -137,24 +119,6 @@ export default function TasksPage() {
                     {tasksAwaitingMyApproval.length > 0 ? tasksAwaitingMyApproval.map(task => (
                         <TaskCard key={task.id} task={task} />
                     )) : <p className="text-muted-foreground text-center">No tasks are awaiting your approval.</p>}
-                </div>
-            </ScrollArea>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={isMyRequestsDialogOpen} onOpenChange={setIsMyRequestsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>My Pending Requests</DialogTitle>
-                <DialogDescription>
-                    These tasks are awaiting approval. You can view comments from the approver here.
-                </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="max-h-[60vh] p-1">
-                <div className="p-4 space-y-4">
-                    {mySubmittedTasks.length > 0 ? mySubmittedTasks.map(task => (
-                        <TaskCard key={task.id} task={task} />
-                    )) : <p className="text-muted-foreground text-center">You have no tasks awaiting approval.</p>}
                 </div>
             </ScrollArea>
         </DialogContent>

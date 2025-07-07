@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, FileCode } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, FileCode, History, Archive } from 'lucide-react';
 
 export default function Header() {
   const { user, logout, appName, appLogo } = useAppContext();
@@ -14,12 +14,14 @@ export default function Header() {
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
     if (pathname.startsWith('/tasks')) return 'Manage Tasks';
+    if (pathname.startsWith('/my-requests')) return 'My Requests';
     if (pathname.startsWith('/planner')) return 'Planner';
     if (pathname.startsWith('/performance')) return 'Performance';
     if (pathname.startsWith('/achievements')) return 'Achievements';
     if (pathname.startsWith('/reports')) return 'Reports';
     if (pathname.startsWith('/account')) return 'Employees';
     if (pathname.startsWith('/activity-tracker')) return 'Activity Tracker';
+    if (pathname.startsWith('/store-inventory')) return 'Store Inventory';
     if (pathname.startsWith('/file-explorer')) return 'File Explorer';
     return 'Task Management System';
   };
@@ -27,12 +29,14 @@ export default function Header() {
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
+    { href: '/my-requests', icon: History, label: 'My Requests' },
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
     { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
+    { href: '/store-inventory', icon: Archive, label: 'Store Inventory' },
   ];
 
   if (user?.role === 'Admin') {

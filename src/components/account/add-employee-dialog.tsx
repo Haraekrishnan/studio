@@ -30,7 +30,7 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
   const { users, roles, addUser } = useAppContext();
   const { toast } = useToast();
   
-  const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE'].includes(u.role));
+  const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(u.role));
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),

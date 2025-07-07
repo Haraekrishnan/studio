@@ -34,8 +34,10 @@ const roleHierarchy: Record<Role, number> = {
   'Team Member': 0,
   'Junior Supervisor': 1,
   'Junior HSE': 1,
+  'Assistant Store Incharge': 1,
   'Supervisor': 2,
   'HSE': 2,
+  'Store in Charge': 2,
   'Manager': 3,
   'Admin': 4,
 };

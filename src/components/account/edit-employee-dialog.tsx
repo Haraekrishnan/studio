@@ -32,7 +32,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
   const { user: currentUser, users, roles, updateUser } = useAppContext();
   const { toast } = useToast();
   
-  const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE'].includes(u.role));
+  const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(u.role));
   const canEditRoles = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
   const canEditEmail = currentUser?.role === 'Admin';
   const canChangePassword = currentUser?.role === 'Admin';
