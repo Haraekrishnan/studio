@@ -44,6 +44,7 @@ interface AppContextType {
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
+  createPpeRequestTask: (title: string, description: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -480,6 +481,27 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Updated app branding.`);
   };
 
+  const createPpeRequestTask = (title: string, description: string) => {
+    if (!user) return;
+
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title,
+      description,
+      status: 'Pending Approval',
+      priority: 'Medium', // Default priority for requests
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default due date, e.g., 7 days from now
+      assigneeId: user.id,
+      creatorId: user.id, // User is creating it for themselves
+      comments: [],
+      requiresAttachmentForCompletion: false,
+      approvalState: 'pending',
+      previousStatus: 'To Do', // The state before pending
+    };
+    setTasks(prevTasks => [newTask, ...prevTasks]);
+    recordAction(`Created PPE Request: "${title}"`);
+  };
+
   const value = {
     user,
     users,
@@ -518,6 +540,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addPlannerEventComment,
     addDailyPlannerComment,
     updateBranding,
+    createPpeRequestTask,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
