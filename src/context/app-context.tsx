@@ -49,6 +49,7 @@ interface AppContextType {
   updateInternalRequest: (updatedRequest: InternalRequest) => void;
   deleteInternalRequest: (requestId: string) => void;
   addInternalRequestComment: (requestId: string, commentText: string) => void;
+  createPpeRequestTask: (data: any) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -519,9 +520,26 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     const request = internalRequests.find(r => r.id === requestId);
     setInternalRequests(prev => prev.map(r => 
-      r.id === requestId ? { ...r, comments: [(r.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : r
+      r.id === requestId ? { ...r, comments: [...(r.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : r
     ));
     recordAction(`Commented on internal request ID: ${request?.id}`);
+  };
+
+  const createPpeRequestTask = (data: any) => {
+    if (!user) return;
+    const ppeTask = {
+      title: `PPE Request: ${data.employeeName}`,
+      description: `Plant: ${data.plant}, First Joining: ${format(data.firstJoiningDate, 'PPP')}, Rejoining: ${data.rejoiningDate ? format(data.rejoiningDate, 'PPP') : 'N/A'}`,
+      assigneeId: user.id,
+      dueDate: new Date().toISOString(),
+      priority: 'Medium' as Priority,
+      creatorId: user.id,
+      requiresAttachmentForCompletion: false,
+      status: 'Pending Approval' as TaskStatus,
+      approvalState: 'pending' as ApprovalState,
+      comments: [],
+    };
+    addTask(ppeTask);
   };
 
 
@@ -568,6 +586,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     updateInternalRequest,
     deleteInternalRequest,
     addInternalRequestComment,
+    createPpeRequestTask,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
