@@ -9,13 +9,14 @@ import { useMemo, useState, useEffect } from 'react';
 import type { User as UserType } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Layers, ShieldPlus } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Layers, ShieldPlus, FolderKanban } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AddEmployeeDialog from '@/components/account/add-employee-dialog';
 import EditEmployeeDialog from '@/components/account/edit-employee-dialog';
 import AddRoleDialog from '@/components/account/add-role-dialog';
 import RoleManagementTable from '@/components/account/role-management-table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import ProjectManagementTable from '@/components/account/ProjectManagementTable';
 
 export default function AccountPage() {
   const { user, users, updateUser, deleteUser, updateProfile, getVisibleUsers, appName, appLogo, updateBranding } = useAppContext();
@@ -58,6 +59,7 @@ export default function AccountPage() {
   const canManageUsers = user.role === 'Admin' || user.role === 'Manager';
   const canManageRoles = user.role === 'Admin';
   const canManageBranding = user.role === 'Admin';
+  const canManageProjects = user.role === 'Admin';
 
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,6 +198,18 @@ export default function AccountPage() {
             </CardFooter>
           </form>
         </Card>
+      )}
+
+      {canManageProjects && (
+          <Card>
+            <CardHeader>
+                <CardTitle>Project Management</CardTitle>
+                <CardDescription>Add, edit, or remove project locations.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProjectManagementTable />
+            </CardContent>
+          </Card>
       )}
 
       {canManageRoles && (

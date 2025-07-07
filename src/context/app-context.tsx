@@ -6,8 +6,6 @@ import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, App
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
-type Theme = 'light' | 'dark';
-
 interface AppContextType {
   user: User | null;
   users: User[];
@@ -23,7 +21,6 @@ interface AppContextType {
   activityLogs: ActivityLog[];
   appName: string;
   appLogo: string | null;
-  theme: Theme;
   internalRequests: InternalRequest[];
   pendingStoreRequestCount: number;
   myRequestUpdateCount: number;
@@ -42,6 +39,9 @@ interface AppContextType {
   addRole: (role: Omit<RoleDefinition, 'id' | 'isEditable'>) => void;
   updateRole: (updatedRole: RoleDefinition) => void;
   deleteRole: (roleId: string) => void;
+  addProject: (projectName: string) => void;
+  updateProject: (updatedProject: Project) => void;
+  deleteProject: (projectId: string) => void;
   updateProfile: (name: string, email: string, avatar: string) => void;
   requestTaskStatusChange: (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']) => boolean;
   approveTaskStatusChange: (taskId: string, commentText: string) => void;
@@ -55,7 +55,6 @@ interface AppContextType {
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
-  toggleTheme: () => void;
   addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester'>) => void;
   updateInternalRequest: (updatedRequest: InternalRequest) => void;
   deleteInternalRequest: (requestId: string) => void;
@@ -93,25 +92,14 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const [appName, setAppName] = useState('Aries Marine - Task Management System');
   const [appLogo, setAppLogo] = useState<string | null>(null);
-  const [theme, setTheme] = useState<Theme>('light');
   const router = useRouter();
   
   useEffect(() => {
     const storedAppName = localStorage.getItem('appName');
     const storedAppLogo = localStorage.getItem('appLogo');
-    const storedTheme = localStorage.getItem('theme') as Theme;
     if (storedAppName) setAppName(storedAppName);
     if (storedAppLogo) setAppLogo(storedAppLogo);
-    if (storedTheme) setTheme(storedTheme);
   }, []);
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => {
-        const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-        localStorage.setItem('theme', newTheme);
-        return newTheme;
-    });
-  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -450,6 +438,23 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Deleted role: ${roleName}`);
   };
 
+  const addProject = (projectName: string) => {
+    const newProject: Project = { id: `proj-${Date.now()}`, name: projectName };
+    setProjects(prev => [...prev, newProject]);
+    recordAction(`Added project: ${projectName}`);
+  };
+
+  const updateProject = (updatedProject: Project) => {
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+    recordAction(`Updated project: ${updatedProject.name}`);
+  };
+  
+  const deleteProject = (projectId: string) => {
+    const projectName = projects.find(p => p.id === projectId)?.name;
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+    recordAction(`Deleted project: ${projectName}`);
+  };
+
   const updateProfile = (name: string, email: string, avatar: string) => {
     if (user) {
         const updatedUser = {...user, name, email, avatar};
@@ -730,8 +735,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     activityLogs,
     appName,
     appLogo,
-    theme,
-    toggleTheme,
     internalRequests,
     pendingStoreRequestCount,
     myRequestUpdateCount,
@@ -750,6 +753,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addRole,
     updateRole,
     deleteRole,
+    addProject,
+    updateProject,
+    deleteProject,
     updateProfile,
     requestTaskStatusChange,
     approveTaskStatusChange,

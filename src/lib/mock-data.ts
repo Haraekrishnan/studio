@@ -264,7 +264,17 @@ export const INVENTORY_ITEMS: InventoryItem[] = [
 
 export const INVENTORY_TRANSFER_REQUESTS: InventoryTransferRequest[] = [];
 
-export const CERTIFICATE_REQUESTS: CertificateRequest[] = [];
+export const CERTIFICATE_REQUESTS: CertificateRequest[] = [
+  {
+    id: 'cert-req-1',
+    itemId: 'inv-1',
+    requesterId: '3', // Mujeeb
+    requestType: 'TP Certificate',
+    status: 'Pending',
+    date: new Date().toISOString(),
+    comments: [{ userId: '3', text: 'Need this for client audit next week.', date: new Date().toISOString() }],
+  }
+];
 
 export const PLANNER_EVENTS: PlannerEvent[] = [
     {

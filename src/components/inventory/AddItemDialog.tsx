@@ -1,4 +1,5 @@
 'use client';
+import { useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -38,8 +39,10 @@ interface AddItemDialogProps {
 const statusOptions: InventoryItemStatus[] = ['In Use', 'In Store', 'Damaged', 'Expired'];
 
 export default function AddItemDialog({ isOpen, setIsOpen }: AddItemDialogProps) {
-  const { projects, addInventoryItem } = useAppContext();
+  const { projects, addInventoryItem, inventoryItems } = useAppContext();
   const { toast } = useToast();
+
+  const itemNames = useMemo(() => Array.from(new Set(inventoryItems.map(item => item.name))), [inventoryItems]);
 
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
@@ -78,7 +81,10 @@ export default function AddItemDialog({ isOpen, setIsOpen }: AddItemDialogProps)
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <Label htmlFor="name">Item Name</Label>
-                    <Input id="name" {...form.register('name')} placeholder="e.g., Harness" />
+                    <Input id="name" {...form.register('name')} placeholder="e.g., Harness or select" list="item-names" />
+                    <datalist id="item-names">
+                        {itemNames.map(n => <option key={n} value={n} />)}
+                    </datalist>
                     {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
                 </div>
                 <div>

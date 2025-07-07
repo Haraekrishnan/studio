@@ -5,14 +5,22 @@ import './globals.css';
 import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
-function AppThemeWrapper({ children }: { children: React.ReactNode }) {
-  const { appName, theme } = useAppContext();
+function AppTitleUpdater({ children }: { children: React.ReactNode }) {
+  const { appName } = useAppContext();
   useEffect(() => {
     document.title = appName;
   }, [appName]);
 
+  return <>{children}</>;
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en" className={cn('h-full', theme)}>
+    <html lang="en" className='h-full'>
       <head>
         <meta name="description" content="A collaborative task management application." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -23,23 +31,13 @@ function AppThemeWrapper({ children }: { children: React.ReactNode }) {
         />
       </head>
       <body className="font-body antialiased h-full bg-background">
-          {children}
+          <AppContextProvider>
+            <AppTitleUpdater>
+              {children}
+              <Toaster />
+            </AppTitleUpdater>
+          </AppContextProvider>
       </body>
     </html>
-  );
-}
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <AppContextProvider>
-      <AppThemeWrapper>
-        {children}
-        <Toaster />
-      </AppThemeWrapper>
-    </AppContextProvider>
   );
 }
