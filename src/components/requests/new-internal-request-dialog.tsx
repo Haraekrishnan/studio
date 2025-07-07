@@ -16,6 +16,7 @@ const requestSchema = z.object({
   category: z.enum(['Site Items', 'RA Equipments', 'Stationery', 'Other']),
   description: z.string().min(1, 'Description is required'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
+  unit: z.string().min(1, 'Unit is required'),
   location: z.string().min(1, 'Project location/site is required'),
 });
 
@@ -37,6 +38,7 @@ export default function NewInternalRequestDialog({ isOpen, setIsOpen }: NewInter
     defaultValues: {
       description: '',
       quantity: 1,
+      unit: '',
       location: '',
     },
   });
@@ -94,11 +96,17 @@ export default function NewInternalRequestDialog({ isOpen, setIsOpen }: NewInter
                     <Input id="quantity" type="number" {...form.register('quantity')} />
                     {form.formState.errors.quantity && <p className="text-xs text-destructive">{form.formState.errors.quantity.message}</p>}
                 </div>
-                 <div>
-                    <Label htmlFor="location">Project / Site Location</Label>
-                    <Input id="location" {...form.register('location')} placeholder="e.g., Sharjah Site" />
-                    {form.formState.errors.location && <p className="text-xs text-destructive">{form.formState.errors.location.message}</p>}
+                <div>
+                    <Label htmlFor="unit">Unit</Label>
+                    <Input id="unit" {...form.register('unit')} placeholder="e.g. Nos, Pairs, Box" />
+                    {form.formState.errors.unit && <p className="text-xs text-destructive">{form.formState.errors.unit.message}</p>}
                 </div>
+            </div>
+            
+            <div>
+                <Label htmlFor="location">Project / Site Location</Label>
+                <Input id="location" {...form.register('location')} placeholder="e.g., Sharjah Site" />
+                {form.formState.errors.location && <p className="text-xs text-destructive">{form.formState.errors.location.message}</p>}
             </div>
           
           <DialogFooter>

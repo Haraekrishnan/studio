@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS } from '@/lib/mock-data';
@@ -18,6 +18,8 @@ interface AppContextType {
   appName: string;
   appLogo: string | null;
   internalRequests: InternalRequest[];
+  pendingStoreRequestCount: number;
+  myRequestUpdateCount: number;
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
@@ -45,10 +47,11 @@ interface AppContextType {
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
-  addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments'>) => void;
+  addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester'>) => void;
   updateInternalRequest: (updatedRequest: InternalRequest) => void;
   deleteInternalRequest: (requestId: string) => void;
   addInternalRequestComment: (requestId: string, commentText: string) => void;
+  markRequestAsViewed: (requestId: string) => void;
   createPpeRequestTask: (data: any) => void;
 }
 
@@ -487,7 +490,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Updated app branding.`);
   };
 
-  const addInternalRequest = (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments'>) => {
+  const addInternalRequest = (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester'>) => {
     if (!user) return;
     const newRequest: InternalRequest = {
       ...request,
@@ -496,13 +499,24 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       date: new Date().toISOString(),
       status: 'Pending',
       comments: [{ userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
+      isViewedByRequester: true,
     };
     setInternalRequests(prev => [newRequest, ...prev]);
     recordAction(`Created internal request for ${request.category}`);
   };
 
   const updateInternalRequest = (updatedRequest: InternalRequest) => {
-    setInternalRequests(prev => prev.map(r => r.id === updatedRequest.id ? updatedRequest : r));
+    setInternalRequests(prev => prev.map(r => {
+      if (r.id === updatedRequest.id) {
+        // If status changes FROM pending, mark as not viewed by requester
+        const originalRequest = internalRequests.find(req => req.id === updatedRequest.id);
+        if (originalRequest && originalRequest.status === 'Pending' && updatedRequest.status !== 'Pending') {
+          return { ...updatedRequest, isViewedByRequester: false };
+        }
+        return updatedRequest;
+      }
+      return r;
+    }));
     recordAction(`Updated internal request ID: ${updatedRequest.id}`);
   };
 
@@ -518,11 +532,23 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       text: commentText,
       date: new Date().toISOString(),
     };
+    setInternalRequests(prev => {
+        return prev.map(r => {
+            if (r.id === requestId) {
+                const updatedComments = r.comments ? [...r.comments, newComment] : [newComment];
+                return { ...r, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
+            }
+            return r;
+        });
+    });
     const request = internalRequests.find(r => r.id === requestId);
-    setInternalRequests(prev => prev.map(r => 
-      r.id === requestId ? { ...r, comments: [...(r.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : r
-    ));
     recordAction(`Commented on internal request ID: ${request?.id}`);
+  };
+
+  const markRequestAsViewed = (requestId: string) => {
+    setInternalRequests(prev => prev.map(r => 
+      r.id === requestId ? { ...r, isViewedByRequester: true } : r
+    ));
   };
 
   const createPpeRequestTask = (data: any) => {
@@ -542,6 +568,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addTask(ppeTask);
   };
 
+  const pendingStoreRequestCount = useMemo(() => {
+    return internalRequests.filter(r => r.status === 'Pending').length;
+  }, [internalRequests]);
+
+  const myRequestUpdateCount = useMemo(() => {
+    if (!user) return 0;
+    return internalRequests.filter(r => r.requesterId === user.id && !r.isViewedByRequester).length;
+  }, [internalRequests, user]);
+
 
   const value = {
     user,
@@ -555,6 +590,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     appName,
     appLogo,
     internalRequests,
+    pendingStoreRequestCount,
+    myRequestUpdateCount,
     login,
     logout,
     addTask,
@@ -586,6 +623,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     updateInternalRequest,
     deleteInternalRequest,
     addInternalRequestComment,
+    markRequestAsViewed,
     createPpeRequestTask,
   };
 

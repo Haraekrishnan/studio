@@ -1,3 +1,4 @@
+'use client';
 export const ALL_PERMISSIONS = [
   'manage_branding',
   'manage_users',
@@ -84,10 +85,12 @@ export interface InternalRequest {
   category: InternalRequestCategory;
   description: string;
   quantity: number;
+  unit: string;
   location: string; // Project location/site
   status: InternalRequestStatus;
   date: string; // ISO string
   comments?: Comment[];
+  isViewedByRequester: boolean;
 }
 
 export interface PlannerEvent {

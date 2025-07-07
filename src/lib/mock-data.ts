@@ -219,10 +219,12 @@ export const INTERNAL_REQUESTS: InternalRequest[] = [
         category: 'Stationery',
         description: 'A4 paper ream, 5 nos. Blue and black pens, 1 box each.',
         quantity: 7,
+        unit: 'Nos',
         location: 'Head Office',
         status: 'Pending',
         date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        comments: [{ userId: '19', text: 'Requesting stationery for the design team.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() }]
+        comments: [{ userId: '19', text: 'Requesting stationery for the design team.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() }],
+        isViewedByRequester: true
     },
     {
         id: 'ireq-2',
@@ -230,13 +232,15 @@ export const INTERNAL_REQUESTS: InternalRequest[] = [
         category: 'RA Equipments',
         description: 'Need 2 new multimeters (Fluke brand preferred).',
         quantity: 2,
+        unit: 'Pairs',
         location: 'Sharjah Site',
         status: 'Approved',
         date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
         comments: [
             { userId: '12', text: 'The old ones are malfunctioning.', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
-            { userId: '1', text: 'Approved. Please collect from the main store.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
-        ]
+            { userId: '22', text: 'Approved. Please collect from the main store.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+        ],
+        isViewedByRequester: true
     }
 ];
 

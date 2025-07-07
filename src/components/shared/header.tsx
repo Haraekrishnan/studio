@@ -5,11 +5,15 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Bell } from 'lucide-react';
+import { Badge } from '../ui/badge';
 
 export default function Header() {
-  const { user, logout, appName, appLogo } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount } = useAppContext();
   const pathname = usePathname();
+
+  const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
+  const notificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
 
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -28,7 +32,7 @@ export default function Header() {
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
-    { href: '/my-requests', icon: History, label: 'My Requests' },
+    { href: '/my-requests', icon: History, label: 'My Requests', notification: notificationCount },
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
     { href: '/achievements', icon: Award, label: 'Achievements' },
@@ -74,6 +78,11 @@ export default function Header() {
                                 <Link href={item.href} className="flex items-center gap-3">
                                 <item.icon className="h-5 w-5" />
                                 <span>{item.label}</span>
+                                {item.notification && item.notification > 0 && (
+                                    <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                                        {item.notification}
+                                    </Badge>
+                                )}
                                 </Link>
                             </Button>
                         </SheetClose>

@@ -11,19 +11,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Send } from 'lucide-react';
+import { Send, Trash2 } from 'lucide-react';
 import type { InternalRequest, InternalRequestCategory, InternalRequestStatus, Comment } from '@/lib/types';
-import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
-import { cn } from '@/lib/utils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const requestSchema = z.object({
   category: z.enum(['Site Items', 'RA Equipments', 'Stationery', 'Other']),
   description: z.string().min(1, 'Description is required'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
+  unit: z.string().min(1, 'Unit is required'),
   location: z.string().min(1, 'Location is required'),
 });
 
@@ -47,12 +47,15 @@ const statusOptions: InternalRequestStatus[] = ['Pending', 'Approved', 'On Hold'
 const categoryOptions: InternalRequestCategory[] = ['Site Items', 'RA Equipments', 'Stationery', 'Other'];
 
 export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }: EditInternalRequestDialogProps) {
-  const { user, users, updateInternalRequest, addInternalRequestComment } = useAppContext();
+  const { user, users, updateInternalRequest, addInternalRequestComment, deleteInternalRequest, markRequestAsViewed } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
 
   const requester = useMemo(() => users.find(u => u.id === request.requesterId), [users, request.requesterId]);
   const isApprover = useMemo(() => user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge', [user]);
+  
+  const isFinalStatus = request.status === 'Approved' || request.status === 'Allotted';
+  const canEdit = isApprover && (!isFinalStatus || user?.role === 'Admin');
 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestSchema),
@@ -64,10 +67,14 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
         category: request.category,
         description: request.description,
         quantity: request.quantity,
+        unit: request.unit,
         location: request.location,
       });
+      if(user?.id === request.requesterId) {
+        markRequestAsViewed(request.id);
+      }
     }
-  }, [request, isOpen, form]);
+  }, [request, isOpen, form, user, markRequestAsViewed]);
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user) return;
@@ -86,8 +93,14 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
     toast({ title: 'Request Updated', description: `Status changed to ${newStatus}.` });
   };
   
+  const handleDelete = () => {
+    deleteInternalRequest(request.id);
+    toast({ variant: 'destructive', title: 'Request Deleted', description: 'The request has been permanently deleted.' });
+    setIsOpen(false);
+  }
+
   const onSubmit = (data: RequestFormValues) => {
-    if (!isApprover) return;
+    if (!canEdit) return;
     updateInternalRequest({ ...request, ...data });
     toast({ title: 'Request Updated', description: `The request details have been updated.` });
   };
@@ -114,7 +127,7 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
               <Controller
                 control={form.control} name="category"
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!isApprover}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!canEdit}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {categoryOptions.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
@@ -126,21 +139,47 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
             
             <div>
               <Label>Description</Label>
-              <Textarea {...form.register('description')} rows={5} disabled={!isApprover}/>
+              <Textarea {...form.register('description')} rows={5} disabled={!canEdit}/>
             </div>
 
             <div className='grid grid-cols-2 gap-4'>
                 <div>
                     <Label>Quantity</Label>
-                    <Input type="number" {...form.register('quantity')} disabled={!isApprover}/>
+                    <Input type="number" {...form.register('quantity')} disabled={!canEdit}/>
+                </div>
+                <div>
+                    <Label>Unit</Label>
+                    <Input {...form.register('unit')} disabled={!canEdit}/>
                 </div>
                 <div>
                     <Label>Project / Site</Label>
-                    <Input {...form.register('location')} disabled={!isApprover}/>
+                    <Input {...form.register('location')} disabled={!canEdit}/>
                 </div>
             </div>
 
-            {isApprover && <Button type="submit" className="w-full">Save Changes</Button>}
+            {canEdit && <Button type="submit" className="w-full">Save Changes</Button>}
+            {user?.role === 'Admin' && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="w-full">
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Request
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete this request.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+
           </form>
 
           <div className="flex flex-col gap-4">
@@ -165,7 +204,7 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
               <Textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Add a comment..." className="pr-12"/>
               <Button type="button" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleAddComment} disabled={!newComment.trim()}><Send className="h-4 w-4" /></Button>
             </div>
-            {isApprover && (
+            {canEdit && (
               <div className="space-y-2">
                 <Label>Change Status</Label>
                 <div className="flex flex-wrap gap-2">

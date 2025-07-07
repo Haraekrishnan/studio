@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
-import { Eye } from 'lucide-react';
+import { Eye, CircleAlert } from 'lucide-react';
 import EditInternalRequestDialog from './edit-internal-request-dialog';
+import { cn } from '@/lib/utils';
 
 interface InternalRequestTableProps {
   requests: InternalRequest[];
@@ -24,7 +25,7 @@ const statusVariant: { [key in InternalRequestStatus]: "default" | "secondary" |
 }
 
 export default function InternalRequestTable({ requests }: InternalRequestTableProps) {
-    const { users } = useAppContext();
+    const { user, users } = useAppContext();
     const [selectedRequest, setSelectedRequest] = useState<InternalRequest | null>(null);
 
     const handleViewClick = (request: InternalRequest) => {
@@ -55,8 +56,9 @@ export default function InternalRequestTable({ requests }: InternalRequestTableP
                 <TableBody>
                 {requests.map(request => {
                     const requester = users.find(u => u.id === request.requesterId);
+                    const isUnreadUpdate = user?.id === request.requesterId && !request.isViewedByRequester;
                     return (
-                    <TableRow key={request.id}>
+                    <TableRow key={request.id} className={cn(isUnreadUpdate && 'bg-blue-50 dark:bg-blue-900/20')}>
                         <TableCell>
                         <div className="flex items-center gap-2">
                             <Avatar className="h-7 w-7">
@@ -70,7 +72,10 @@ export default function InternalRequestTable({ requests }: InternalRequestTableP
                         <TableCell>{request.location}</TableCell>
                         <TableCell>{format(new Date(request.date), 'MMM dd, yyyy')}</TableCell>
                         <TableCell>
-                            <Badge variant={statusVariant[request.status]}>{request.status}</Badge>
+                           <div className='flex items-center gap-2'>
+                             <Badge variant={statusVariant[request.status]}>{request.status}</Badge>
+                             {isUnreadUpdate && <CircleAlert className="h-4 w-4 text-primary" title="Status has been updated"/>}
+                           </div>
                         </TableCell>
                         <TableCell className="text-right">
                             <Button variant="outline" size="sm" onClick={() => handleViewClick(request)}>
