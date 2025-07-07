@@ -75,9 +75,10 @@ export interface Task {
   };
 
   // PPE Request fields
-  department?: string;
-  items?: string;
-  remarks?: string;
+  firstJoiningDate?: string;
+  rejoiningDate?: string;
+  employeeName?: string;
+  plant?: string;
 }
 
 export interface PlannerEvent {

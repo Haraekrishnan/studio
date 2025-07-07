@@ -187,7 +187,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     return null;
   }
   
-  const isPpeRequest = task.items || task.department;
+  const isPpeRequest = !!task.plant;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -278,20 +278,26 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
               {isPpeRequest && (
                   <div className="space-y-4 pt-4 border-t">
                       <h3 className="font-semibold">PPE Request Details</h3>
-                      <div>
-                          <Label>Department</Label>
-                          <p className="text-sm p-2 bg-muted rounded-md">{task.department}</p>
-                      </div>
-                      <div>
-                          <Label>Items Required</Label>
-                          <p className="text-sm p-2 bg-muted rounded-md whitespace-pre-wrap">{task.items}</p>
-                      </div>
-                       {task.remarks && (
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label>Remarks</Label>
-                          <p className="text-sm p-2 bg-muted rounded-md whitespace-pre-wrap">{task.remarks}</p>
+                            <Label>Employee Name</Label>
+                            <p className="text-sm p-2 bg-muted rounded-md">{task.employeeName}</p>
                         </div>
-                       )}
+                        <div>
+                            <Label>Plant</Label>
+                            <p className="text-sm p-2 bg-muted rounded-md">{task.plant}</p>
+                        </div>
+                        <div>
+                            <Label>First Joining Date</Label>
+                            <p className="text-sm p-2 bg-muted rounded-md">{task.firstJoiningDate ? format(new Date(task.firstJoiningDate), 'PPP') : 'N/A'}</p>
+                        </div>
+                        {task.rejoiningDate && (
+                            <div>
+                                <Label>Rejoining Date</Label>
+                                <p className="text-sm p-2 bg-muted rounded-md">{format(new Date(task.rejoiningDate), 'PPP')}</p>
+                            </div>
+                        )}
+                      </div>
                   </div>
               )}
             </div>

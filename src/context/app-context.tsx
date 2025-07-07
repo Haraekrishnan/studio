@@ -7,13 +7,10 @@ import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNE
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
 interface PpeRequestData {
-    title: string;
-    description: string;
-    department: string;
-    items: string;
-    expectedDate: Date;
-    priority: Priority;
-    remarks: string;
+    employeeName: string;
+    firstJoiningDate: Date;
+    rejoiningDate?: Date;
+    plant: string;
 }
 
 interface AppContextType {
@@ -496,23 +493,24 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
     const newTask: Task = {
       id: `task-${Date.now()}`,
-      title: data.title,
-      description: data.description,
+      title: `PPE Request: ${data.employeeName}`,
+      description: `Request for PPE for ${data.employeeName} at ${data.plant}.`,
       status: 'Pending Approval',
-      priority: data.priority,
-      dueDate: data.expectedDate.toISOString(),
+      priority: 'Medium',
+      dueDate: new Date().toISOString(),
       assigneeId: user.id,
-      creatorId: user.id, // User is creating it for themselves
+      creatorId: user.id,
       comments: [],
       requiresAttachmentForCompletion: false,
       approvalState: 'pending',
-      previousStatus: 'To Do', // The state before pending
-      department: data.department,
-      items: data.items,
-      remarks: data.remarks,
+      previousStatus: 'To Do',
+      employeeName: data.employeeName,
+      firstJoiningDate: data.firstJoiningDate.toISOString(),
+      rejoiningDate: data.rejoiningDate?.toISOString(),
+      plant: data.plant,
     };
     setTasks(prevTasks => [newTask, ...prevTasks]);
-    recordAction(`Created PPE Request: "${data.title}"`);
+    recordAction(`Created PPE Request for: "${data.employeeName}"`);
   };
 
   const value = {
