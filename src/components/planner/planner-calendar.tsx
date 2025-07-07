@@ -84,7 +84,7 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
                     Daily Notepad
                 </CardTitle>
                 <CardDescription>
-                    {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a date'}
+                    {selectedDate ? format(selectedDate, 'dd-MM-yyyy') : 'Select a date'}
                 </CardDescription>
             </CardHeader>
             <CardContent className="h-[calc(100%-120px)]">

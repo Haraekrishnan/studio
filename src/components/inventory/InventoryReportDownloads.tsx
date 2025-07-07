@@ -37,9 +37,9 @@ export default function InventoryReportDownloads({ items, isSummary = false, sum
         'Chest Croll No': item.chestCrollNo || 'N/A',
         'Status': item.status,
         'Location': item.location,
-        'Inspection Date': format(new Date(item.inspectionDate), 'yyyy-MM-dd'),
-        'Inspection Due Date': format(new Date(item.inspectionDueDate), 'yyyy-MM-dd'),
-        'TP Inspection Due Date': format(new Date(item.tpInspectionDueDate), 'yyyy-MM-dd'),
+        'Inspection Date': format(new Date(item.inspectionDate), 'dd-MM-yyyy'),
+        'Inspection Due Date': format(new Date(item.inspectionDueDate), 'dd-MM-yyyy'),
+        'TP Inspection Due Date': format(new Date(item.tpInspectionDueDate), 'dd-MM-yyyy'),
       }));
        worksheet = XLSX.utils.json_to_sheet(dataToExport);
     }
@@ -75,8 +75,8 @@ export default function InventoryReportDownloads({ items, isSummary = false, sum
           item.serialNumber,
           item.status,
           item.location,
-          format(new Date(item.inspectionDueDate), 'yyyy-MM-dd'),
-          format(new Date(item.tpInspectionDueDate), 'yyyy-MM-dd'),
+          format(new Date(item.inspectionDueDate), 'dd-MM-yyyy'),
+          format(new Date(item.tpInspectionDueDate), 'dd-MM-yyyy'),
         ]),
         startY: 20,
       });

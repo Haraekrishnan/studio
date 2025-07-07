@@ -59,7 +59,7 @@ export default function ActivityLogTable({ logs }: ActivityLogTableProps) {
                   </div>
                 </div>
               </TableCell>
-              <TableCell>{format(new Date(log.loginTime), 'MMM dd, yyyy')}</TableCell>
+              <TableCell>{format(new Date(log.loginTime), 'dd-MM-yyyy')}</TableCell>
               <TableCell>{format(new Date(log.loginTime), 'p')}</TableCell>
               <TableCell>{log.logoutTime ? format(new Date(log.logoutTime), 'p') : <Badge variant="secondary">Active</Badge>}</TableCell>
               <TableCell>{formatDuration(log.duration)}</TableCell>

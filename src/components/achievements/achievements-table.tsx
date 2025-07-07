@@ -140,7 +140,7 @@ export default function AchievementsTable({ data, type }: AchievementsTableProps
                     <p className="text-sm text-muted-foreground">{item.description}</p>
                 </TableCell>
                 <TableCell>{awardedBy?.name || 'System'}</TableCell>
-                <TableCell>{format(new Date(item.date), 'MMM dd, yyyy')}</TableCell>
+                <TableCell>{format(new Date(item.date), 'dd-MM-yyyy')}</TableCell>
                 <TableCell className="text-right font-semibold">{item.points}</TableCell>
                 <TableCell className="text-right">
                     {canManage && (

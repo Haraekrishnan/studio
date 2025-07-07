@@ -79,7 +79,7 @@ export default function Header() {
                                 <Link href={item.href} className="flex items-center gap-3">
                                 <item.icon className="h-5 w-5" />
                                 <span>{item.label}</span>
-                                {item.notification && item.notification > 0 && (
+                                {item.notification > 0 && (
                                     <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
                                         {item.notification}
                                     </Badge>

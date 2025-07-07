@@ -70,7 +70,7 @@ export default function InternalRequestTable({ requests }: InternalRequestTableP
                         </TableCell>
                         <TableCell>{request.category}</TableCell>
                         <TableCell>{request.location}</TableCell>
-                        <TableCell>{format(new Date(request.date), 'MMM dd, yyyy')}</TableCell>
+                        <TableCell>{format(new Date(request.date), 'dd-MM-yyyy')}</TableCell>
                         <TableCell>
                            <div className='flex items-center gap-2'>
                              <Badge variant={statusVariant[request.status]}>{request.status}</Badge>

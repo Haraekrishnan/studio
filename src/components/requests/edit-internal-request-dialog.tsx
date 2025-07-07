@@ -113,7 +113,7 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
             <div>
               <DialogTitle>Request Details</DialogTitle>
               <DialogDescription>
-                Requested by {requester?.name} on {format(new Date(request.date), 'PPP')}
+                Requested by {requester?.name} on {format(new Date(request.date), 'dd-MM-yyyy')}
               </DialogDescription>
             </div>
             <Badge variant={statusVariant[request.status]} className="capitalize">{request.status}</Badge>

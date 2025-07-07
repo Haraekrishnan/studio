@@ -68,7 +68,7 @@ export default function ReportResultsTable({ tasks }: ReportResultsTableProps) {
                 <TableCell>
                   <Badge variant={priorityVariant[task.priority]}>{task.priority}</Badge>
                 </TableCell>
-                <TableCell>{format(new Date(task.dueDate), 'MMM dd, yyyy')}</TableCell>
+                <TableCell>{format(new Date(task.dueDate), 'dd-MM-yyyy')}</TableCell>
               </TableRow>
             )
           })}

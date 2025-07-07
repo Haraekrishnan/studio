@@ -91,7 +91,7 @@ export default function TaskCard({ task }: TaskCardProps) {
           <p className="line-clamp-2">{task.description}</p>
           <div className="flex items-center gap-2 mt-4">
               <Calendar className={cn("h-4 w-4", isOverdue && "text-destructive")} />
-              <span className={cn(isOverdue && "text-destructive font-semibold")}>{format(new Date(task.dueDate), 'MMM d, yyyy')} ({formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })})</span>
+              <span className={cn(isOverdue && "text-destructive font-semibold")}>{format(new Date(task.dueDate), 'dd-MM-yyyy')} ({formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })})</span>
           </div>
           <div className="flex items-center gap-2 mt-2">
               <Flag className="h-4 w-4" />

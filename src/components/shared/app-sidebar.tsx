@@ -31,10 +31,6 @@ export function AppSidebar() {
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
   ];
 
-  if (user?.role === 'Admin') {
-    // navItems.push({ href: '/file-explorer', icon: FileCode, label: 'File Explorer' });
-  }
-
   return (
     <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-border h-full">
       <div className="p-4">
@@ -61,7 +57,7 @@ export function AppSidebar() {
                 <Link href={item.href} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                  {item.notification && item.notification > 0 && (
+                  {item.notification > 0 && (
                     <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
                       {item.notification}
                     </Badge>

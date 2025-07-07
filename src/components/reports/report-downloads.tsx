@@ -19,7 +19,7 @@ export default function ReportDownloads({ tasks }: ReportDownloadsProps) {
       'Assignee': users.find(u => u.id === task.assigneeId)?.name || 'N/A',
       'Status': task.status,
       'Priority': task.priority,
-      'Due Date': format(new Date(task.dueDate), 'yyyy-MM-dd'),
+      'Due Date': format(new Date(task.dueDate), 'dd-MM-yyyy'),
       'Description': task.description,
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -45,7 +45,7 @@ export default function ReportDownloads({ tasks }: ReportDownloadsProps) {
         users.find(u => u.id === task.assigneeId)?.name || 'N/A',
         task.status,
         task.priority,
-        format(new Date(task.dueDate), 'yyyy-MM-dd'),
+        format(new Date(task.dueDate), 'dd-MM-yyyy'),
       ]),
       startY: 20,
     });
