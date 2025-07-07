@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS } from '@/lib/mock-data';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
 type Theme = 'light' | 'dark';
@@ -16,6 +16,7 @@ interface AppContextType {
   projects: Project[];
   inventoryItems: InventoryItem[];
   inventoryTransferRequests: InventoryTransferRequest[];
+  certificateRequests: CertificateRequest[];
   plannerEvents: PlannerEvent[];
   dailyPlannerComments: DailyPlannerComment[];
   achievements: Achievement[];
@@ -26,6 +27,7 @@ interface AppContextType {
   internalRequests: InternalRequest[];
   pendingStoreRequestCount: number;
   myRequestUpdateCount: number;
+  pendingCertificateRequestCount: number;
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
@@ -67,6 +69,9 @@ interface AppContextType {
   requestInventoryTransfer: (items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => void;
   approveInventoryTransfer: (requestId: string, comment: string) => void;
   rejectInventoryTransfer: (requestId: string, comment: string) => void;
+  addCertificateRequest: (itemId: string, requestType: CertificateRequestType, comment: string) => void;
+  addCertificateRequestComment: (requestId: string, commentText: string) => void;
+  fulfillCertificateRequest: (requestId: string, commentText: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -79,6 +84,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(PROJECTS);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(INVENTORY_ITEMS);
   const [inventoryTransferRequests, setInventoryTransferRequests] = useState<InventoryTransferRequest[]>(INVENTORY_TRANSFER_REQUESTS);
+  const [certificateRequests, setCertificateRequests] = useState<CertificateRequest[]>(CERTIFICATE_REQUESTS);
   const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
   const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>(DAILY_PLANNER_COMMENTS);
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
@@ -662,6 +668,38 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setInventoryTransferRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Rejected' } : req));
   };
 
+  const addCertificateRequest = (itemId: string, requestType: CertificateRequestType, comment: string) => {
+    if (!user) return;
+    const newRequest: CertificateRequest = {
+      id: `cert-req-${Date.now()}`,
+      itemId,
+      requesterId: user.id,
+      requestType,
+      status: 'Pending',
+      date: new Date().toISOString(),
+      comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
+    };
+    setCertificateRequests(prev => [newRequest, ...prev]);
+  };
+
+  const addCertificateRequestComment = (requestId: string, commentText: string) => {
+    if (!user) return;
+    const newComment: Comment = { userId: user.id, text: commentText, date: new Date().toISOString() };
+    setCertificateRequests(prev => prev.map(req => 
+      req.id === requestId 
+      ? { ...req, comments: [...req.comments, newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } 
+      : req
+    ));
+  };
+
+  const fulfillCertificateRequest = (requestId: string, commentText: string) => {
+    addCertificateRequestComment(requestId, `Request fulfilled: ${commentText}`);
+    setCertificateRequests(prev => prev.map(req => 
+      req.id === requestId 
+      ? { ...req, status: 'Fulfilled' } 
+      : req
+    ));
+  };
 
   const pendingStoreRequestCount = useMemo(() => {
     return internalRequests.filter(r => r.status === 'Pending').length;
@@ -671,6 +709,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (!user) return 0;
     return internalRequests.filter(r => r.requesterId === user.id && !r.isViewedByRequester).length;
   }, [internalRequests, user]);
+  
+  const pendingCertificateRequestCount = useMemo(() => {
+    return certificateRequests.filter(r => r.status === 'Pending').length;
+  }, [certificateRequests]);
 
 
   const value = {
@@ -681,6 +723,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     projects,
     inventoryItems,
     inventoryTransferRequests,
+    certificateRequests,
     plannerEvents,
     dailyPlannerComments,
     achievements,
@@ -692,6 +735,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     internalRequests,
     pendingStoreRequestCount,
     myRequestUpdateCount,
+    pendingCertificateRequestCount,
     login,
     logout,
     addTask,
@@ -732,6 +776,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     requestInventoryTransfer,
     approveInventoryTransfer,
     rejectInventoryTransfer,
+    addCertificateRequest,
+    addCertificateRequestComment,
+    fulfillCertificateRequest,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

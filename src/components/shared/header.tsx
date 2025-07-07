@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Bell, Sun, Moon } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Sun, Moon } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 export default function Header() {
