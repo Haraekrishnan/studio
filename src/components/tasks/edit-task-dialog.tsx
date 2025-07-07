@@ -187,8 +187,6 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     return null;
   }
   
-  const isPpeRequest = !!task.plant;
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-4xl grid-rows-[auto,1fr,auto]">
@@ -274,32 +272,6 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                 
                 <Button type="submit" className="w-full">Save Changes</Button>
               </form>
-
-              {isPpeRequest && (
-                  <div className="space-y-4 pt-4 border-t">
-                      <h3 className="font-semibold">PPE Request Details</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Employee Name</Label>
-                            <p className="text-sm p-2 bg-muted rounded-md">{task.employeeName}</p>
-                        </div>
-                        <div>
-                            <Label>Plant</Label>
-                            <p className="text-sm p-2 bg-muted rounded-md">{task.plant}</p>
-                        </div>
-                        <div>
-                            <Label>First Joining Date</Label>
-                            <p className="text-sm p-2 bg-muted rounded-md">{task.firstJoiningDate ? format(new Date(task.firstJoiningDate), 'PPP') : 'N/A'}</p>
-                        </div>
-                        {task.rejoiningDate && (
-                            <div>
-                                <Label>Rejoining Date</Label>
-                                <p className="text-sm p-2 bg-muted rounded-md">{format(new Date(task.rejoiningDate), 'PPP')}</p>
-                            </div>
-                        )}
-                      </div>
-                  </div>
-              )}
             </div>
 
             <div className="flex flex-col gap-4">

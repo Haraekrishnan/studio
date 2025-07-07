@@ -6,13 +6,6 @@ import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, App
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
-interface PpeRequestData {
-    employeeName: string;
-    firstJoiningDate: Date;
-    rejoiningDate?: Date;
-    plant: string;
-}
-
 interface AppContextType {
   user: User | null;
   users: User[];
@@ -51,7 +44,6 @@ interface AppContextType {
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
-  createPpeRequestTask: (data: PpeRequestData) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -488,31 +480,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Updated app branding.`);
   };
 
-  const createPpeRequestTask = (data: PpeRequestData) => {
-    if (!user) return;
-
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      title: `PPE Request: ${data.employeeName}`,
-      description: `Request for PPE for ${data.employeeName} at ${data.plant}.`,
-      status: 'Pending Approval',
-      priority: 'Medium',
-      dueDate: new Date().toISOString(),
-      assigneeId: user.id,
-      creatorId: user.id,
-      comments: [],
-      requiresAttachmentForCompletion: false,
-      approvalState: 'pending',
-      previousStatus: 'To Do',
-      employeeName: data.employeeName,
-      firstJoiningDate: data.firstJoiningDate.toISOString(),
-      rejoiningDate: data.rejoiningDate?.toISOString(),
-      plant: data.plant,
-    };
-    setTasks(prevTasks => [newTask, ...prevTasks]);
-    recordAction(`Created PPE Request for: "${data.employeeName}"`);
-  };
-
   const value = {
     user,
     users,
@@ -551,7 +518,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addPlannerEventComment,
     addDailyPlannerComment,
     updateBranding,
-    createPpeRequestTask,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

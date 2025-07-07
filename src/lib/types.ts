@@ -73,12 +73,6 @@ export interface Task {
     name: string;
     data?: string; // base64 data for new uploads
   };
-
-  // PPE Request fields
-  firstJoiningDate?: string;
-  rejoiningDate?: string;
-  employeeName?: string;
-  plant?: string;
 }
 
 export interface PlannerEvent {
