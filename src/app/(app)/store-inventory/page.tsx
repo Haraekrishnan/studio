@@ -13,7 +13,7 @@ import InventoryFilters from '@/components/inventory/InventoryFilters';
 import type { InventoryItem, InventoryTransferRequest } from '@/lib/types';
 
 export default function StoreInventoryPage() {
-    const { user, inventoryItems, projects, inventoryTransferRequests, approveInventoryTransfer, rejectInventoryTransfer, addInventoryTransferComment } = useAppContext();
+    const { user, roles, inventoryItems, projects, inventoryTransferRequests, approveInventoryTransfer, rejectInventoryTransfer, addInventoryTransferComment } = useAppContext();
     const [isAddItemOpen, setIsAddItemOpen] = useState(false);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -26,7 +26,11 @@ export default function StoreInventoryPage() {
         search: ''
     });
 
-    const canManageInventory = user?.permissions.includes('manage_inventory');
+    const canManageInventory = useMemo(() => {
+        if (!user) return false;
+        const userRole = roles.find(r => r.name === user.role);
+        return userRole?.permissions.includes('manage_inventory') ?? false;
+    }, [user, roles]);
 
     const filteredItems = useMemo(() => {
         return inventoryItems.filter(item => {
@@ -110,7 +114,7 @@ export default function StoreInventoryPage() {
                     <CardContent>
                         <div className="space-y-4">
                             {pendingTransfers.map(req => {
-                                const requester = user;
+                                const requester = users.find(u => u.id === req.requesterId);
                                 const fromProject = projects.find(p => p.id === req.fromProjectId);
                                 const toProject = projects.find(p => p.id === req.toProjectId);
                                 return (
