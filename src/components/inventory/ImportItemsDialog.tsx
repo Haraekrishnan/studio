@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { FileWarning, Upload } from 'lucide-react';
-import type { InventoryItem } from '@/lib/types';
 
 interface ImportItemsDialogProps {
   isOpen: boolean;
@@ -43,7 +42,7 @@ export default function ImportItemsDialog({ isOpen, setIsOpen }: ImportItemsDial
                 
                 addMultipleInventoryItems(json);
 
-                toast({ title: 'Import Successful', description: `${json.length} items have been imported.` });
+                toast({ title: 'Import Successful', description: `${json.length} items have been imported/updated.` });
                 setIsOpen(false);
             } catch (error) {
                 console.error("Import error:", error);
@@ -57,19 +56,27 @@ export default function ImportItemsDialog({ isOpen, setIsOpen }: ImportItemsDial
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
             <DialogHeader>
-            <DialogTitle>Import Items from Excel</DialogTitle>
-            <DialogDescription>Upload an Excel file to add multiple items to the inventory at once.</DialogDescription>
+                <DialogTitle>Import Items from Excel</DialogTitle>
+                <DialogDescription>
+                    Upload an Excel file to add or update multiple items. Items with existing serial numbers will be updated; new serial numbers will be added.
+                </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
                 <Alert>
                     <FileWarning className="h-4 w-4" />
                     <AlertTitle>File Format Instructions</AlertTitle>
                     <AlertDescription>
-                        <ul className="list-disc list-inside text-xs">
-                            <li>The first row must be the header row.</li>
-                            <li>Required columns: `name`, `serialNumber`, `status`, `projectId`, `inspectionDate`, `inspectionDueDate`, `tpInspectionDueDate`.</li>
-                            <li>Optional columns: `chestCrollNo`, `ariesId`.</li>
-                            <li>Dates must be in a valid format (e.g., YYYY-MM-DD).</li>
+                        <p className="mb-2">The first row of your Excel sheet must be the header row with the following columns in order:</p>
+                        <ul className="list-disc list-inside text-xs space-y-1">
+                            <li><b>A1:</b> ITEM NAME (e.g., Harness)</li>
+                            <li><b>B1:</b> SERIAL NUMBER (Unique identifier)</li>
+                            <li><b>C1:</b> CHEST CROLL NO (Optional, for Harnesses)</li>
+                            <li><b>D1:</b> ARIES ID (Optional, for Harnesses)</li>
+                            <li><b>E1:</b> INSPECTION DATE (Format: YYYY-MM-DD)</li>
+                            <li><b>F1:</b> INSPECTION DUE DATE (Format: YYYY-MM-DD)</li>
+                            <li><b>G1:</b> TP INSPECTION DUE DATE (Format: YYYY-MM-DD)</li>
+                            <li><b>H1:</b> STATUS (In Use, In Store, Damaged, Expired)</li>
+                            <li><b>I1:</b> PROJECT (Exact name, e.g., "SEZ", "DTA")</li>
                         </ul>
                     </AlertDescription>
                 </Alert>

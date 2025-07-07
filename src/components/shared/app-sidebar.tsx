@@ -10,23 +10,25 @@ import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount } = useAppContext();
   const pathname = usePathname();
 
   const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
-  const notificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
+  
+  const myRequestsNotificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
+  const inventoryNotificationCount = isApprover ? pendingCertificateRequestCount : 0;
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
-    { href: '/my-requests', icon: History, label: 'My Requests', notification: notificationCount },
+    { href: '/my-requests', icon: History, label: 'My Requests', notification: myRequestsNotificationCount },
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
     { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
-    { href: '/store-inventory', icon: Archive, label: 'Store Inventory' },
+    { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
   ];
 
   return (
@@ -55,13 +57,11 @@ export function AppSidebar() {
                 <Link href={item.href} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                  {item.notification && item.notification > 0 ? (
+                  {item.notification && item.notification > 0 && (
                     <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
                       {item.notification}
                     </Badge>
-                  ) : isApprover && item.href === '/my-requests' && item.notification === 0 ? (
-                    <Bell className="ml-auto h-5 w-5 text-muted-foreground/50"/>
-                  ) : null }
+                  )}
                 </Link>
               </Button>
             </li>

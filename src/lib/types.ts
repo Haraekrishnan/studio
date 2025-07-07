@@ -161,3 +161,16 @@ export interface InventoryTransferRequest {
     status: InventoryTransferStatus;
     comments: Comment[];
 }
+
+export type CertificateRequestStatus = 'Pending' | 'Fulfilled';
+export type CertificateRequestType = 'TP Certificate' | 'Inspection Certificate';
+
+export interface CertificateRequest {
+    id: string;
+    itemId: string;
+    requesterId: string;
+    requestType: CertificateRequestType;
+    status: CertificateRequestStatus;
+    date: string; // ISO Date
+    comments: Comment[];
+}

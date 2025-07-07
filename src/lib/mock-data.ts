@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest } from './types';
 import { sub, add, format } from 'date-fns';
 import { ALL_PERMISSIONS } from './types';
 
@@ -263,6 +263,8 @@ export const INVENTORY_ITEMS: InventoryItem[] = [
 ];
 
 export const INVENTORY_TRANSFER_REQUESTS: InventoryTransferRequest[] = [];
+
+export const CERTIFICATE_REQUESTS: CertificateRequest[] = [];
 
 export const PLANNER_EVENTS: PlannerEvent[] = [
     {

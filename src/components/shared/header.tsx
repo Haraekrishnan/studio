@@ -9,11 +9,12 @@ import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText,
 import { Badge } from '../ui/badge';
 
 export default function Header() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, theme, toggleTheme } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, theme, toggleTheme } = useAppContext();
   const pathname = usePathname();
 
   const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
-  const notificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
+  const myRequestsNotificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
+  const inventoryNotificationCount = isApprover ? pendingCertificateRequestCount : 0;
 
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -32,14 +33,14 @@ export default function Header() {
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
-    { href: '/my-requests', icon: History, label: 'My Requests', notification: notificationCount },
+    { href: '/my-requests', icon: History, label: 'My Requests', notification: myRequestsNotificationCount },
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
     { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
-    { href: '/store-inventory', icon: Archive, label: 'Store Inventory' },
+    { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
   ];
 
   return (

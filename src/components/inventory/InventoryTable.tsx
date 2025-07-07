@@ -6,13 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, ShieldQuestion } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import EditItemDialog from './EditItemDialog';
 import { format, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import InventoryReportDownloads from './InventoryReportDownloads';
+import RequestCertificateDialog from './RequestCertificateDialog';
 
 interface InventoryTableProps {
   items: InventoryItem[];
@@ -22,6 +23,7 @@ export default function InventoryTable({ items }: InventoryTableProps) {
     const { user, roles, deleteInventoryItem } = useAppContext();
     const { toast } = useToast();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isCertRequestOpen, setIsCertRequestOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
     const canManage = useMemo(() => {
@@ -33,6 +35,11 @@ export default function InventoryTable({ items }: InventoryTableProps) {
     const handleEditClick = (item: InventoryItem) => {
         setSelectedItem(item);
         setIsEditDialogOpen(true);
+    };
+    
+    const handleRequestClick = (item: InventoryItem) => {
+        setSelectedItem(item);
+        setIsCertRequestOpen(true);
     };
 
     const handleDelete = (itemId: string) => {
@@ -52,12 +59,11 @@ export default function InventoryTable({ items }: InventoryTableProps) {
                     <TableRow>
                         <TableHead>Item Name</TableHead>
                         <TableHead>Serial No.</TableHead>
-                        <TableHead>Aries ID</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead>Insp. Due</TableHead>
                         <TableHead>TP Insp. Due</TableHead>
-                        {canManage && <TableHead className="text-right">Actions</TableHead>}
+                        <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -65,19 +71,18 @@ export default function InventoryTable({ items }: InventoryTableProps) {
                         <TableRow key={item.id}>
                             <TableCell className="font-medium">{item.name}</TableCell>
                             <TableCell>{item.serialNumber}</TableCell>
-                            <TableCell>{item.ariesId || 'N/A'}</TableCell>
                             <TableCell><Badge variant={item.status === 'Damaged' || item.status === 'Expired' ? 'destructive' : 'secondary'}>{item.status}</Badge></TableCell>
                             <TableCell>{item.location}</TableCell>
                             <TableCell className={cn(isDatePast(item.inspectionDueDate) && 'text-destructive font-bold')}>{format(new Date(item.inspectionDueDate), 'dd-MM-yyyy')}</TableCell>
                             <TableCell className={cn(isDatePast(item.tpInspectionDueDate) && 'text-destructive font-bold')}>{format(new Date(item.tpInspectionDueDate), 'dd-MM-yyyy')}</TableCell>
-                            {canManage && (
-                                <TableCell className="text-right">
+                            <TableCell className="text-right">
                                     <AlertDialog>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Menu</span><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onSelect={() => handleEditClick(item)}><Edit className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
-                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem></AlertDialogTrigger>
+                                                {canManage && <DropdownMenuItem onSelect={() => handleEditClick(item)}><Edit className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>}
+                                                <DropdownMenuItem onSelect={() => handleRequestClick(item)}><ShieldQuestion className="mr-2 h-4 w-4"/>Request Certificate</DropdownMenuItem>
+                                                {canManage && <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem></AlertDialogTrigger>}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                         <AlertDialogContent>
@@ -85,13 +90,13 @@ export default function InventoryTable({ items }: InventoryTableProps) {
                                             <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction></AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
-                                </TableCell>
-                            )}
+                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
-            {selectedItem && <EditItemDialog isOpen={isEditDialogOpen} setIsOpen={setIsEditDialogOpen} item={selectedItem} />}
+            {selectedItem && canManage && <EditItemDialog isOpen={isEditDialogOpen} setIsOpen={setIsEditDialogOpen} item={selectedItem} />}
+            {selectedItem && <RequestCertificateDialog isOpen={isCertRequestOpen} setIsOpen={setIsCertRequestOpen} item={selectedItem} />}
         </>
     );
 }
