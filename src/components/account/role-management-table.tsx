@@ -56,7 +56,7 @@ export default function RoleManagementTable() {
                                 </div>
                             </TableCell>
                             <TableCell className="text-right">
-                                {user?.role === 'Admin' || role.isEditable ? (
+                                {(user?.role === 'Admin') ? (
                                     <AlertDialog>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -92,7 +92,7 @@ export default function RoleManagementTable() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 ) : (
-                                    <span className="text-xs text-muted-foreground">System Role</span>
+                                    <span className="text-xs text-muted-foreground">Locked</span>
                                 )}
                             </TableCell>
                         </TableRow>

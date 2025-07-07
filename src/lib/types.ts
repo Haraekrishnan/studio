@@ -13,6 +13,7 @@ export const ALL_PERMISSIONS = [
   'view_subordinates_activity',
   'view_all_users',
   'view_subordinates_users',
+  'manage_inventory',
 ] as const;
 export type Permission = (typeof ALL_PERMISSIONS)[number];
 
@@ -36,20 +37,26 @@ export type ApprovalState = 'none' | 'pending' | 'approved' | 'returned';
 export type InternalRequestStatus = 'Pending' | 'Approved' | 'On Hold' | 'Allotted' | 'Rejected';
 export type InternalRequestCategory = 'Site Items' | 'RA Equipments' | 'Stationery' | 'Other';
 
+export interface Project {
+    id: string;
+    name: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  password?: string; // Password is optional on the type for security reasons
+  password?: string;
   role: Role;
-  avatar: string; // URL to avatar image
-  supervisorId?: string; // ID of this user's supervisor
+  avatar: string;
+  supervisorId?: string;
+  projectId?: string;
 }
 
 export interface Comment {
     userId: string;
     text: string;
-    date: string; // ISO string
+    date: string;
 }
 
 export interface Task {
@@ -58,24 +65,18 @@ export interface Task {
   description: string;
   status: TaskStatus;
   priority: Priority;
-  dueDate: string; // ISO string date
+  dueDate: string;
   assigneeId: string;
   creatorId: string;
   comments?: Comment[];
-  
-  // New workflow fields
   requiresAttachmentForCompletion: boolean;
-  
-  // Approval flow
   previousStatus?: TaskStatus;
   pendingStatus?: TaskStatus; 
   approvalState: ApprovalState;
-  
-  // Attachment
   attachment?: {
     url: string;
     name: string;
-    data?: string; // base64 data for new uploads
+    data?: string;
   };
 }
 
@@ -86,9 +87,9 @@ export interface InternalRequest {
   description: string;
   quantity: number;
   unit: string;
-  location: string; // Project location/site
+  location: string;
   status: InternalRequestStatus;
-  date: string; // ISO string
+  date: string;
   comments?: Comment[];
   isViewedByRequester: boolean;
 }
@@ -97,18 +98,16 @@ export interface PlannerEvent {
   id: string;
   title: string;
   description: string;
-  date: string; // ISO string, represents the start date for recurring events
+  date: string;
   frequency: Frequency;
   creatorId: string;
-  userId: string; // The user this event is for
+  userId: string;
   comments?: Comment[];
 }
 
 export interface DailyPlannerComment {
   id: string;
-  // The user whose planner this comment belongs to
   plannerUserId: string; 
-  // The specific day the comment is for, in 'yyyy-MM-dd' format
   day: string; 
   comments: Comment[];
 }
@@ -120,7 +119,7 @@ export interface Achievement {
   title: string;
   description: string;
   points: number;
-  date: string; // ISO string
+  date: string;
   awardedById?: string;
   status: 'pending' | 'approved';
 }
@@ -128,8 +127,37 @@ export interface Achievement {
 export interface ActivityLog {
   id: string;
   userId: string;
-  loginTime: string; // ISO
-  logoutTime: string | null; // ISO or null if active
-  duration: number | null; // in minutes
+  loginTime: string;
+  logoutTime: string | null;
+  duration: number | null;
   actions: string[];
+}
+
+export type InventoryItemStatus = 'In Use' | 'In Store' | 'Damaged' | 'Expired';
+
+export interface InventoryItem {
+    id: string;
+    name: string;
+    serialNumber: string;
+    chestCrollNo?: string;
+    ariesId?: string;
+    status: InventoryItemStatus;
+    inspectionDate: string; // ISO Date
+    inspectionDueDate: string; // ISO Date
+    tpInspectionDueDate: string; // ISO Date
+    location: string; // Project Name
+    projectId: string;
+}
+
+export type InventoryTransferStatus = 'Pending' | 'Approved' | 'Rejected';
+
+export interface InventoryTransferRequest {
+    id: string;
+    items: InventoryItem[];
+    fromProjectId: string;
+    toProjectId: string;
+    requesterId: string;
+    date: string; // ISO Date
+    status: InventoryTransferStatus;
+    comments: Comment[];
 }

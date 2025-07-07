@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +17,7 @@ const employeeSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.string().min(1, 'Role is required') as z.ZodType<Role>,
   supervisorId: z.string().optional(),
+  projectId: z.string().min(1, 'Project is required'),
 });
 
 type EmployeeFormValues = z.infer<typeof employeeSchema>;
@@ -27,7 +28,7 @@ interface AddEmployeeDialogProps {
 }
 
 export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDialogProps) {
-  const { users, roles, addUser } = useAppContext();
+  const { users, roles, projects, addUser } = useAppContext();
   const { toast } = useToast();
   
   const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(u.role));
@@ -40,6 +41,7 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
       password: '',
       role: 'Team Member',
       supervisorId: '',
+      projectId: '',
     },
   });
 
@@ -103,6 +105,7 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
                 </Select>
               )}
             />
+             {form.formState.errors.role && <p className="text-xs text-destructive">{form.formState.errors.role.message}</p>}
           </div>
 
           <div>
@@ -120,6 +123,23 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
                 </Select>
               )}
             />
+          </div>
+
+           <div>
+            <Label>Project / Location</Label>
+            <Controller
+              control={form.control}
+              name="projectId"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <SelectTrigger><SelectValue placeholder="Assign a project" /></SelectTrigger>
+                  <SelectContent>
+                      {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {form.formState.errors.projectId && <p className="text-xs text-destructive">{form.formState.errors.projectId.message}</p>}
           </div>
           
           <DialogFooter>

@@ -5,11 +5,11 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Bell } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Bell, Sun, Moon } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 export default function Header() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, theme, toggleTheme } = useAppContext();
   const pathname = usePathname();
 
   const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
@@ -112,6 +112,11 @@ export default function Header() {
         <h1 className="text-2xl font-bold text-sidebar-foreground hidden md:block">{getPageTitle()}</h1>
       </div>
       <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={toggleTheme} title="Toggle Theme">
+            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+        </Button>
         <Avatar className="hidden md:block">
             <AvatarImage src={user?.avatar} alt={user?.name} />
             <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>

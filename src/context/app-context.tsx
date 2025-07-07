@@ -2,21 +2,27 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS } from '@/lib/mock-data';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
+
+type Theme = 'light' | 'dark';
 
 interface AppContextType {
   user: User | null;
   users: User[];
   roles: RoleDefinition[];
   tasks: Task[];
+  projects: Project[];
+  inventoryItems: InventoryItem[];
+  inventoryTransferRequests: InventoryTransferRequest[];
   plannerEvents: PlannerEvent[];
   dailyPlannerComments: DailyPlannerComment[];
   achievements: Achievement[];
   activityLogs: ActivityLog[];
   appName: string;
   appLogo: string | null;
+  theme: Theme;
   internalRequests: InternalRequest[];
   pendingStoreRequestCount: number;
   myRequestUpdateCount: number;
@@ -47,12 +53,20 @@ interface AppContextType {
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
+  toggleTheme: () => void;
   addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester'>) => void;
   updateInternalRequest: (updatedRequest: InternalRequest) => void;
   deleteInternalRequest: (requestId: string) => void;
   addInternalRequestComment: (requestId: string, commentText: string) => void;
   markRequestAsViewed: (requestId: string) => void;
   createPpeRequestTask: (data: any) => void;
+  addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
+  updateInventoryItem: (item: InventoryItem) => void;
+  deleteInventoryItem: (itemId: string) => void;
+  addMultipleInventoryItems: (items: any[]) => void;
+  requestInventoryTransfer: (items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => void;
+  approveInventoryTransfer: (requestId: string, comment: string) => void;
+  rejectInventoryTransfer: (requestId: string, comment: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -62,6 +76,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>(USERS);
   const [roles, setRoles] = useState<RoleDefinition[]>(MOCK_ROLES);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
+  const [projects, setProjects] = useState<Project[]>(PROJECTS);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(INVENTORY_ITEMS);
+  const [inventoryTransferRequests, setInventoryTransferRequests] = useState<InventoryTransferRequest[]>(INVENTORY_TRANSFER_REQUESTS);
   const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
   const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>(DAILY_PLANNER_COMMENTS);
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
@@ -70,18 +87,25 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const [appName, setAppName] = useState('Aries Marine - Task Management System');
   const [appLogo, setAppLogo] = useState<string | null>(null);
+  const [theme, setTheme] = useState<Theme>('light');
   const router = useRouter();
   
   useEffect(() => {
     const storedAppName = localStorage.getItem('appName');
     const storedAppLogo = localStorage.getItem('appLogo');
-    if (storedAppName) {
-      setAppName(storedAppName);
-    }
-    if (storedAppLogo) {
-      setAppLogo(storedAppLogo);
-    }
+    const storedTheme = localStorage.getItem('theme') as Theme;
+    if (storedAppName) setAppName(storedAppName);
+    if (storedAppLogo) setAppLogo(storedAppLogo);
+    if (storedTheme) setTheme(storedTheme);
   }, []);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => {
+        const newTheme = prevTheme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('theme', newTheme);
+        return newTheme;
+    });
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -395,7 +419,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const deleteUser = (userId: string) => {
     const userName = users.find(u => u.id === userId)?.name;
     setUsers(prev => prev.filter(u => u.id !== userId));
-    // Also consider un-assigning tasks or re-assigning them
     setTasks(prev => prev.map(t => t.assigneeId === userId ? {...t, assigneeId: ''} : t));
     recordAction(`Deleted user: ${userName}`);
   };
@@ -508,9 +531,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const updateInternalRequest = (updatedRequest: InternalRequest) => {
     setInternalRequests(prev => prev.map(r => {
       if (r.id === updatedRequest.id) {
-        // If status changes FROM pending, mark as not viewed by requester
         const originalRequest = internalRequests.find(req => req.id === updatedRequest.id);
-        if (originalRequest && originalRequest.status === 'Pending' && updatedRequest.status !== 'Pending') {
+        const isApproverAction = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
+        
+        if (originalRequest && originalRequest.status !== updatedRequest.status && isApproverAction) {
           return { ...updatedRequest, isViewedByRequester: false };
         }
         return updatedRequest;
@@ -535,8 +559,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setInternalRequests(prev => {
         return prev.map(r => {
             if (r.id === requestId) {
-                const updatedComments = r.comments ? [...r.comments, newComment] : [newComment];
-                return { ...r, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
+                const updatedComments = r.comments ? [newComment, ...r.comments] : [newComment];
+                return { ...r, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), isViewedByRequester: user.id !== r.requesterId ? false : true };
             }
             return r;
         });
@@ -568,6 +592,77 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addTask(ppeTask);
   };
 
+  const addInventoryItem = (item: Omit<InventoryItem, 'id'>) => {
+    const newItem: InventoryItem = { ...item, id: `inv-${Date.now()}` };
+    setInventoryItems(prev => [newItem, ...prev]);
+  };
+  
+  const updateInventoryItem = (item: InventoryItem) => {
+    setInventoryItems(prev => prev.map(i => i.id === item.id ? item : i));
+  };
+
+  const deleteInventoryItem = (itemId: string) => {
+    setInventoryItems(prev => prev.filter(i => i.id !== itemId));
+  };
+  
+  const addMultipleInventoryItems = (items: any[]) => {
+      const newItems: InventoryItem[] = items.map((item, index) => ({
+        id: `inv-import-${Date.now()}-${index}`,
+        name: item.name,
+        serialNumber: item.serialNumber,
+        chestCrollNo: item.chestCrollNo,
+        ariesId: item.ariesId,
+        status: item.status,
+        projectId: projects.find(p => p.name.toLowerCase() === item.location?.toLowerCase())?.id || '',
+        location: item.location,
+        inspectionDate: new Date(item.inspectionDate).toISOString(),
+        inspectionDueDate: new Date(item.inspectionDueDate).toISOString(),
+        tpInspectionDueDate: new Date(item.tpInspectionDueDate).toISOString(),
+      }));
+      setInventoryItems(prev => [...prev, ...newItems]);
+  };
+  
+  const requestInventoryTransfer = (items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => {
+    if (!user) return;
+    const newRequest: InventoryTransferRequest = {
+        id: `inv-tr-${Date.now()}`,
+        items,
+        fromProjectId,
+        toProjectId,
+        requesterId: user.id,
+        date: new Date().toISOString(),
+        status: 'Pending',
+        comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
+    };
+    setInventoryTransferRequests(prev => [newRequest, ...prev]);
+  };
+
+  const addInventoryTransferComment = (requestId: string, commentText: string) => {
+    if (!user) return;
+     const newComment: Comment = { userId: user.id, text: commentText, date: new Date().toISOString() };
+     setInventoryTransferRequests(prev => prev.map(req => req.id === requestId ? { ...req, comments: [...req.comments, newComment] } : req));
+  };
+
+  const approveInventoryTransfer = (requestId: string, comment: string) => {
+    addInventoryTransferComment(requestId, comment);
+    setInventoryTransferRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Approved' } : req));
+    const request = inventoryTransferRequests.find(r => r.id === requestId);
+    if(request) {
+        setInventoryItems(prevItems => prevItems.map(item => {
+            if (request.items.some(i => i.id === item.id)) {
+                return { ...item, projectId: request.toProjectId, location: projects.find(p => p.id === request.toProjectId)?.name || item.location };
+            }
+            return item;
+        }));
+    }
+  };
+  
+  const rejectInventoryTransfer = (requestId: string, comment: string) => {
+    addInventoryTransferComment(requestId, comment);
+    setInventoryTransferRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Rejected' } : req));
+  };
+
+
   const pendingStoreRequestCount = useMemo(() => {
     return internalRequests.filter(r => r.status === 'Pending').length;
   }, [internalRequests]);
@@ -583,12 +678,17 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     users,
     roles,
     tasks,
+    projects,
+    inventoryItems,
+    inventoryTransferRequests,
     plannerEvents,
     dailyPlannerComments,
     achievements,
     activityLogs,
     appName,
     appLogo,
+    theme,
+    toggleTheme,
     internalRequests,
     pendingStoreRequestCount,
     myRequestUpdateCount,
@@ -625,6 +725,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addInternalRequestComment,
     markRequestAsViewed,
     createPpeRequestTask,
+    addInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    addMultipleInventoryItems,
+    requestInventoryTransfer,
+    approveInventoryTransfer,
+    rejectInventoryTransfer,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

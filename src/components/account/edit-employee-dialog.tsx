@@ -17,6 +17,7 @@ const employeeSchema = z.object({
   email: z.string().email('Invalid email address'),
   role: z.string().min(1, "Role is required") as z.ZodType<Role>,
   supervisorId: z.string().optional(),
+  projectId: z.string().min(1, 'Project is required'),
   password: z.string().min(6, 'Password must be at least 6 characters').optional().or(z.literal('')),
 });
 
@@ -29,7 +30,7 @@ interface EditEmployeeDialogProps {
 }
 
 export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit }: EditEmployeeDialogProps) {
-  const { user: currentUser, users, roles, updateUser } = useAppContext();
+  const { user: currentUser, users, roles, projects, updateUser } = useAppContext();
   const { toast } = useToast();
   
   const supervisors = users.filter(u => ['Admin', 'Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(u.role));
@@ -48,6 +49,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
         email: userToEdit.email,
         role: userToEdit.role,
         supervisorId: userToEdit.supervisorId || 'unassigned',
+        projectId: userToEdit.projectId,
         password: '',
       });
     }
@@ -60,6 +62,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
     finalUserData.email = data.email;
     finalUserData.role = data.role;
     finalUserData.supervisorId = (data.supervisorId === 'unassigned' || !data.supervisorId) ? undefined : data.supervisorId;
+    finalUserData.projectId = data.projectId;
 
     if (data.password) {
         finalUserData.password = data.password;
@@ -132,6 +135,23 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
                 </Select>
               )}
             />
+          </div>
+
+          <div>
+            <Label>Project / Location</Label>
+            <Controller
+              control={form.control}
+              name="projectId"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <SelectTrigger><SelectValue placeholder="Assign a project" /></SelectTrigger>
+                  <SelectContent>
+                      {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {form.formState.errors.projectId && <p className="text-xs text-destructive">{form.formState.errors.projectId.message}</p>}
           </div>
           
           <DialogFooter>
