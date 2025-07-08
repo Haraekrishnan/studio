@@ -11,8 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Send, Trash2 } from 'lucide-react';
-import type { InternalRequest, InternalRequestCategory, InternalRequestStatus, Comment } from '@/lib/types';
+import { Send, Trash2, Forward } from 'lucide-react';
+import type { InternalRequest, InternalRequestCategory, InternalRequestStatus, Comment, Role } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Label } from '../ui/label';
@@ -47,15 +47,37 @@ const statusOptions: InternalRequestStatus[] = ['Pending', 'Approved', 'On Hold'
 const categoryOptions: InternalRequestCategory[] = ['Site Items', 'RA Equipments', 'Stationery', 'Other'];
 
 export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }: EditInternalRequestDialogProps) {
-  const { user, users, updateInternalRequest, addInternalRequestComment, deleteInternalRequest, markRequestAsViewed } = useAppContext();
+  const { user, users, updateInternalRequest, addInternalRequestComment, deleteInternalRequest, markRequestAsViewed, forwardInternalRequest } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
+  const [forwardComment, setForwardComment] = useState('');
+  const [isForwarding, setIsForwarding] = useState(false);
 
   const requester = useMemo(() => users.find(u => u.id === request.requesterId), [users, request.requesterId]);
-  const isApprover = useMemo(() => user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge', [user]);
   
-  const isFinalStatus = request.status === 'Approved' || request.status === 'Allotted';
-  const canEdit = isApprover && (!isFinalStatus || user?.role === 'Admin');
+  const isStorePersonnel = useMemo(() => user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge', [user]);
+  const isAdminOrManager = useMemo(() => user?.role === 'Admin' || user?.role === 'Manager', [user]);
+  const isAdmin = useMemo(() => user?.role === 'Admin', [user]);
+  
+  const isFinalStatus = useMemo(() => ['Approved', 'Allotted', 'Rejected'].includes(request.status), [request.status]);
+  const isForwarded = useMemo(() => !!request.forwardedTo, [request.forwardedTo]);
+
+  const canEditFields = useMemo(() => {
+    if (isAdmin) return true;
+    if (isFinalStatus) return false;
+    
+    if (isForwarded) {
+      return isAdminOrManager;
+    }
+    
+    return isStorePersonnel;
+  }, [isAdmin, isFinalStatus, isForwarded, isAdminOrManager, isStorePersonnel]);
+  
+  const canChangeStatus = canEditFields;
+  
+  const canForward = useMemo(() => isStorePersonnel && !isForwarded && !isFinalStatus, [isStorePersonnel, isForwarded, isFinalStatus]);
+  
+  const canDelete = isAdmin;
 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestSchema),
@@ -83,6 +105,7 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
   };
 
   const handleStatusChange = (newStatus: InternalRequestStatus) => {
+    if (!canChangeStatus) return;
     if (!newComment.trim()) {
         toast({ variant: 'destructive', title: 'Comment Required', description: 'Please add a comment explaining the status change.' });
         return;
@@ -93,6 +116,18 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
     toast({ title: 'Request Updated', description: `Status changed to ${newStatus}.` });
   };
   
+  const handleForwardRequest = () => {
+    if (!forwardComment.trim()) {
+        toast({ variant: 'destructive', title: 'Comment Required', description: 'Please provide a reason for forwarding.' });
+        return;
+    }
+    forwardInternalRequest(request.id, 'Manager', forwardComment);
+    toast({ title: 'Request Forwarded', description: 'The request has been sent to management.' });
+    setIsForwarding(false);
+    setForwardComment('');
+    setIsOpen(false);
+  };
+  
   const handleDelete = () => {
     deleteInternalRequest(request.id);
     toast({ variant: 'destructive', title: 'Request Deleted', description: 'The request has been permanently deleted.' });
@@ -100,7 +135,7 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
   }
 
   const onSubmit = (data: RequestFormValues) => {
-    if (!canEdit) return;
+    if (!canEditFields) return;
     updateInternalRequest({ ...request, ...data });
     toast({ title: 'Request Updated', description: `The request details have been updated.` });
   };
@@ -116,71 +151,82 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
                 Requested by {requester?.name} on {format(new Date(request.date), 'dd-MM-yyyy')}
               </DialogDescription>
             </div>
-            <Badge variant={statusVariant[request.status]} className="capitalize">{request.status}</Badge>
+            <div className='flex flex-col items-end gap-1'>
+                <Badge variant={statusVariant[request.status]} className="capitalize">{request.status}</Badge>
+                {isForwarded && <Badge variant="outline" className="capitalize">Forwarded</Badge>}
+            </div>
           </div>
         </DialogHeader>
 
         <div className="grid md:grid-cols-2 gap-8 py-4 overflow-y-auto max-h-[70vh]">
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pr-4 border-r">
-            <div>
-              <Label>Category</Label>
-              <Controller
-                control={form.control} name="category"
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!canEdit}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {categoryOptions.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+          <div className="space-y-4 pr-4 border-r">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div>
+                <Label>Category</Label>
+                <Controller
+                  control={form.control} name="category"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!canEditFields}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {categoryOptions.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              
+              <div>
+                <Label>Description</Label>
+                <Textarea {...form.register('description')} rows={5} disabled={!canEditFields}/>
+              </div>
+
+              <div className='grid grid-cols-2 gap-4'>
+                  <div>
+                      <Label>Quantity</Label>
+                      <Input type="number" {...form.register('quantity')} disabled={!canEditFields}/>
+                  </div>
+                  <div>
+                      <Label>Unit</Label>
+                      <Input {...form.register('unit')} disabled={!canEditFields}/>
+                  </div>
+                  <div>
+                      <Label>Project / Site</Label>
+                      <Input {...form.register('location')} disabled={!canEditFields}/>
+                  </div>
+              </div>
+
+              {canEditFields && <Button type="submit" className="w-full">Save Changes</Button>}
+            </form>
+            <div className="space-y-2 mt-4">
+                {canForward && (
+                    <Button type="button" variant="outline" className="w-full" onClick={() => setIsForwarding(true)}>
+                        <Forward className="mr-2 h-4 w-4" /> Forward to Management
+                    </Button>
                 )}
-              />
+                {canDelete && (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete Request
+                    </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete this request.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                )}
             </div>
-            
-            <div>
-              <Label>Description</Label>
-              <Textarea {...form.register('description')} rows={5} disabled={!canEdit}/>
-            </div>
-
-            <div className='grid grid-cols-2 gap-4'>
-                <div>
-                    <Label>Quantity</Label>
-                    <Input type="number" {...form.register('quantity')} disabled={!canEdit}/>
-                </div>
-                <div>
-                    <Label>Unit</Label>
-                    <Input {...form.register('unit')} disabled={!canEdit}/>
-                </div>
-                <div>
-                    <Label>Project / Site</Label>
-                    <Input {...form.register('location')} disabled={!canEdit}/>
-                </div>
-            </div>
-
-            {canEdit && <Button type="submit" className="w-full">Save Changes</Button>}
-            {user?.role === 'Admin' && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="w-full">
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete Request
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete this request.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-
-          </form>
+          </div>
 
           <div className="flex flex-col gap-4">
             <h3 className="text-lg font-semibold">Comments & Activity</h3>
@@ -204,7 +250,7 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
               <Textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Add a comment..." className="pr-12"/>
               <Button type="button" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleAddComment} disabled={!newComment.trim()}><Send className="h-4 w-4" /></Button>
             </div>
-            {canEdit && (
+            {canChangeStatus && (
               <div className="space-y-2">
                 <Label>Change Status</Label>
                 <div className="flex flex-wrap gap-2">
@@ -222,6 +268,25 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
           <Button variant="outline" onClick={() => setIsOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
+      <AlertDialog open={isForwarding} onOpenChange={setIsForwarding}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Forward Request to Management?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. You will no longer be able to edit or change the status of this request. Please provide a reason for forwarding.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <Textarea 
+                placeholder="Reason for forwarding..."
+                value={forwardComment}
+                onChange={(e) => setForwardComment(e.target.value)}
+            />
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleForwardRequest}>Forward</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </Dialog>
   );
 }

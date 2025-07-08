@@ -19,11 +19,23 @@ export default function MyRequestsPage() {
 
     const visibleRequests = useMemo(() => {
         if (!user) return [];
-        if (isApprover) {
-            return internalRequests.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        }
-        return internalRequests.filter(req => req.requesterId === user.id).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [internalRequests, user, isApprover]);
+        
+        const isStorePersonnel = ['Store in Charge', 'Assistant Store Incharge'].includes(user.role);
+        const isAdminOrManager = ['Admin', 'Manager'].includes(user.role);
+
+        return internalRequests.filter(req => {
+            // Requester can always see their own requests
+            if (req.requesterId === user.id) return true;
+            
+            // Admins and Managers see all requests
+            if (isAdminOrManager) return true;
+            
+            // Store personnel see requests that are NOT forwarded to management
+            if (isStorePersonnel && !req.forwardedTo) return true;
+            
+            return false;
+        }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [internalRequests, user]);
 
     return (
         <div className="space-y-8">

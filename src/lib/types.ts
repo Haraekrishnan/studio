@@ -99,6 +99,7 @@ export interface InternalRequest {
   date: string;
   comments?: Comment[];
   isViewedByRequester: boolean;
+  forwardedTo?: Role;
 }
 
 export interface PlannerEvent {

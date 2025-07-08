@@ -64,6 +64,7 @@ interface AppContextType {
   deleteInternalRequest: (requestId: string) => void;
   addInternalRequestComment: (requestId: string, commentText: string) => void;
   markRequestAsViewed: (requestId: string) => void;
+  forwardInternalRequest: (requestId: string, role: Role, comment: string) => void;
   createPpeRequestTask: (data: any) => void;
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
   updateInventoryItem: (item: InventoryItem) => void;
@@ -607,7 +608,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Updated app branding.`);
   };
 
-  const addInternalRequest = (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester'>) => {
+  const addInternalRequest = (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'forwardedTo'>) => {
     if (!user) return;
     const newRequest: InternalRequest = {
       ...request,
@@ -667,6 +668,31 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setInternalRequests(prev => prev.map(r => 
       r.id === requestId ? { ...r, isViewedByRequester: true } : r
     ));
+  };
+  
+  const forwardInternalRequest = (requestId: string, role: Role, comment: string) => {
+    if (!user) return;
+    const request = internalRequests.find(r => r.id === requestId);
+    if (!request) return;
+
+    const forwardComment: Comment = {
+      userId: user.id,
+      text: `Request forwarded to ${role}: ${comment}`,
+      date: new Date().toISOString(),
+    };
+    
+    setInternalRequests(prev => prev.map(r => {
+      if (r.id === requestId) {
+        return {
+          ...r,
+          forwardedTo: role,
+          comments: [forwardComment, ...(r.comments || [])],
+          isViewedByRequester: false,
+        };
+      }
+      return r;
+    }));
+    recordAction(`Forwarded internal request ID: ${requestId}`);
   };
 
   const createPpeRequestTask = (data: any) => {
@@ -866,8 +892,18 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   };
 
   const pendingStoreRequestCount = useMemo(() => {
-    return internalRequests.filter(r => r.status === 'Pending').length;
-  }, [internalRequests]);
+    if (!user) return 0;
+    const isStorePersonnel = ['Store in Charge', 'Assistant Store Incharge'].includes(user.role);
+    const isAdminOrManager = ['Admin', 'Manager'].includes(user.role);
+
+    if (isAdminOrManager) {
+        return internalRequests.filter(r => r.status === 'Pending' && r.forwardedTo).length;
+    }
+    if (isStorePersonnel) {
+        return internalRequests.filter(r => r.status === 'Pending' && !r.forwardedTo).length;
+    }
+    return 0;
+  }, [internalRequests, user]);
 
   const myRequestUpdateCount = useMemo(() => {
     if (!user) return 0;
@@ -990,6 +1026,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     deleteInternalRequest,
     addInternalRequestComment,
     markRequestAsViewed,
+    forwardInternalRequest,
     createPpeRequestTask,
     addInventoryItem,
     updateInventoryItem,
