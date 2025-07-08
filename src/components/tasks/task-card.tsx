@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Flag, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, Flag, MoreVertical, Pencil, Trash2, CheckCircle } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -27,7 +27,7 @@ export default function TaskCard({ task }: TaskCardProps) {
 
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: task.id,
-    disabled: user?.id !== task.assigneeId, // Only assignee can drag
+    disabled: user?.id !== task.assigneeId || task.status === 'Completed', // Only assignee can drag, not completed tasks
   });
 
   const style = {
@@ -62,7 +62,7 @@ export default function TaskCard({ task }: TaskCardProps) {
           className="shadow-md hover:shadow-lg transition-shadow bg-background/80 touch-none"
       >
         <div className="p-4 flex items-start justify-between">
-            <div {...attributes} {...listeners} className={cn("flex-grow", user?.id === task.assigneeId ? "cursor-grab active:cursor-grabbing" : "cursor-default")}>
+            <div {...attributes} {...listeners} className={cn("flex-grow", user?.id === task.assigneeId && task.status !== 'Completed' ? "cursor-grab active:cursor-grabbing" : "cursor-default")}>
                 <CardTitle className="text-base font-semibold leading-tight">{task.title}</CardTitle>
             </div>
             <DropdownMenu>
@@ -90,8 +90,17 @@ export default function TaskCard({ task }: TaskCardProps) {
         <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
           <p className="line-clamp-2">{task.description}</p>
           <div className="flex items-center gap-2 mt-4">
-              <Calendar className={cn("h-4 w-4", isOverdue && "text-destructive")} />
-              <span className={cn(isOverdue && "text-destructive font-semibold")}>{format(new Date(task.dueDate), 'dd-MM-yyyy')} ({formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })})</span>
+              {task.completionDate ? (
+                 <>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-green-600 font-semibold">{format(new Date(task.completionDate), 'dd-MM-yyyy')}</span>
+                 </>
+              ) : (
+                <>
+                    <Calendar className={cn("h-4 w-4", isOverdue && "text-destructive")} />
+                    <span className={cn(isOverdue && "text-destructive font-semibold")}>{format(new Date(task.dueDate), 'dd-MM-yyyy')} ({formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })})</span>
+                </>
+              )}
           </div>
           <div className="flex items-center gap-2 mt-2">
               <Flag className="h-4 w-4" />

@@ -70,6 +70,8 @@ export interface Task {
   status: TaskStatus;
   priority: Priority;
   dueDate: string;
+  completionDate?: string; // ISO string
+  isViewedByAssignee?: boolean;
   assigneeId: string;
   creatorId: string;
   comments?: Comment[];

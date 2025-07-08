@@ -120,6 +120,7 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '19', // Aparna M R
     creatorId: '11', // Akhil Pillai
+    isViewedByAssignee: true,
     comments: [
         { userId: '11', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
     ],
@@ -135,6 +136,7 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '12', // Athul Kumar
     creatorId: '3', // Mujeeb
+    isViewedByAssignee: true,
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'none'
@@ -148,6 +150,7 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '2', // Manu M G
     creatorId: '1', // Harikrishnan P S
+    isViewedByAssignee: true,
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'none'
@@ -161,6 +164,7 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '15', // Vishnu S
     creatorId: '5', // Arjun P
+    isViewedByAssignee: true,
     comments: [
         { userId: '5', text: 'This is a top priority, please escalate if you run into issues.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
         { userId: '15', text: 'On it. I think I have an idea of what the issue is.', date: new Date().toISOString() }
@@ -175,8 +179,10 @@ export const TASKS: Task[] = [
     status: 'Completed',
     priority: 'Low',
     dueDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    completionDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '19', // Aparna M R
     creatorId: '11', // Akhil Pillai
+    isViewedByAssignee: true,
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'approved'
@@ -190,6 +196,7 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '2', // Manu M G
     creatorId: '1', // Harikrishnan P S
+    isViewedByAssignee: true,
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'none'
@@ -203,6 +210,7 @@ export const TASKS: Task[] = [
     dueDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '12', // Athul Kumar
     creatorId: '3', // Mujeeb
+    isViewedByAssignee: false,
     comments: [],
     requiresAttachmentForCompletion: true,
     approvalState: 'none'
@@ -214,8 +222,10 @@ export const TASKS: Task[] = [
     status: 'Completed',
     priority: 'Medium',
     dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    completionDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     assigneeId: '16', // Vishnu J
     creatorId: '5', // Arjun P
+    isViewedByAssignee: true,
     comments: [],
     requiresAttachmentForCompletion: false,
     approvalState: 'approved'

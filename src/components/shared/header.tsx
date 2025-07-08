@@ -10,13 +10,13 @@ import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export default function Header() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, pendingTaskApprovalCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, pendingTaskApprovalCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, myNewTaskCount } = useAppContext();
   const pathname = usePathname();
 
   const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
   const myRequestsNotificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
   const inventoryNotificationCount = isApprover ? pendingCertificateRequestCount : 0;
-  const taskNotificationCount = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE') ? pendingTaskApprovalCount : 0;
+  const taskNotificationCount = pendingTaskApprovalCount + myNewTaskCount;
 
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';

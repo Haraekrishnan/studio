@@ -10,14 +10,15 @@ import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, pendingTaskApprovalCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, pendingTaskApprovalCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, myNewTaskCount } = useAppContext();
   const pathname = usePathname();
 
   const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
   
   const myRequestsNotificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
   const inventoryNotificationCount = isApprover ? pendingCertificateRequestCount : 0;
-  const taskNotificationCount = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE') ? pendingTaskApprovalCount : 0;
+  
+  const taskNotificationCount = pendingTaskApprovalCount + myNewTaskCount;
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },

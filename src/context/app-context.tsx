@@ -31,7 +31,7 @@ interface AppContextType {
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
-  addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'completionDateIsMandatory'>) => void;
+  addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'completionDateIsMandatory' | 'isViewedByAssignee' | 'completionDate'>) => void;
   deleteTask: (taskId: string) => void;
   addPlannerEvent: (event: Omit<PlannerEvent, 'id' | 'comments'>) => void;
   getExpandedPlannerEvents: (date: Date, userId: string) => (PlannerEvent & { eventDate: Date })[];
@@ -50,6 +50,7 @@ interface AppContextType {
   approveTaskStatusChange: (taskId: string, commentText: string) => void;
   returnTaskStatusChange: (taskId: string, commentText: string) => void;
   addComment: (taskId: string, commentText: string) => void;
+  markTaskAsViewed: (taskId: string) => void;
   addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => void;
   approveAchievement: (achievementId: string, points: number) => void;
   rejectAchievement: (achievementId: string) => void;
@@ -85,6 +86,7 @@ interface AppContextType {
   expiringVehicleDocsCount: number;
   expiringUtMachineCalibrationsCount: number;
   pendingTaskApprovalCount: number;
+  myNewTaskCount: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -194,44 +196,24 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const getSubordinates = useCallback((managerId: string): string[] => {
-    const allSubordinates: string[] = [];
-    const queue: string[] = [managerId];
-    const visited = new Set<string>();
-  
-    // Build a map for efficient lookups
-    const userMap = new Map(users.map(u => [u.id, u]));
-    const supervisorMap = new Map<string, string[]>();
-    users.forEach(u => {
-      if (u.supervisorId) {
-        if (!supervisorMap.has(u.supervisorId)) {
-          supervisorMap.set(u.supervisorId, []);
-        }
-        supervisorMap.get(u.supervisorId)!.push(u.id);
-      }
-    });
+  const getSubordinates = useCallback((managerId: string, usersList: User[]): string[] => {
+    const subordinates: string[] = [];
+    const queue = [managerId];
+    const visited = new Set([managerId]);
   
     while (queue.length > 0) {
-      const currentManagerId = queue.shift()!;
-      if (visited.has(currentManagerId)) {
-        continue; // Avoid cycles
-      }
-      visited.add(currentManagerId);
-  
-      const directReports = supervisorMap.get(currentManagerId) || [];
-  
-      for (const reportId of directReports) {
-        if (!visited.has(reportId)) {
-          allSubordinates.push(reportId);
-          const reportUser = userMap.get(reportId);
-          if (reportUser && ['Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(reportUser.role)) {
-            queue.push(reportId);
-          }
+      const currentId = queue.shift()!;
+      const reports = usersList.filter(u => u.supervisorId === currentId);
+      for (const report of reports) {
+        if (!visited.has(report.id)) {
+          visited.add(report.id);
+          subordinates.push(report.id);
+          queue.push(report.id);
         }
       }
     }
-    return allSubordinates;
-  }, [users]);
+    return subordinates;
+  }, []);
   
   const getVisibleUsers = useCallback((): User[] => {
     if (!user) return [];
@@ -240,19 +222,20 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
     const userRole = roles.find(r => r.name === user.role);
     if (userRole?.permissions.includes('view_subordinates_users')) {
-      const subordinateIds = getSubordinates(user.id);
+      const subordinateIds = getSubordinates(user.id, users);
       return users.filter(u => u.id === user.id || subordinateIds.includes(u.id));
     }
     return users.filter(u => u.id === user.id);
   }, [user, users, roles, getSubordinates]);
   
-  const addTask = (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'completionDateIsMandatory'>) => {
+  const addTask = (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'completionDateIsMandatory' | 'isViewedByAssignee' | 'completionDate'>) => {
     const newTask: Task = {
         ...task,
         id: `task-${Date.now()}`,
         comments: [],
         status: 'To Do',
-        approvalState: 'none'
+        approvalState: 'none',
+        isViewedByAssignee: false,
     };
     setTasks(prevTasks => [newTask, ...prevTasks]);
     recordAction(`Created task: "${task.title}"`);
@@ -261,7 +244,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const updateTask = (updatedTask: Task) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
-        task.id === updatedTask.id ? { ...updatedTask, attachment: updatedTask.attachment || task.attachment } : task
+        task.id === updatedTask.id ? { ...task, ...updatedTask } : task
       )
     );
     recordAction(`Updated task details for: "${updatedTask.title}"`);
@@ -316,9 +299,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (!task || !task.pendingStatus) return;
 
     addComment(taskId, `Request Approved: ${commentText}`);
+    const isCompleting = task.pendingStatus === 'Completed';
+
     const updatedTask = {
       ...task,
       status: task.pendingStatus,
+      completionDate: isCompleting ? new Date().toISOString() : task.completionDate,
       pendingStatus: undefined,
       previousStatus: undefined,
       approvalState: 'approved' as ApprovalState,
@@ -347,6 +333,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const taskTitle = tasks.find(t => t.id === taskId)?.title;
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
     recordAction(`Deleted task: "${taskTitle}"`);
+  };
+
+  const markTaskAsViewed = (taskId: string) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isViewedByAssignee: true } : t));
   };
 
   const addPlannerEvent = (event: Omit<PlannerEvent, 'id' | 'comments'>) => {
@@ -656,9 +646,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       priority: 'Medium' as Priority,
       creatorId: user.id,
       requiresAttachmentForCompletion: false,
-      status: 'Pending Approval' as TaskStatus,
-      approvalState: 'pending' as ApprovalState,
-      comments: [],
     };
     addTask(ppeTask);
   };
@@ -893,6 +880,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }).length;
   }, [tasks, user, users]);
 
+  const myNewTaskCount = useMemo(() => {
+    if (!user) return 0;
+    return tasks.filter(task => task.assigneeId === user.id && !task.isViewedByAssignee).length;
+  }, [tasks, user]);
+
   const value = {
     user,
     users,
@@ -937,6 +929,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     approveTaskStatusChange,
     returnTaskStatusChange,
     addComment,
+    markTaskAsViewed,
     addManualAchievement,
     approveAchievement,
     rejectAchievement,
@@ -972,6 +965,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     expiringVehicleDocsCount,
     expiringUtMachineCalibrationsCount,
     pendingTaskApprovalCount,
+    myNewTaskCount,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

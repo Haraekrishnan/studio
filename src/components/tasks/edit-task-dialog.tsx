@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
-import { CalendarIcon, Send, ThumbsUp, ThumbsDown, Paperclip, Upload, X, BellRing } from 'lucide-react';
+import { CalendarIcon, Send, ThumbsUp, ThumbsDown, Paperclip, Upload, X, BellRing, CheckCircle, Clock } from 'lucide-react';
 import type { Task, Priority, TaskStatus, Role, Comment, ApprovalState } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -52,7 +52,7 @@ const roleHierarchy: Record<Role, number> = {
 };
 
 export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDialogProps) {
-  const { user, users, tasks, updateTask, getVisibleUsers, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, addComment } = useAppContext();
+  const { user, users, tasks, updateTask, getVisibleUsers, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, addComment, markTaskAsViewed } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
   const [attachment, setAttachment] = useState<File | null>(null);
@@ -66,6 +66,10 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     resolver: zodResolver(taskSchema),
   });
 
+  const isCompleted = taskToDisplay.status === 'Completed';
+  const isAdmin = user?.role === 'Admin';
+  const canEditFields = !isCompleted || isAdmin;
+
   useEffect(() => {
     if (taskToDisplay && isOpen) {
       form.reset({
@@ -75,9 +79,12 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         dueDate: new Date(taskToDisplay.dueDate),
         priority: taskToDisplay.priority,
       });
-      setAttachment(null); // Reset attachment on open
+      setAttachment(null);
+      if (user?.id === taskToDisplay.assigneeId && !taskToDisplay.isViewedByAssignee) {
+        markTaskAsViewed(taskToDisplay.id);
+      }
     }
-  }, [taskToDisplay, form, isOpen]);
+  }, [taskToDisplay, form, isOpen, user, markTaskAsViewed]);
 
   const allVisibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
 
@@ -154,16 +161,27 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
   };
 
   const onSubmit = (data: TaskFormValues) => {
-    updateTask({
-      ...taskToDisplay,
+    const updatedData: Partial<Task> = {
       ...data,
       dueDate: data.dueDate.toISOString(),
+    };
+    
+    // If admin changes status of a completed task, it becomes active again.
+    if(isAdmin && isCompleted && data.assigneeId) {
+        updatedData.status = 'To Do';
+        updatedData.completionDate = undefined;
+        updatedData.approvalState = 'none';
+    }
+
+    updateTask({
+      ...taskToDisplay,
+      ...updatedData,
     });
     toast({ title: 'Task Updated', description: `"${data.title}" has been successfully updated.` });
   };
   
-  const canReassign = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE' || user?.role === 'Store in Charge';
-  const isApprover = user?.id === taskToDisplay.creatorId || user?.id === assignee?.supervisorId;
+  const canReassign = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE' || user?.role === 'Store in Charge') && (!isCompleted || isAdmin);
+  const isApprover = (user?.id === taskToDisplay.creatorId || user?.id === assignee?.supervisorId) && user.id !== taskToDisplay.assigneeId;
   const isAssignee = user?.id === taskToDisplay.assigneeId;
 
   const renderActionButtons = () => {
@@ -178,7 +196,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         }
         return <p className='text-sm text-center text-muted-foreground p-2 bg-muted rounded-md'>Awaiting approval from {creator?.name}</p>
     }
-    if (isAssignee) {
+    if (isAssignee && !isCompleted) {
         if (taskToDisplay.status === 'To Do') {
             return <Button onClick={() => handleRequestStatusChange('In Progress')} className="w-full">Start Progress</Button>
         }
@@ -195,8 +213,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         <DialogHeader>
           <DialogTitle>Task Details: {taskToDisplay.title}</DialogTitle>
           <DialogDescription>
-            Assigned by <span className='font-semibold'>{creator?.name}</span> to <span className='font-semibold'>{assignee?.name}</span>. 
-            Due {formatDistanceToNow(new Date(taskToDisplay.dueDate), { addSuffix: true })}.
+            Assigned by <span className='font-semibold'>{creator?.name}</span> to <span className='font-semibold'>{assignee?.name}</span>.
           </DialogDescription>
           {taskToDisplay.status === 'Pending Approval' && taskToDisplay.previousStatus && taskToDisplay.pendingStatus && (
             <Alert variant="default" className="mt-2">
@@ -213,12 +230,12 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div>
                   <Label>Title</Label>
-                  <Input {...form.register('title')} placeholder="Task title" />
+                  <Input {...form.register('title')} placeholder="Task title" disabled={!canEditFields} />
                 </div>
                 
                 <div>
                   <Label>Description</Label>
-                  <Textarea {...form.register('description')} placeholder="Task description" rows={3}/>
+                  <Textarea {...form.register('description')} placeholder="Task description" rows={3} disabled={!canEditFields}/>
                 </div>
 
                 <div>
@@ -243,7 +260,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                     <Controller control={form.control} name="dueDate"
                         render={({ field }) => (
                         <Popover>
-                            <PopoverTrigger asChild>
+                            <PopoverTrigger asChild disabled={!canEditFields}>
                             <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick a date</span>}
@@ -259,7 +276,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                     <Label>Priority</Label>
                     <Controller control={form.control} name="priority"
                         render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!canEditFields}>
                             <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Low">Low</SelectItem>
@@ -271,8 +288,18 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                     />
                   </div>
                 </div>
+
+                {taskToDisplay.completionDate && (
+                    <div>
+                        <Label>Completion Date</Label>
+                        <div className="flex items-center gap-2 text-sm p-2 border rounded-md bg-muted">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span>{format(new Date(taskToDisplay.completionDate), 'dd-MM-yyyy, p')}</span>
+                        </div>
+                    </div>
+                )}
                 
-                <Button type="submit" className="w-full">Save Changes</Button>
+                {canEditFields && <Button type="submit" className="w-full">Save Changes</Button>}
               </form>
             </div>
 

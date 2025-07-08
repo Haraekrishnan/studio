@@ -17,7 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import TaskCard from '@/components/tasks/task-card';
 
 export default function TasksPage() {
-  const { user, tasks, users } = useAppContext();
+  const { user, tasks, users, pendingTaskApprovalCount, myNewTaskCount } = useAppContext();
   const canManageTasks = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE' || user?.role === 'Store in Charge';
 
   const [filters, setFilters] = useState<FiltersType>({
@@ -38,13 +38,13 @@ export default function TasksPage() {
         const assignee = users.find(u => u.id === task.assigneeId);
         if (!assignee) return false;
 
-        const isCreator = task.creatorId === user.id;
-        const isSupervisor = assignee.supervisorId === user.id;
-
         // An approver cannot be the person who the task is assigned to.
         if (task.assigneeId === user.id) {
             return false;
         }
+
+        const isCreator = task.creatorId === user.id;
+        const isSupervisor = assignee.supervisorId === user.id;
 
         return isCreator || isSupervisor;
     });
@@ -111,7 +111,7 @@ export default function TasksPage() {
                     <Bell className="mr-2 h-4 w-4" />
                     Pending Approvals
                     <span className="ml-2 bg-primary text-primary-foreground h-6 w-6 rounded-full flex items-center justify-center text-xs">
-                        {tasksAwaitingMyApproval.length}
+                        {pendingTaskApprovalCount}
                     </span>
                 </Button>
               )}
