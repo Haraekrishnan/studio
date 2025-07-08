@@ -59,7 +59,7 @@ export default function UTMachineStatusPage() {
                 )}
             </div>
 
-            {expiringMachines.length > 0 && (
+            {canManage && expiringMachines.length > 0 && (
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Expiring Calibrations</CardTitle>

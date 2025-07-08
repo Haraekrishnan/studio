@@ -31,7 +31,7 @@ interface AppContextType {
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
-  addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'completionDateIsMandatory' | 'isViewedByAssignee' | 'completionDate'>) => void;
+  addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => void;
   deleteTask: (taskId: string) => void;
   addPlannerEvent: (event: Omit<PlannerEvent, 'id' | 'comments'>) => void;
   getExpandedPlannerEvents: (date: Date, userId: string) => (PlannerEvent & { eventDate: Date })[];
@@ -196,21 +196,22 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const getSubordinates = useCallback((managerId: string, usersList: User[]): string[] => {
+  const getSubordinates = useCallback((managerId: string, allUsers: User[]): string[] => {
     const subordinates: string[] = [];
-    const queue = [managerId];
-    const visited = new Set([managerId]);
-  
+    const queue: string[] = [managerId];
+    const visited: Set<string> = new Set(queue);
+
     while (queue.length > 0) {
-      const currentId = queue.shift()!;
-      const reports = usersList.filter(u => u.supervisorId === currentId);
-      for (const report of reports) {
-        if (!visited.has(report.id)) {
-          visited.add(report.id);
-          subordinates.push(report.id);
-          queue.push(report.id);
+        const currentManagerId = queue.shift()!;
+        const directSubordinates = allUsers.filter(u => u.supervisorId === currentManagerId);
+
+        for (const subordinate of directSubordinates) {
+            if (!visited.has(subordinate.id)) {
+                visited.add(subordinate.id);
+                subordinates.push(subordinate.id);
+                queue.push(subordinate.id);
+            }
         }
-      }
     }
     return subordinates;
   }, []);
@@ -228,7 +229,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return users.filter(u => u.id === user.id);
   }, [user, users, roles, getSubordinates]);
   
-  const addTask = (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'completionDateIsMandatory' | 'isViewedByAssignee' | 'completionDate'>) => {
+  const addTask = (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => {
     const newTask: Task = {
         ...task,
         id: `task-${Date.now()}`,
@@ -261,7 +262,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         const updatedTasks = prevTasks.map(t => {
             if (t.id === taskId) {
                 const updatedComments = t.comments ? [...t.comments, newComment] : [newComment];
-                return { ...t, comments: updatedComments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()) };
+                return { ...t, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
             }
             return t;
         });
@@ -400,7 +401,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       const updatedEvents = prevEvents.map(event => {
           if (event.id === eventId) {
               const updatedComments = event.comments ? [...event.comments, newComment] : [newComment];
-              return { ...event, comments: updatedComments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()) };
+              return { ...event, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
           }
           return event;
       });
@@ -425,7 +426,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         if (existingEntry) {
             return prev.map(dpc => 
                 dpc.id === existingEntry.id 
-                ? { ...dpc, comments: [...dpc.comments, newComment] } 
+                ? { ...dpc, comments: [...dpc.comments, newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } 
                 : dpc
             );
         } else {
@@ -845,7 +846,20 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return certificateRequests.filter(r => r.status === 'Pending').length;
   }, [certificateRequests]);
 
+  const canManageVehicles = useMemo(() => {
+    if (!user) return false;
+    const userRole = roles.find(r => r.name === user.role);
+    return userRole?.permissions.includes('manage_vehicles') ?? false;
+  }, [user, roles]);
+  
+  const canManageUtMachines = useMemo(() => {
+    if (!user) return false;
+    const userRole = roles.find(r => r.name === user.role);
+    return userRole?.permissions.includes('manage_ut_machines') ?? false;
+  }, [user, roles]);
+
   const expiringVehicleDocsCount = useMemo(() => {
+    if (!canManageVehicles) return 0;
     const thirtyDaysFromNow = addDays(new Date(), 30);
     return vehicles.filter(v => {
         const vapDate = new Date(v.vapValidity);
@@ -856,12 +870,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
                            isBefore(epDate, thirtyDaysFromNow);
         return isExpiring;
     }).length;
-  }, [vehicles]);
+  }, [vehicles, canManageVehicles]);
 
   const expiringUtMachineCalibrationsCount = useMemo(() => {
+    if (!canManageUtMachines) return 0;
     const thirtyDaysFromNow = addDays(new Date(), 30);
     return utMachines.filter(m => isBefore(new Date(m.calibrationDueDate), thirtyDaysFromNow)).length;
-  }, [utMachines]);
+  }, [utMachines, canManageUtMachines]);
 
   const pendingTaskApprovalCount = useMemo(() => {
     if (!user) return 0;

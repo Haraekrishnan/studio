@@ -1,14 +1,20 @@
 'use client';
 import { useState, useMemo } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
 import type { UTMachine } from '@/lib/types';
 import AddUTMachineLogDialog from './AddUTMachineLogDialog';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { cn } from '@/lib/utils';
+import { Calendar } from '../ui/calendar';
+import UTMachineReportDownloads from './UTMachineReportDownloads';
+
 
 interface UTMachineLogManagerDialogProps {
   isOpen: boolean;
@@ -19,6 +25,7 @@ interface UTMachineLogManagerDialogProps {
 export default function UTMachineLogManagerDialog({ isOpen, setIsOpen, machine }: UTMachineLogManagerDialogProps) {
   const { user, roles, users } = useAppContext();
   const [isAddLogOpen, setIsAddLogOpen] = useState(false);
+  const [reportDateRange, setReportDateRange] = useState<DateRange | undefined>();
 
   const canManageLogs = useMemo(() => {
     if (!user) return false;
@@ -37,7 +44,34 @@ export default function UTMachineLogManagerDialog({ isOpen, setIsOpen, machine }
             <DialogDescription>A complete history of usage for this machine.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className='flex items-center gap-2'>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={'outline'}
+                            className={cn('w-full md:w-[250px] justify-start text-left font-normal', !reportDateRange && 'text-muted-foreground')}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {reportDateRange?.from ? (
+                              reportDateRange.to ? (
+                                <>
+                                  {format(reportDateRange.from, 'LLL dd, y')} - {format(reportDateRange.to, 'LLL dd, y')}
+                                </>
+                              ) : (
+                                format(reportDateRange.from, 'LLL dd, y')
+                              )
+                            ) : (
+                              <span>Filter dates for export...</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="range" selected={reportDateRange} onSelect={setReportDateRange} />
+                        </PopoverContent>
+                    </Popover>
+                    <UTMachineReportDownloads machine={machine} dateRange={reportDateRange} />
+                </div>
                 {canManageLogs && (
                     <Button size="sm" onClick={() => setIsAddLogOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add New Log
