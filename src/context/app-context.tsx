@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import { useRouter } from 'next/navigation';
 import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES } from '@/lib/mock-data';
-import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
+import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
 interface AppContextType {
   user: User | null;
@@ -81,6 +81,9 @@ interface AppContextType {
   addVehicle: (vehicle: Omit<Vehicle, 'id'>) => void;
   updateVehicle: (vehicle: Vehicle) => void;
   deleteVehicle: (vehicleId: string) => void;
+  expiringVehicleDocsCount: number;
+  expiringUtMachineCalibrationsCount: number;
+  pendingTaskApprovalCount: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -195,6 +198,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const directReports = users.filter(u => u.supervisorId === managerId);
     for (const report of directReports) {
       subordinates.push(report.id);
+      // Recurse if the subordinate is also a manager/supervisor type role
       if (['Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(report.role)) {
         subordinates = subordinates.concat(getSubordinates(report.id));
       }
@@ -207,12 +211,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (user.role === 'Admin' || user.role === 'Manager') {
       return users;
     }
-    if (['Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(user.role)) {
+    const userRole = roles.find(r => r.name === user.role);
+    if (userRole?.permissions.includes('view_subordinates_users')) {
       const subordinateIds = getSubordinates(user.id);
       return users.filter(u => u.id === user.id || subordinateIds.includes(u.id));
     }
     return users.filter(u => u.id === user.id);
-  }, [user, users, getSubordinates]);
+  }, [user, users, roles, getSubordinates]);
   
   const addTask = (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState'>) => {
     const newTask: Task = {
@@ -809,6 +814,38 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return certificateRequests.filter(r => r.status === 'Pending').length;
   }, [certificateRequests]);
 
+  const expiringVehicleDocsCount = useMemo(() => {
+    const thirtyDaysFromNow = addDays(new Date(), 30);
+    return vehicles.filter(v => {
+        const vapDate = new Date(v.vapValidity);
+        const sdpDate = new Date(v.sdpValidity);
+        const epDate = new Date(v.epValidity);
+        const isExpiring = isBefore(vapDate, thirtyDaysFromNow) || isBefore(sdpDate, thirtyDaysFromNow) || isBefore(epDate, thirtyDaysFromNow);
+        return isExpiring;
+    }).length;
+  }, [vehicles]);
+
+  const expiringUtMachineCalibrationsCount = useMemo(() => {
+    const thirtyDaysFromNow = addDays(new Date(), 30);
+    return utMachines.filter(m => isBefore(new Date(m.calibrationDueDate), thirtyDaysFromNow)).length;
+  }, [utMachines]);
+
+  const pendingTaskApprovalCount = useMemo(() => {
+    if (!user) return 0;
+    return tasks.filter(task => {
+        if (task.status !== 'Pending Approval') return false;
+
+        const assignee = users.find(u => u.id === task.assigneeId);
+        if (!assignee) return false;
+
+        if (task.assigneeId === user.id) return false;
+
+        const isCreator = task.creatorId === user.id;
+        const isSupervisor = assignee.supervisorId === user.id;
+        
+        return isCreator || isSupervisor;
+    }).length;
+  }, [tasks, user, users]);
 
   const value = {
     user,
@@ -885,6 +922,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addVehicle,
     updateVehicle,
     deleteVehicle,
+    expiringVehicleDocsCount,
+    expiringUtMachineCalibrationsCount,
+    pendingTaskApprovalCount,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
