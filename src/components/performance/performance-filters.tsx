@@ -1,7 +1,7 @@
 'use client';
 import type { User } from '@/lib/types';
 import type { DateRange } from 'react-day-picker';
-import { MultiSelect } from '@/components/ui/multi-select';
+import { TransferList } from '@/components/ui/transfer-list';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Button } from '../ui/button';
 import { X } from 'lucide-react';
@@ -34,24 +34,26 @@ export default function PerformanceFilters({
 
     return (
         <Card>
-            <CardContent className="p-4">
-                <div className="flex flex-col md:flex-row gap-4 items-center">
-                    <MultiSelect
+            <CardContent className="p-4 space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                    <TransferList
                         options={userOptions}
                         selected={selectedUserIds}
                         onChange={onUserChange}
-                        className="w-full md:w-[300px]"
-                        placeholder="Select employees to compare..."
+                        availableTitle="Available Employees"
+                        selectedTitle="Selected for Comparison"
                     />
-                    <DateRangePicker
-                        date={dateRange}
-                        onDateChange={onDateChange}
-                    />
-                    <div className="flex gap-2 ml-auto">
-                        <Button onClick={onApply}>Apply</Button>
-                        <Button variant="ghost" onClick={onClear}>
-                            <X className="mr-2 h-4 w-4" /> Clear
-                        </Button>
+                     <div className="flex flex-col gap-4 justify-center">
+                        <DateRangePicker
+                            date={dateRange}
+                            onDateChange={onDateChange}
+                        />
+                        <div className="flex gap-2 justify-end">
+                            <Button onClick={onApply}>Apply Filters</Button>
+                            <Button variant="ghost" onClick={onClear}>
+                                <X className="mr-2 h-4 w-4" /> Clear All
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </CardContent>
