@@ -14,7 +14,9 @@ import { Textarea } from '../ui/textarea';
 const logSchema = z.object({
   projectId: z.string().min(1, 'Project is required'),
   countIn: z.coerce.number().min(0, 'Count In must be non-negative'),
+  personInName: z.string().optional(),
   countOut: z.coerce.number().min(0, 'Count Out must be non-negative'),
+  personOutName: z.string().optional(),
   reason: z.string().min(1, 'Reason is required'),
 });
 
@@ -34,7 +36,9 @@ export default function ManpowerLogDialog({ isOpen, setIsOpen }: ManpowerLogDial
     defaultValues: {
       projectId: user?.projectId || '',
       countIn: 0,
+      personInName: '',
       countOut: 0,
+      personOutName: '',
       reason: '',
     },
   });
@@ -55,7 +59,7 @@ export default function ManpowerLogDialog({ isOpen, setIsOpen }: ManpowerLogDial
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Log Daily Manpower</DialogTitle>
           <DialogDescription>Update the manpower count for today.</DialogDescription>
@@ -85,9 +89,19 @@ export default function ManpowerLogDialog({ isOpen, setIsOpen }: ManpowerLogDial
               {form.formState.errors.countIn && <p className="text-xs text-destructive">{form.formState.errors.countIn.message}</p>}
             </div>
             <div>
+              <Label htmlFor="personInName">Person In Name(s)</Label>
+              <Input id="personInName" {...form.register('personInName')} placeholder="e.g., John, Jane" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <Label htmlFor="countOut">Manpower Out</Label>
               <Input id="countOut" type="number" {...form.register('countOut')} />
               {form.formState.errors.countOut && <p className="text-xs text-destructive">{form.formState.errors.countOut.message}</p>}
+            </div>
+             <div>
+              <Label htmlFor="personOutName">Person Out Name(s)</Label>
+              <Input id="personOutName" {...form.register('personOutName')} placeholder="e.g., Peter" />
             </div>
           </div>
           

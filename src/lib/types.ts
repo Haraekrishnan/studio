@@ -183,7 +183,9 @@ export interface ManpowerLog {
   date: string; // yyyy-MM-dd
   projectId: string;
   countIn: number;
+  personInName?: string;
   countOut: number;
+  personOutName?: string;
   reason: string;
   updatedBy: string; // userId
 }

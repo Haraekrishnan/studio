@@ -278,7 +278,7 @@ export const CERTIFICATE_REQUESTS: CertificateRequest[] = [
 ];
 
 export const MANPOWER_LOGS: ManpowerLog[] = [
-    { id: 'mp-1', date: format(new Date(), 'yyyy-MM-dd'), projectId: 'proj-1', countIn: 20, countOut: 1, reason: '1 person sick leave', updatedBy: '3' },
+    { id: 'mp-1', date: format(new Date(), 'yyyy-MM-dd'), projectId: 'proj-1', countIn: 20, countOut: 1, reason: '1 person sick leave', updatedBy: '3', personOutName: 'David' },
     { id: 'mp-2', date: format(new Date(), 'yyyy-MM-dd'), projectId: 'proj-2', countIn: 15, countOut: 0, reason: 'Full attendance', updatedBy: '4' },
     { id: 'mp-3', date: format(sub(new Date(), { days: 1 }), 'yyyy-MM-dd'), projectId: 'proj-1', countIn: 19, countOut: 0, reason: 'Full attendance', updatedBy: '3' },
 ];

@@ -35,7 +35,9 @@ export default function ManpowerReportDownloads({ dateRange }: ManpowerReportDow
       'Date': log.date,
       'Project': projects.find(p => p.id === log.projectId)?.name || 'N/A',
       'Manpower In': log.countIn,
+      'Person In Name(s)': log.personInName || '',
       'Manpower Out': log.countOut,
+      'Person Out Name(s)': log.personOutName || '',
       'Reason': log.reason,
       'Updated By': users.find(u => u.id === log.updatedBy)?.name || 'N/A'
     }));
