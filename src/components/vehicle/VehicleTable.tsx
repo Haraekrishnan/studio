@@ -69,7 +69,7 @@ export default function VehicleTable({ onEdit }: VehicleTableProps) {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem onSelect={() => onEdit(vehicle)}><Edit className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
-                                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem></AlertDialogTrigger>}
+                                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem></AlertDialogTrigger>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                     <AlertDialogContent>
