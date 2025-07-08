@@ -1,10 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { cn } from "@/lib/utils"
-import { X, ChevronsUpDown, Check } from "lucide-react"
+import { Check, ChevronsUpDown, X } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -19,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Badge } from "./badge"
 
 interface Option {
     value: string;
@@ -47,7 +47,7 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between h-auto min-h-10", className)}
+          className={cn("w-full justify-between h-auto", className)}
           onClick={() => setOpen(!open)}
         >
           <div className="flex gap-1 flex-wrap">
@@ -58,14 +58,28 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
                   <Badge
                     variant="secondary"
                     key={option.value}
-                    className="mr-1"
+                    className="mr-1 mb-1"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleUnselect(option.value);
                     }}
                   >
                     {option.label}
-                    <X className="ml-1 h-3 w-3" />
+                    <button
+                      className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleUnselect(option.value);
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onClick={() => handleUnselect(option.value)}
+                    >
+                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    </button>
                   </Badge>
                 ))
             ) : (
