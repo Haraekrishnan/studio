@@ -131,11 +131,11 @@ export default function StoreInventoryPage() {
                 </Card>
             )}
             
-            {canManageInventory && (pendingTransfers.length > 0 || pendingCertRequests.length > 0) && (
+            {canManageInventory && pendingTransfers.length > 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Pending Requests</CardTitle>
-                        <CardDescription>Review and action these requests.</CardDescription>
+                        <CardTitle>Pending Inventory Transfers</CardTitle>
+                        <CardDescription>Review and action these inventory transfer requests.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {pendingTransfers.map(req => {
@@ -149,6 +149,17 @@ export default function StoreInventoryPage() {
                                 </div>
                             )
                         })}
+                    </CardContent>
+                </Card>
+            )}
+            
+            {canManageInventory && pendingCertRequests.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Pending Certificate Requests</CardTitle>
+                        <CardDescription>Review and action these certificate requests.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                          {pendingCertRequests.map(req => {
                             const requester = users.find(u => u.id === req.requesterId);
                             const item = inventoryItems.find(i => i.id === req.itemId);
