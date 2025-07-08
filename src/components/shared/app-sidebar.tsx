@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Wrench, Car, Bell, Gamepad2 } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Car, Bell, Gamepad2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
