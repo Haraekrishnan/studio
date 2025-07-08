@@ -93,10 +93,13 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     if (user.role === 'Admin' || user.role === 'Manager') {
       return allVisibleUsers;
     }
+    
     const userRoleLevel = roleHierarchy[user.role];
+
     return allVisibleUsers.filter(assignee => {
       const assigneeRoleLevel = roleHierarchy[assignee.role];
-      return assignee.id === user.id || assigneeRoleLevel < userRoleLevel;
+      // Allow assigning to self or to roles lower in the hierarchy
+      return assignee.id === user.id || assigneeRoleLevel <= userRoleLevel;
     });
   }, [user, allVisibleUsers]);
 
@@ -166,8 +169,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
       dueDate: data.dueDate.toISOString(),
     };
     
-    // If admin changes status of a completed task, it becomes active again.
-    if(isAdmin && isCompleted && data.assigneeId) {
+    if (isAdmin && isCompleted && data.assigneeId) {
         updatedData.status = 'To Do';
         updatedData.completionDate = undefined;
         updatedData.approvalState = 'none';
@@ -307,11 +309,10 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                 <h3 className="text-lg font-semibold">Comments & Activity</h3>
                 <ScrollArea className="flex-1 h-64 pr-4 border-b">
                     <div className="space-y-4">
-                        {(taskToDisplay.comments || []).map((comment, index) => {
+                        {taskToDisplay.comments && [...taskToDisplay.comments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((comment, index) => {
                             const commentUser = users.find(u => u.id === comment.userId);
-                            const isApprovalComment = index === 0 && taskToDisplay.status === 'Pending Approval';
                             return (
-                                <div key={index} className={cn("flex items-start gap-3", isApprovalComment && "p-2 rounded-lg bg-amber-100 dark:bg-amber-900/20")}>
+                                <div key={index} className={cn("flex items-start gap-3")}>
                                     <Avatar className="h-8 w-8"><AvatarImage src={commentUser?.avatar} /><AvatarFallback>{commentUser?.name.charAt(0)}</AvatarFallback></Avatar>
                                     <div className="bg-muted p-3 rounded-lg w-full">
                                         <div className="flex justify-between items-center"><p className="font-semibold text-sm">{commentUser?.name}</p><p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(comment.date), { addSuffix: true })}</p></div>
@@ -320,7 +321,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                                 </div>
                             )
                         })}
-                        {(taskToDisplay.comments || []).length === 0 && <p className="text-sm text-center text-muted-foreground py-4">No comments yet.</p>}
+                        {(!taskToDisplay.comments || taskToDisplay.comments.length === 0) && <p className="text-sm text-center text-muted-foreground py-4">No comments yet.</p>}
                     </div>
                 </ScrollArea>
                 {taskToDisplay.attachment && (

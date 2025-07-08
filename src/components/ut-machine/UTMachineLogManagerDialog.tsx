@@ -22,10 +22,12 @@ interface UTMachineLogManagerDialogProps {
   machine: UTMachine;
 }
 
-export default function UTMachineLogManagerDialog({ isOpen, setIsOpen, machine }: UTMachineLogManagerDialogProps) {
-  const { user, roles, users } = useAppContext();
+export default function UTMachineLogManagerDialog({ isOpen, setIsOpen, machine: initialMachine }: UTMachineLogManagerDialogProps) {
+  const { user, roles, users, utMachines } = useAppContext();
   const [isAddLogOpen, setIsAddLogOpen] = useState(false);
   const [reportDateRange, setReportDateRange] = useState<DateRange | undefined>();
+
+  const machine = useMemo(() => utMachines.find(m => m.id === initialMachine.id) || initialMachine, [utMachines, initialMachine]);
 
   const canManageLogs = useMemo(() => {
     if (!user) return false;
@@ -33,7 +35,9 @@ export default function UTMachineLogManagerDialog({ isOpen, setIsOpen, machine }
     return userRole?.permissions.includes('manage_ut_machine_logs');
   }, [user, roles]);
   
-  const machineLogs = machine.usageLog || [];
+  const machineLogs = useMemo(() => {
+    return (machine.usageLog || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [machine.usageLog]);
 
   return (
     <>

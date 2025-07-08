@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Wrench, Car, Bell } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Wrench, Car, Bell, Gamepad2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
@@ -31,7 +31,7 @@ export function AppSidebar() {
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
     { href: '/manpower', icon: Users2, label: 'Manpower' },
-    { href: '/ut-machine-status', icon: Wrench, label: 'UT Machine Status', notification: expiringUtMachineCalibrationsCount },
+    { href: '/ut-machine-status', icon: Gamepad2, label: 'UT Machine Status', notification: expiringUtMachineCalibrationsCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: expiringVehicleDocsCount },
   ];
 

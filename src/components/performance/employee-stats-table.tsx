@@ -1,6 +1,4 @@
 'use client';
-import { useMemo } from 'react';
-import { useAppContext } from '@/context/app-context';
 import {
   Table,
   TableHeader,
@@ -12,33 +10,11 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
-export default function EmployeeStatsTable() {
-  const { tasks, getVisibleUsers } = useAppContext();
-  const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
+interface EmployeeStatsTableProps {
+  data: any[];
+}
 
-  const performanceData = useMemo(() => {
-    return visibleUsers.map(user => {
-      const userTasks = tasks.filter(task => task.assigneeId === user.id);
-      const completed = userTasks.filter(t => t.status === 'Completed').length;
-      const inProgress = userTasks.filter(t => t.status === 'In Progress').length;
-      const todo = userTasks.filter(t => t.status === 'To Do').length;
-      const pending = userTasks.filter(t => t.status === 'Pending Approval').length;
-      const overdue = userTasks.filter(t => t.status === 'Overdue').length;
-
-      return {
-        ...user,
-        stats: {
-          completed,
-          inProgress,
-          todo,
-          pending,
-          overdue,
-          total: userTasks.length,
-        },
-      };
-    }).sort((a, b) => b.stats.completed - a.stats.completed);
-  }, [visibleUsers, tasks]);
-
+export default function EmployeeStatsTable({ data }: EmployeeStatsTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -53,7 +29,7 @@ export default function EmployeeStatsTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {performanceData.map(user => (
+        {data.map(user => (
           <TableRow key={user.id}>
             <TableCell>
               <div className="flex items-center gap-3">
@@ -67,20 +43,27 @@ export default function EmployeeStatsTable() {
                 </div>
               </div>
             </TableCell>
-            <TableCell className="text-center">{user.stats.todo}</TableCell>
-            <TableCell className="text-center">{user.stats.inProgress}</TableCell>
-            <TableCell className="text-center">{user.stats.pending}</TableCell>
-            <TableCell className="text-center font-medium">{user.stats.completed}</TableCell>
+            <TableCell className="text-center">{user.todo}</TableCell>
+            <TableCell className="text-center">{user.inProgress}</TableCell>
+            <TableCell className="text-center">{user.pending}</TableCell>
+            <TableCell className="text-center font-medium">{user.completed}</TableCell>
             <TableCell className="text-center">
-              {user.stats.overdue > 0 ? (
-                <Badge variant="destructive">{user.stats.overdue}</Badge>
+              {user.overdue > 0 ? (
+                <Badge variant="destructive">{user.overdue}</Badge>
               ) : (
                 0
               )}
             </TableCell>
-            <TableCell className="text-center font-semibold">{user.stats.total}</TableCell>
+            <TableCell className="text-center font-semibold">{user.total}</TableCell>
           </TableRow>
         ))}
+         {data.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={7} className="h-24 text-center">
+              No data available for the selected filters.
+            </TableCell>
+          </TableRow>
+        )}
       </TableBody>
     </Table>
   );

@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Users2, Wrench, Car } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Users2, Wrench, Car, Gamepad2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
@@ -46,7 +46,7 @@ export default function Header() {
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: 0 },
-    { href: '/ut-machine-status', icon: Wrench, label: 'UT Machine Status', notification: expiringUtMachineCalibrationsCount },
+    { href: '/ut-machine-status', icon: Gamepad2, label: 'UT Machine Status', notification: expiringUtMachineCalibrationsCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: expiringVehicleDocsCount },
   ];
 

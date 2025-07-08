@@ -34,7 +34,7 @@ import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, is
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AchievementsPage() {
-  const { user, users, tasks, achievements, approveAchievement, rejectAchievement } = useAppContext();
+  const { user, users, tasks, achievements, plannerEvents, approveAchievement, rejectAchievement } = useAppContext();
   const { toast } = useToast();
 
   const [achievementToApprove, setAchievementToApprove] = useState<Achievement | null>(null);
@@ -58,12 +58,16 @@ export default function AchievementsPage() {
     }
     
     const tasksInPeriod = dateRange
-      ? tasks.filter(t => isWithinInterval(new Date(t.dueDate), { start: dateRange!.start, end: dateRange!.end }))
+      ? tasks.filter(t => t.dueDate && isWithinInterval(new Date(t.dueDate), { start: dateRange!.start, end: dateRange!.end }))
       : tasks;
       
     const achievementsInPeriod = dateRange
       ? achievements.filter(a => isWithinInterval(new Date(a.date), { start: dateRange!.start, end: dateRange!.end }))
       : achievements;
+
+    const plannerEventsInPeriod = dateRange
+      ? plannerEvents.filter(e => isWithinInterval(new Date(e.date), { start: dateRange!.start, end: dateRange!.end }))
+      : plannerEvents;
 
     return users
       .filter(u => u.role !== 'Admin' && u.role !== 'Manager') // Filter out top-level roles from ranking
@@ -76,15 +80,17 @@ export default function AchievementsPage() {
         const manualAchievements = achievementsInPeriod.filter(a => a.userId === u.id && a.type === 'manual' && a.status === 'approved');
         const manualPoints = manualAchievements.reduce((sum, a) => sum + a.points, 0);
 
+        const planningPoints = plannerEventsInPeriod.filter(e => e.creatorId === u.id).length * 1; // 1 point per event created
+
         return {
           user: u,
-          score: performanceScore + manualPoints,
+          score: performanceScore + manualPoints + planningPoints,
           completed: completedCount,
           overdue: overdueCount,
         };
       })
       .sort((a, b) => b.score - a.score);
-  }, [users, tasks, achievements, rankingFilter]);
+  }, [users, tasks, achievements, plannerEvents, rankingFilter]);
 
   const manualAchievements = useMemo(() => {
     return achievements.filter(ach => ach.type === 'manual' && ach.status === 'approved');
