@@ -28,6 +28,8 @@ interface AppContextType {
   pendingStoreRequestCount: number;
   myRequestUpdateCount: number;
   pendingCertificateRequestCount: number;
+  myCertificateRequestUpdateCount: number;
+  myFulfilledUTRequests: CertificateRequest[];
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
@@ -74,8 +76,10 @@ interface AppContextType {
   approveInventoryTransfer: (requestId: string, comment: string) => void;
   rejectInventoryTransfer: (requestId: string, comment: string) => void;
   addCertificateRequest: (itemId: string, requestType: CertificateRequestType, comment: string) => void;
+  requestUTMachineCertificate: (machineId: string, requestType: CertificateRequestType, comment: string) => void;
   addCertificateRequestComment: (requestId: string, commentText: string) => void;
   fulfillCertificateRequest: (requestId: string, commentText: string) => void;
+  markUTRequestsAsViewed: () => void;
   addManpowerLog: (log: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => void;
   addUTMachine: (machine: Omit<UTMachine, 'id' | 'usageLog'>) => void;
   updateUTMachine: (machine: UTMachine) => void;
@@ -793,22 +797,46 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setCertificateRequests(prev => [newRequest, ...prev]);
   };
 
+  const requestUTMachineCertificate = (machineId: string, requestType: CertificateRequestType, comment: string) => {
+    if (!user) return;
+    const newRequest: CertificateRequest = {
+      id: `cert-req-${Date.now()}`,
+      utMachineId: machineId,
+      requesterId: user.id,
+      requestType,
+      status: 'Pending',
+      date: new Date().toISOString(),
+      comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
+      isViewedByRequester: true,
+    };
+    setCertificateRequests(prev => [newRequest, ...prev]);
+    recordAction(`Requested ${requestType} for UT Machine ID ${machineId}`);
+  };
+
   const addCertificateRequestComment = (requestId: string, commentText: string) => {
     if (!user) return;
     const newComment: Comment = { userId: user.id, text: commentText, date: new Date().toISOString() };
     setCertificateRequests(prev => prev.map(req => 
       req.id === requestId 
-      ? { ...req, comments: [...req.comments, newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } 
+      ? { ...req, comments: [...req.comments, newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), isViewedByRequester: user.id !== req.requesterId ? false : true } 
       : req
     ));
   };
 
   const fulfillCertificateRequest = (requestId: string, commentText: string) => {
+    if (!user) return;
     addCertificateRequestComment(requestId, `Request fulfilled: ${commentText}`);
     setCertificateRequests(prev => prev.map(req => 
       req.id === requestId 
-      ? { ...req, status: 'Fulfilled' } 
+      ? { ...req, status: 'Fulfilled', isViewedByRequester: user.id !== req.requesterId ? false : true } 
       : req
+    ));
+  };
+
+  const markUTRequestsAsViewed = () => {
+    if (!user) return;
+    setCertificateRequests(prev => prev.map(req => 
+        (req.requesterId === user.id && req.utMachineId) ? { ...req, isViewedByRequester: true } : req
     ));
   };
 
@@ -914,6 +942,16 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return certificateRequests.filter(r => r.status === 'Pending').length;
   }, [certificateRequests]);
 
+  const myCertificateRequestUpdateCount = useMemo(() => {
+    if (!user) return 0;
+    return certificateRequests.filter(r => r.requesterId === user.id && r.utMachineId && r.isViewedByRequester === false).length;
+  }, [certificateRequests, user]);
+
+  const myFulfilledUTRequests = useMemo(() => {
+    if (!user) return [];
+    return certificateRequests.filter(r => r.requesterId === user.id && r.status === 'Fulfilled' && r.utMachineId);
+  }, [certificateRequests, user]);
+
   const canManageVehicles = useMemo(() => {
     if (!user) return false;
     const userRole = roles.find(r => r.name === user.role);
@@ -990,6 +1028,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     pendingStoreRequestCount,
     myRequestUpdateCount,
     pendingCertificateRequestCount,
+    myCertificateRequestUpdateCount,
+    myFulfilledUTRequests,
     login,
     logout,
     addTask,
@@ -1036,8 +1076,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     approveInventoryTransfer,
     rejectInventoryTransfer,
     addCertificateRequest,
+    requestUTMachineCertificate,
     addCertificateRequestComment,
     fulfillCertificateRequest,
+    markUTRequestsAsViewed,
     addManpowerLog,
     addUTMachine,
     updateUTMachine,

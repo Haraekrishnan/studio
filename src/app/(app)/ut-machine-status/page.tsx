@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,15 +8,22 @@ import UTMachineTable from '@/components/ut-machine/UTMachineTable';
 import AddUTMachineDialog from '@/components/ut-machine/AddUTMachineDialog';
 import type { UTMachine } from '@/lib/types';
 import EditUTMachineDialog from '@/components/ut-machine/EditUTMachineDialog';
-import { addDays, isBefore, format } from 'date-fns';
+import { addDays, isBefore, format, formatDistanceToNow } from 'date-fns';
 import UTMachineLogManagerDialog from '@/components/ut-machine/UTMachineLogManagerDialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function UTMachineStatusPage() {
-    const { user, roles, utMachines } = useAppContext();
+    const { user, roles, utMachines, users, myFulfilledUTRequests, markUTRequestsAsViewed } = useAppContext();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isLogManagerOpen, setIsLogManagerOpen] = useState(false);
     const [selectedMachine, setSelectedMachine] = useState<UTMachine | null>(null);
+
+    useEffect(() => {
+        if (user) {
+            markUTRequestsAsViewed();
+        }
+    }, [user, markUTRequestsAsViewed]);
 
     const canManage = useMemo(() => {
         if (!user) return false;
@@ -58,6 +65,34 @@ export default function UTMachineStatusPage() {
                     </Button>
                 )}
             </div>
+
+            {myFulfilledUTRequests.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Fulfilled Certificate Requests</CardTitle>
+                        <CardDescription>Your recent certificate requests have been fulfilled.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {myFulfilledUTRequests.map(req => {
+                            const machine = utMachines.find(m => m.id === req.utMachineId);
+                            const lastComment = req.comments?.[0];
+                            const fulfiller = users.find(u => u.id === lastComment?.userId);
+                            return (
+                                <div key={req.id} className="p-3 border rounded-lg bg-muted/50">
+                                    <p className="font-semibold">{req.requestType} for {machine?.machineName} (SN: {machine?.serialNumber})</p>
+                                    <div className="flex items-start gap-2 mt-2">
+                                        <Avatar className="h-7 w-7"><AvatarImage src={fulfiller?.avatar} /><AvatarFallback>{fulfiller?.name.charAt(0)}</AvatarFallback></Avatar>
+                                        <div className="bg-background p-2 rounded-md w-full text-sm">
+                                            <div className="flex justify-between items-baseline"><p className="font-semibold text-xs">{fulfiller?.name}</p><p className="text-xs text-muted-foreground">{lastComment ? formatDistanceToNow(new Date(lastComment.date), { addSuffix: true }) : ''}</p></div>
+                                            <p className="text-foreground/80 mt-1">{lastComment?.text}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </CardContent>
+                </Card>
+            )}
 
             {canManage && expiringMachines.length > 0 && (
                 <Card>

@@ -175,12 +175,14 @@ export type CertificateRequestType = 'TP Certificate' | 'Inspection Certificate'
 
 export interface CertificateRequest {
     id: string;
-    itemId: string;
+    itemId?: string;
+    utMachineId?: string;
     requesterId: string;
     requestType: CertificateRequestType;
     status: CertificateRequestStatus;
     date: string; // ISO Date
     comments: Comment[];
+    isViewedByRequester?: boolean;
 }
 
 export interface ManpowerLog {

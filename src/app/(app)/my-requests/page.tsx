@@ -30,8 +30,8 @@ export default function MyRequestsPage() {
             // Admins and Managers see all requests
             if (isAdminOrManager) return true;
             
-            // Store personnel see requests that are NOT forwarded to management
-            if (isStorePersonnel && !req.forwardedTo) return true;
+            // Store personnel see all requests (view button will be disabled for forwarded ones)
+            if (isStorePersonnel) return true;
             
             return false;
         }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

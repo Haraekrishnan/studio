@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { InternalRequest, InternalRequestStatus } from '@/lib/types';
 import { useAppContext } from '@/context/app-context';
 import { format } from 'date-fns';
@@ -27,6 +27,11 @@ const statusVariant: { [key in InternalRequestStatus]: "default" | "secondary" |
 export default function InternalRequestTable({ requests }: InternalRequestTableProps) {
     const { user, users } = useAppContext();
     const [selectedRequest, setSelectedRequest] = useState<InternalRequest | null>(null);
+
+    const isStorePersonnel = useMemo(() => {
+        if (!user) return false;
+        return ['Store in Charge', 'Assistant Store Incharge'].includes(user.role);
+    }, [user]);
 
     const handleViewClick = (request: InternalRequest) => {
         setSelectedRequest(request);
@@ -57,6 +62,7 @@ export default function InternalRequestTable({ requests }: InternalRequestTableP
                 {requests.map(request => {
                     const requester = users.find(u => u.id === request.requesterId);
                     const isUnreadUpdate = user?.id === request.requesterId && !request.isViewedByRequester;
+                    const cantViewDetails = isStorePersonnel && !!request.forwardedTo;
                     return (
                     <TableRow key={request.id} className={cn(isUnreadUpdate && 'bg-blue-50 dark:bg-blue-900/20')}>
                         <TableCell>
@@ -78,7 +84,7 @@ export default function InternalRequestTable({ requests }: InternalRequestTableP
                            </div>
                         </TableCell>
                         <TableCell className="text-right">
-                            <Button variant="outline" size="sm" onClick={() => handleViewClick(request)}>
+                            <Button variant="outline" size="sm" onClick={() => handleViewClick(request)} disabled={cantViewDetails}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
                             </Button>

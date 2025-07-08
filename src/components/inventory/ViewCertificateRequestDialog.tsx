@@ -19,12 +19,17 @@ interface ViewCertificateRequestDialogProps {
 }
 
 export default function ViewCertificateRequestDialog({ isOpen, setIsOpen, request }: ViewCertificateRequestDialogProps) {
-  const { users, inventoryItems, fulfillCertificateRequest, addCertificateRequestComment } = useAppContext();
+  const { users, inventoryItems, utMachines, fulfillCertificateRequest, addCertificateRequestComment } = useAppContext();
   const { toast } = useToast();
   const [comment, setComment] = useState('');
 
   const requester = users.find(u => u.id === request.requesterId);
   const item = inventoryItems.find(i => i.id === request.itemId);
+  const machine = utMachines.find(m => m.id === request.utMachineId);
+  
+  const subjectName = item ? item.name : machine?.machineName;
+  const subjectSN = item ? item.serialNumber : machine?.serialNumber;
+
 
   const handleFulfill = () => {
     if (!comment) {
@@ -48,7 +53,7 @@ export default function ViewCertificateRequestDialog({ isOpen, setIsOpen, reques
         <DialogHeader>
           <DialogTitle>Review Certificate Request</DialogTitle>
           <DialogDescription>
-            {requester?.name} is requesting a {request.requestType} for {item?.name} (SN: {item?.serialNumber}).
+            {requester?.name} is requesting a {request.requestType} for {subjectName} (SN: {subjectSN}).
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">

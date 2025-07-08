@@ -1,8 +1,12 @@
 'use client';
+import { useState } from 'react';
 import { useAppContext } from '@/context/app-context';
-import type { UTMachine } from '@/lib/types';
+import type { UTMachine, CertificateRequestType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 interface RequestUTMachineCertificateDialogProps {
@@ -12,10 +16,18 @@ interface RequestUTMachineCertificateDialogProps {
 }
 
 export default function RequestUTMachineCertificateDialog({ isOpen, setIsOpen, machine }: RequestUTMachineCertificateDialogProps) {
+  const { requestUTMachineCertificate } = useAppContext();
   const { toast } = useToast();
+  const [requestType, setRequestType] = useState<CertificateRequestType | ''>('');
+  const [comment, setComment] = useState('');
 
   const handleSubmit = () => {
-    toast({ title: 'Request Sent', description: `Your request for the calibration certificate for ${machine.machineName} has been sent.` });
+    if (!requestType || !comment) {
+      toast({ variant: 'destructive', title: 'Information Missing', description: 'Please select a type and add a comment.' });
+      return;
+    }
+    requestUTMachineCertificate(machine.id, requestType, comment);
+    toast({ title: 'Request Sent', description: `Your request for the certificate for ${machine.machineName} has been sent.` });
     setIsOpen(false);
   };
 
@@ -23,15 +35,36 @@ export default function RequestUTMachineCertificateDialog({ isOpen, setIsOpen, m
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Request Calibration Certificate</DialogTitle>
+          <DialogTitle>Request Certificate</DialogTitle>
           <DialogDescription>
-            You are about to request a calibration certificate for {machine.machineName} (SN: {machine.serialNumber}).
-            This will notify the relevant personnel.
+            Request a certificate for {machine.machineName} (SN: {machine.serialNumber}).
           </DialogDescription>
         </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div>
+            <Label>Certificate Type</Label>
+            <Select value={requestType} onValueChange={(value) => setRequestType(value as CertificateRequestType)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select certificate type..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Inspection Certificate">Inspection Certificate</SelectItem>
+                <SelectItem value="TP Certificate">TP Certificate</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Comment / Reason</Label>
+            <Textarea 
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Add a comment explaining why you need this certificate."
+            />
+          </div>
+        </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button onClick={handleSubmit}>Confirm Request</Button>
+          <Button onClick={handleSubmit}>Submit Request</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

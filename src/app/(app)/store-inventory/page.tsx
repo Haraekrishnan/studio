@@ -16,7 +16,7 @@ import ViewCertificateRequestDialog from '@/components/inventory/ViewCertificate
 import InventorySummary from '@/components/inventory/InventorySummary';
 
 export default function StoreInventoryPage() {
-    const { user, users, roles, inventoryItems, projects, inventoryTransferRequests, certificateRequests } = useAppContext();
+    const { user, users, roles, inventoryItems, projects, utMachines, inventoryTransferRequests, certificateRequests } = useAppContext();
     const [isAddItemOpen, setIsAddItemOpen] = useState(false);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -152,9 +152,12 @@ export default function StoreInventoryPage() {
                          {pendingCertRequests.map(req => {
                             const requester = users.find(u => u.id === req.requesterId);
                             const item = inventoryItems.find(i => i.id === req.itemId);
+                            const machine = utMachines.find(m => m.id === req.utMachineId);
+                            const subject = item ? `${item.name} (SN: ${item.serialNumber})` : (machine ? `${machine.machineName} (SN: ${machine.serialNumber})` : 'Unknown');
+
                             return (
                                 <div key={req.id} className="p-4 border rounded-lg flex justify-between items-center">
-                                    <div><p><span className="font-semibold">{requester?.name}</span> requests a <span className="font-semibold">{req.requestType}</span></p><p className="text-sm text-muted-foreground">For: {item?.name} (SN: {item?.serialNumber})</p></div>
+                                    <div><p><span className="font-semibold">{requester?.name}</span> requests a <span className="font-semibold">{req.requestType}</span></p><p className="text-sm text-muted-foreground">For: {subject}</p></div>
                                     <Button size="sm" onClick={() => setViewingCertRequest(req)}>Review Request</Button>
                                 </div>
                             )

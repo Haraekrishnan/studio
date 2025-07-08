@@ -10,15 +10,25 @@ import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, pendingTaskApprovalCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, myNewTaskCount } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles } = useAppContext();
   const pathname = usePathname();
 
-  const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
+  const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
+  const canManageUtMachines = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_ut_machines');
   
+  const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
   const myRequestsNotificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
-  const inventoryNotificationCount = isApprover ? pendingCertificateRequestCount : 0;
+  
+  let inventoryNotificationCount = 0;
+  if(isApprover) inventoryNotificationCount += pendingCertificateRequestCount;
   
   const taskNotificationCount = pendingTaskApprovalCount + myNewTaskCount;
+
+  let utMachineNotificationCount = myCertificateRequestUpdateCount;
+  if (canManageUtMachines) utMachineNotificationCount += expiringUtMachineCalibrationsCount;
+
+  let vehicleNotificationCount = 0;
+  if (canManageVehicles) vehicleNotificationCount += expiringVehicleDocsCount;
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -31,8 +41,8 @@ export function AppSidebar() {
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
     { href: '/manpower', icon: Users2, label: 'Manpower' },
-    { href: '/ut-machine-status', icon: Gamepad2, label: 'UT Machine Status', notification: expiringUtMachineCalibrationsCount },
-    { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: expiringVehicleDocsCount },
+    { href: '/ut-machine-status', icon: Gamepad2, label: 'UT Machine Status', notification: utMachineNotificationCount },
+    { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
   ];
 
   return (
