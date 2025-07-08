@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/s
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Users2, Wrench, Car } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export default function Header() {
   const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount } = useAppContext();
@@ -42,7 +43,6 @@ export default function Header() {
     { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
-    { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
     { href: '/manpower', icon: Users2, label: 'Manpower' },
     { href: '/ut-machine-status', icon: Wrench, label: 'UT Machine Status' },
@@ -85,7 +85,7 @@ export default function Header() {
                                 <Link href={item.href} className="flex items-center gap-3">
                                 <item.icon className="h-5 w-5" />
                                 <span>{item.label}</span>
-                                {(item.notification && item.notification > 0) && (
+                                {(item.notification ?? 0) > 0 && (
                                     <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
                                         {item.notification}
                                     </Badge>
@@ -118,7 +118,21 @@ export default function Header() {
         </Sheet>
         <h1 className="text-2xl font-bold text-sidebar-foreground hidden md:block">{getPageTitle()}</h1>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" asChild>
+                        <Link href="/activity-tracker">
+                            <Clock />
+                        </Link>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Activity Tracker</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
         <Avatar className="hidden md:block">
             <AvatarImage src={user?.avatar} alt={user?.name} />
             <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>

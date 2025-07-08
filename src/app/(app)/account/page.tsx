@@ -190,11 +190,6 @@ export default function AccountPage() {
             </CardContent>
             <CardFooter className="flex items-center gap-2">
               <Button type="submit">Save Branding</Button>
-              {newAppLogo && (
-                <Button variant="outline" type="button" onClick={() => setNewAppLogo(null)}>
-                  Remove Logo
-                </Button>
-              )}
             </CardFooter>
           </form>
         </Card>
