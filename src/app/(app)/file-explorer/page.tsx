@@ -184,6 +184,7 @@ export default function FileExplorerPage() {
                     <FileItem name="chart.tsx" path="src/components/ui/chart.tsx" level={3}/>
                     <FileItem name="checkbox.tsx" path="src/components/ui/checkbox.tsx" level={3}/>
                     <FileItem name="collapsible.tsx" path="src/components/ui/collapsible.tsx" level={3}/>
+                    <FileItem name="command.tsx" path="src/components/ui/command.tsx" level={3}/>
                     <FileItem name="dialog.tsx" path="src/components/ui/dialog.tsx" level={3}/>
                     <FileItem name="dropdown-menu.tsx" path="src/components/ui/dropdown-menu.tsx" level={3}/>
                     <FileItem name="form.tsx" path="src/components/ui/form.tsx" level={3}/>
