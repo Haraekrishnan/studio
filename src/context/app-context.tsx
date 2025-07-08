@@ -827,14 +827,30 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const fulfillCertificateRequest = useCallback((requestId: string, commentText: string) => {
-    if (!user) return;
-    addCertificateRequestComment(requestId, `Request fulfilled: ${commentText}`);
-    setCertificateRequests(prev => prev.map(req => 
-      req.id === requestId 
-      ? { ...req, status: 'Fulfilled', isViewedByRequester: user.id !== req.requesterId ? false : true } 
-      : req
-    ));
-  }, [user, addCertificateRequestComment]);
+      if (!user) return;
+      const newComment: Comment = { 
+        userId: user.id, 
+        text: `Request fulfilled: ${commentText}`, 
+        date: new Date().toISOString() 
+      };
+
+      setCertificateRequests(prev => prev.map(req => {
+          if (req.id === requestId) {
+              return {
+                  ...req,
+                  status: 'Fulfilled',
+                  isViewedByRequester: user.id !== req.requesterId ? false : req.isViewedByRequester,
+                  comments: [...req.comments, newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              }
+          }
+          return req;
+      }));
+      
+      const request = certificateRequests.find(r => r.id === requestId);
+      if (request) {
+          recordAction(`Fulfilled certificate request for item ID ${request.itemId || request.utMachineId}`);
+      }
+  }, [user, recordAction, certificateRequests]);
 
   const acknowledgeFulfilledUTRequest = useCallback((requestId: string) => {
     if (!user) return;
