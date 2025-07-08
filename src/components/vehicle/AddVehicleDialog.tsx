@@ -14,12 +14,16 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 import { ScrollArea } from '../ui/scroll-area';
+import { useMemo } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const vehicleSchema = z.object({
   vehicleNumber: z.string().min(1),
   vehicleDetails: z.string().min(1),
   seatingCapacity: z.coerce.number().min(1),
   driverName: z.string().min(1),
+  supervisorId: z.string().min(1, 'Supervisor is required'),
+  projectId: z.string().min(1, 'Project is required'),
   vapNumber: z.string().min(1),
   driverLicenseNumber: z.string().min(1),
   driverEpNumber: z.string().min(1),
@@ -38,8 +42,10 @@ interface AddVehicleDialogProps {
 }
 
 export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialogProps) {
-  const { addVehicle } = useAppContext();
+  const { addVehicle, users, projects } = useAppContext();
   const { toast } = useToast();
+
+  const supervisors = useMemo(() => users.filter(u => u.role === 'Supervisor' || u.role === 'Manager' || u.role === 'Admin'), [users]);
 
   const form = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
@@ -77,6 +83,18 @@ export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialog
                     <div><Label>Seating Capacity</Label><Input type="number" {...form.register('seatingCapacity')} />{form.formState.errors.seatingCapacity && <p className="text-xs text-destructive">{form.formState.errors.seatingCapacity.message}</p>}</div>
                 </div>
                 <div><Label>Vehicle Details</Label><Input {...form.register('vehicleDetails')} />{form.formState.errors.vehicleDetails && <p className="text-xs text-destructive">{form.formState.errors.vehicleDetails.message}</p>}</div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <Label>Supervisor</Label>
+                        <Controller control={form.control} name="supervisorId" render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue placeholder="Select..."/></SelectTrigger><SelectContent>{supervisors.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select>)}/>{form.formState.errors.supervisorId && <p className="text-xs text-destructive">{form.formState.errors.supervisorId.message}</p>}
+                    </div>
+                    <div>
+                        <Label>Project / Location</Label>
+                        <Controller control={form.control} name="projectId" render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue placeholder="Select..."/></SelectTrigger><SelectContent>{projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select>)}/>{form.formState.errors.projectId && <p className="text-xs text-destructive">{form.formState.errors.projectId.message}</p>}
+                    </div>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-4">
                     <div><Label>Driver Name</Label><Input {...form.register('driverName')} />{form.formState.errors.driverName && <p className="text-xs text-destructive">{form.formState.errors.driverName.message}</p>}</div>
                     <div><Label>VAP Number</Label><Input {...form.register('vapNumber')} />{form.formState.errors.vapNumber && <p className="text-xs text-destructive">{form.formState.errors.vapNumber.message}</p>}</div>

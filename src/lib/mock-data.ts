@@ -289,8 +289,8 @@ export const UT_MACHINES: UTMachine[] = [
 ];
 
 export const VEHICLES: Vehicle[] = [
-    { id: 'vh-1', vehicleNumber: 'DXB 12345', vehicleDetails: 'Toyota HiAce 2022', seatingCapacity: 14, driverName: 'Ali Khan', vapNumber: 'VAP-001', driverLicenseNumber: 'DL-001', driverEpNumber: 'EP-001', driverSdpNumber: 'SDP-001', vapValidity: add(new Date(), { months: 6 }).toISOString(), sdpValidity: add(new Date(), { years: 1 }).toISOString(), epValidity: add(new Date(), { years: 2 }).toISOString(), status: 'Operational' },
-    { id: 'vh-2', vehicleNumber: 'SHJ 54321', vehicleDetails: 'Nissan Urvan 2021', seatingCapacity: 12, driverName: 'Babu Raj', vapNumber: 'VAP-002', driverLicenseNumber: 'DL-002', driverEpNumber: 'EP-002', driverSdpNumber: 'SDP-002', vapValidity: add(new Date(), { days: 45 }).toISOString(), sdpValidity: add(new Date(), { months: 8 }).toISOString(), epValidity: add(new Date(), { years: 1 }).toISOString(), status: 'In Workshop' },
+    { id: 'vh-1', vehicleNumber: 'DXB 12345', vehicleDetails: 'Toyota HiAce 2022', seatingCapacity: 14, driverName: 'Ali Khan', supervisorId: '3', projectId: 'proj-1', vapNumber: 'VAP-001', driverLicenseNumber: 'DL-001', driverEpNumber: 'EP-001', driverSdpNumber: 'SDP-001', vapValidity: add(new Date(), { months: 6 }).toISOString(), sdpValidity: add(new Date(), { years: 1 }).toISOString(), epValidity: add(new Date(), { years: 2 }).toISOString(), status: 'Operational' },
+    { id: 'vh-2', vehicleNumber: 'SHJ 54321', vehicleDetails: 'Nissan Urvan 2021', seatingCapacity: 12, driverName: 'Babu Raj', supervisorId: '4', projectId: 'proj-2', vapNumber: 'VAP-002', driverLicenseNumber: 'DL-002', driverEpNumber: 'EP-002', driverSdpNumber: 'SDP-002', vapValidity: add(new Date(), { days: 25 }).toISOString(), sdpValidity: add(new Date(), { months: 8 }).toISOString(), epValidity: add(new Date(), { years: 1 }).toISOString(), status: 'In Workshop' },
 ];
 
 

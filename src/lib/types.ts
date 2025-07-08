@@ -209,6 +209,8 @@ export interface Vehicle {
   vehicleDetails: string;
   seatingCapacity: number;
   driverName: string;
+  supervisorId: string;
+  projectId: string;
   vapNumber: string;
   driverLicenseNumber: string;
   driverEpNumber: string;

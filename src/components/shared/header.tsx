@@ -10,12 +10,13 @@ import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export default function Header() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, pendingTaskApprovalCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount } = useAppContext();
   const pathname = usePathname();
 
   const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
   const myRequestsNotificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
   const inventoryNotificationCount = isApprover ? pendingCertificateRequestCount : 0;
+  const taskNotificationCount = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE') ? pendingTaskApprovalCount : 0;
 
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -36,7 +37,7 @@ export default function Header() {
   
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/tasks', icon: Briefcase, label: 'Manage Tasks' },
+    { href: '/tasks', icon: Briefcase, label: 'Manage Tasks', notification: taskNotificationCount },
     { href: '/my-requests', icon: History, label: 'My Requests', notification: myRequestsNotificationCount },
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
@@ -44,9 +45,9 @@ export default function Header() {
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
-    { href: '/manpower', icon: Users2, label: 'Manpower' },
-    { href: '/ut-machine-status', icon: Wrench, label: 'UT Machine Status' },
-    { href: '/vehicle-status', icon: Car, label: 'Vehicle Status' },
+    { href: '/manpower', icon: Users2, label: 'Manpower', notification: 0 },
+    { href: '/ut-machine-status', icon: Wrench, label: 'UT Machine Status', notification: expiringUtMachineCalibrationsCount },
+    { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: expiringVehicleDocsCount },
   ];
 
   return (

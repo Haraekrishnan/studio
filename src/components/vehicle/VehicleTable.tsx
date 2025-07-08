@@ -17,7 +17,7 @@ interface VehicleTableProps {
 }
 
 export default function VehicleTable({ onEdit }: VehicleTableProps) {
-    const { user, roles, vehicles, deleteVehicle } = useAppContext();
+    const { user, roles, vehicles, deleteVehicle, users, projects } = useAppContext();
     const { toast } = useToast();
 
     const canManage = useMemo(() => {
@@ -43,44 +43,52 @@ export default function VehicleTable({ onEdit }: VehicleTableProps) {
                 <TableRow>
                     <TableHead>Vehicle No.</TableHead>
                     <TableHead>Driver</TableHead>
+                    <TableHead>Supervisor</TableHead>
+                    <TableHead>Project</TableHead>
                     <TableHead>VAP Validity</TableHead>
                     <TableHead>Status</TableHead>
                     {canManage && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {vehicles.map(vehicle => (
-                    <TableRow key={vehicle.id}>
-                        <TableCell className="font-medium">{vehicle.vehicleNumber}</TableCell>
-                        <TableCell>{vehicle.driverName}</TableCell>
-                        <TableCell className={cn(isDatePast(vehicle.vapValidity) && 'text-destructive font-bold')}>
-                            {format(new Date(vehicle.vapValidity), 'dd-MM-yyyy')}
-                        </TableCell>
-                        <TableCell><Badge variant={vehicle.status.toLowerCase() !== 'operational' ? 'destructive' : 'secondary'}>{vehicle.status}</Badge></TableCell>
-                        {canManage && (
-                            <TableCell className="text-right">
-                                <AlertDialog>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <span className="sr-only">Open menu</span>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onSelect={() => onEdit(vehicle)}><Edit className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
-                                            <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem></AlertDialogTrigger>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action will permanently delete the vehicle record.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(vehicle.id)}>Delete</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                {vehicles.map(vehicle => {
+                    const supervisor = users.find(u => u.id === vehicle.supervisorId);
+                    const project = projects.find(p => p.id === vehicle.projectId);
+                    return (
+                        <TableRow key={vehicle.id}>
+                            <TableCell className="font-medium">{vehicle.vehicleNumber}</TableCell>
+                            <TableCell>{vehicle.driverName}</TableCell>
+                            <TableCell>{supervisor?.name || 'N/A'}</TableCell>
+                            <TableCell>{project?.name || 'N/A'}</TableCell>
+                            <TableCell className={cn(isDatePast(vehicle.vapValidity) && 'text-destructive font-bold')}>
+                                {format(new Date(vehicle.vapValidity), 'dd-MM-yyyy')}
                             </TableCell>
-                        )}
-                    </TableRow>
-                ))}
+                            <TableCell><Badge variant={vehicle.status.toLowerCase() !== 'operational' ? 'destructive' : 'secondary'}>{vehicle.status}</Badge></TableCell>
+                            {canManage && (
+                                <TableCell className="text-right">
+                                    <AlertDialog>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onSelect={() => onEdit(vehicle)}><Edit className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
+                                                <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem></AlertDialogTrigger>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action will permanently delete the vehicle record.</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(vehicle.id)}>Delete</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </TableCell>
+                            )}
+                        </TableRow>
+                    );
+                })}
             </TableBody>
         </Table>
     );
