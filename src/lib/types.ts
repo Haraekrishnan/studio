@@ -14,6 +14,9 @@ export const ALL_PERMISSIONS = [
   'view_all_users',
   'view_subordinates_users',
   'manage_inventory',
+  'manage_manpower',
+  'manage_ut_machines',
+  'manage_vehicles',
 ] as const;
 export type Permission = (typeof ALL_PERMISSIONS)[number];
 
@@ -173,4 +176,43 @@ export interface CertificateRequest {
     status: CertificateRequestStatus;
     date: string; // ISO Date
     comments: Comment[];
+}
+
+export interface ManpowerLog {
+  id: string;
+  date: string; // yyyy-MM-dd
+  projectId: string;
+  countIn: number;
+  countOut: number;
+  reason: string;
+  updatedBy: string; // userId
+}
+
+export interface UTMachine {
+  id: string;
+  machineName: string;
+  serialNumber: string;
+  projectId: string;
+  unit: string; // e.g., 'Unit A', 'Unit B'
+  calibrationDueDate: string; // ISO Date
+  probeDetails: string;
+  cableDetails: string;
+  status: string; // Daily status update
+  usageLog: { date: string; updatedBy: string; status: string }[];
+}
+
+export interface Vehicle {
+  id: string;
+  vehicleNumber: string;
+  vehicleDetails: string;
+  seatingCapacity: number;
+  driverName: string;
+  vapNumber: string;
+  driverLicenseNumber: string;
+  driverEpNumber: string;
+  driverSdpNumber: string;
+  vapValidity: string; // ISO Date
+  sdpValidity: string; // ISO Date
+  epValidity: string; // ISO Date
+  status: string; // Daily status update
 }

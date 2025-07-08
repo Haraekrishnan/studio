@@ -1,25 +1,48 @@
-// This is a placeholder file for the new UT Machine Status page.
-// The actual implementation will be provided in subsequent turns.
 'use client';
+import { useState, useMemo } from 'react';
+import { useAppContext } from '@/context/app-context';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
+import UTMachineTable from '@/components/ut-machine/UTMachineTable';
+import AddUTMachineDialog from '@/components/ut-machine/AddUTMachineDialog';
 
 export default function UTMachineStatusPage() {
+    const { user, roles } = useAppContext();
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+    const canManage = useMemo(() => {
+        if (!user) return false;
+        const userRole = roles.find(r => r.name === user.role);
+        return userRole?.permissions.includes('manage_ut_machines');
+    }, [user, roles]);
+
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">UT Machine Status</h1>
-                <p className="text-muted-foreground">Manage and track UT machine details and usage.</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">UT Machine Status</h1>
+                    <p className="text-muted-foreground">Manage and track UT machine details and usage.</p>
+                </div>
+                {canManage && (
+                    <Button onClick={() => setIsAddDialogOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Machine
+                    </Button>
+                )}
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Coming Soon</CardTitle>
-                    <CardDescription>This feature is under construction.</CardDescription>
+                    <CardTitle>Machine List</CardTitle>
+                    <CardDescription>A comprehensive list of all UT machines.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>The full UT Machine Status tracking feature will be implemented here.</p>
+                    <UTMachineTable />
                 </CardContent>
             </Card>
+
+            <AddUTMachineDialog isOpen={isAddDialogOpen} setIsOpen={setIsAddDialogOpen} />
         </div>
     );
 }

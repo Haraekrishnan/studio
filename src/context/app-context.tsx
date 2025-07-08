@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS } from '@/lib/mock-data';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES } from '@/lib/mock-data';
 import { addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
 interface AppContextType {
@@ -19,6 +19,9 @@ interface AppContextType {
   dailyPlannerComments: DailyPlannerComment[];
   achievements: Achievement[];
   activityLogs: ActivityLog[];
+  manpowerLogs: ManpowerLog[];
+  utMachines: UTMachine[];
+  vehicles: Vehicle[];
   appName: string;
   appLogo: string | null;
   internalRequests: InternalRequest[];
@@ -71,6 +74,7 @@ interface AppContextType {
   addCertificateRequest: (itemId: string, requestType: CertificateRequestType, comment: string) => void;
   addCertificateRequestComment: (requestId: string, commentText: string) => void;
   fulfillCertificateRequest: (requestId: string, commentText: string) => void;
+  addManpowerLog: (log: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -88,6 +92,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>(DAILY_PLANNER_COMMENTS);
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
+  const [manpowerLogs, setManpowerLogs] = useState<ManpowerLog[]>(MANPOWER_LOGS);
+  const [utMachines, setUtMachines] = useState<UTMachine[]>(UT_MACHINES);
+  const [vehicles, setVehicles] = useState<Vehicle[]>(VEHICLES);
   const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const [appName, setAppName] = useState('Aries Marine - Task Management System');
@@ -216,7 +223,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const updateTask = (updatedTask: Task) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
-        task.id === updatedTask.id ? updatedTask : task
+        task.id === updatedTask.id ? { ...updatedTask, attachment: updatedTask.attachment || task.attachment } : task
       )
     );
     recordAction(`Updated task details for: "${updatedTask.title}"`);
@@ -229,10 +236,18 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       text: commentText,
       date: new Date().toISOString(),
     };
+    setTasks(prevTasks => {
+        const updatedTasks = prevTasks.map(t => {
+            if (t.id === taskId) {
+                const updatedComments = t.comments ? [...t.comments, newComment] : [newComment];
+                return { ...t, comments: updatedComments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()) };
+            }
+            return t;
+        });
+        return updatedTasks;
+    });
+
     const task = tasks.find(t => t.id === taskId);
-    setTasks(prevTasks => prevTasks.map(t => 
-      t.id === taskId ? { ...t, comments: [...(t.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : t
-    ));
     recordAction(`Commented on task: "${task?.title}"`);
   };
   
@@ -353,9 +368,16 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       text: commentText,
       date: new Date().toISOString(),
     };
-    setPlannerEvents(prevEvents => prevEvents.map(event => 
-      event.id === eventId ? { ...event, comments: [...(event.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } : event
-    ));
+    setPlannerEvents(prevEvents => {
+      const updatedEvents = prevEvents.map(event => {
+          if (event.id === eventId) {
+              const updatedComments = event.comments ? [...event.comments, newComment] : [newComment];
+              return { ...event, comments: updatedComments.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()) };
+          }
+          return event;
+      });
+      return updatedEvents;
+    });
     const eventTitle = plannerEvents.find(e => e.id === eventId)?.title;
     recordAction(`Commented on event: "${eventTitle}"`);
   };
@@ -706,6 +728,22 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     ));
   };
 
+  const addManpowerLog = (logData: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => {
+    if (!user) return;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const newLog: ManpowerLog = {
+      ...logData,
+      id: `mp-${logData.projectId}-${todayStr}`,
+      date: todayStr,
+      updatedBy: user.id,
+    };
+    setManpowerLogs(prev => {
+        // Remove existing log for the same project and day, then add the new one
+        const otherLogs = prev.filter(l => !(l.date === todayStr && l.projectId === newLog.projectId));
+        return [...otherLogs, newLog];
+    });
+  };
+
   const pendingStoreRequestCount = useMemo(() => {
     return internalRequests.filter(r => r.status === 'Pending').length;
   }, [internalRequests]);
@@ -733,6 +771,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     dailyPlannerComments,
     achievements,
     activityLogs,
+    manpowerLogs,
+    utMachines,
+    vehicles,
     appName,
     appLogo,
     internalRequests,
@@ -785,6 +826,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addCertificateRequest,
     addCertificateRequestComment,
     fulfillCertificateRequest,
+    addManpowerLog,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

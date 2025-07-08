@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle } from './types';
 import { sub, add, format } from 'date-fns';
 import { ALL_PERMISSIONS } from './types';
 
@@ -17,7 +17,8 @@ export const ROLES: RoleDefinition[] = [
     permissions: [
       'manage_users', 'assign_supervisors', 'create_tasks', 'reassign_tasks', 'delete_tasks', 
       'grant_manual_achievements', 'approve_manual_achievements', 
-      'view_all_activity', 'view_all_users', 'manage_inventory'
+      'view_all_activity', 'view_all_users', 'manage_inventory',
+      'manage_manpower', 'manage_ut_machines', 'manage_vehicles'
     ],
     isEditable: false,
   },
@@ -249,7 +250,7 @@ export const INTERNAL_REQUESTS: InternalRequest[] = [
             { userId: '12', text: 'The old ones are malfunctioning.', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
             { userId: '22', text: 'Approved. Please collect from the main store.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
         ],
-        isViewedByRequester: true
+        isViewedByRequester: false
     }
 ];
 
@@ -275,6 +276,23 @@ export const CERTIFICATE_REQUESTS: CertificateRequest[] = [
     comments: [{ userId: '3', text: 'Need this for client audit next week.', date: new Date().toISOString() }],
   }
 ];
+
+export const MANPOWER_LOGS: ManpowerLog[] = [
+    { id: 'mp-1', date: format(new Date(), 'yyyy-MM-dd'), projectId: 'proj-1', countIn: 20, countOut: 1, reason: '1 person sick leave', updatedBy: '3' },
+    { id: 'mp-2', date: format(new Date(), 'yyyy-MM-dd'), projectId: 'proj-2', countIn: 15, countOut: 0, reason: 'Full attendance', updatedBy: '4' },
+    { id: 'mp-3', date: format(sub(new Date(), { days: 1 }), 'yyyy-MM-dd'), projectId: 'proj-1', countIn: 19, countOut: 0, reason: 'Full attendance', updatedBy: '3' },
+];
+
+export const UT_MACHINES: UTMachine[] = [
+    { id: 'ut-1', machineName: 'Krautkramer USM 36', serialNumber: 'UTM-001', projectId: 'proj-1', unit: 'Unit A', calibrationDueDate: add(new Date(), { months: 3 }).toISOString(), probeDetails: '5MHz Dual Crystal', cableDetails: 'Standard RG-58', status: 'In Service', usageLog: [] },
+    { id: 'ut-2', machineName: 'Olympus EPOCH 650', serialNumber: 'UTM-002', projectId: 'proj-2', unit: 'Unit B', calibrationDueDate: add(new Date(), { days: 20 }).toISOString(), probeDetails: '2.25MHz Single Crystal', cableDetails: 'Heavy Duty', status: 'In Service', usageLog: [] },
+];
+
+export const VEHICLES: Vehicle[] = [
+    { id: 'vh-1', vehicleNumber: 'DXB 12345', vehicleDetails: 'Toyota HiAce 2022', seatingCapacity: 14, driverName: 'Ali Khan', vapNumber: 'VAP-001', driverLicenseNumber: 'DL-001', driverEpNumber: 'EP-001', driverSdpNumber: 'SDP-001', vapValidity: add(new Date(), { months: 6 }).toISOString(), sdpValidity: add(new Date(), { years: 1 }).toISOString(), epValidity: add(new Date(), { years: 2 }).toISOString(), status: 'Operational' },
+    { id: 'vh-2', vehicleNumber: 'SHJ 54321', vehicleDetails: 'Nissan Urvan 2021', seatingCapacity: 12, driverName: 'Babu Raj', vapNumber: 'VAP-002', driverLicenseNumber: 'DL-002', driverEpNumber: 'EP-002', driverSdpNumber: 'SDP-002', vapValidity: add(new Date(), { days: 45 }).toISOString(), sdpValidity: add(new Date(), { months: 8 }).toISOString(), epValidity: add(new Date(), { years: 1 }).toISOString(), status: 'In Workshop' },
+];
+
 
 export const PLANNER_EVENTS: PlannerEvent[] = [
     {
