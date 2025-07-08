@@ -156,7 +156,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
   }, [currentLogId]);
 
-  const login = (email: string, password: string): boolean => {
+  const login = useCallback((email: string, password: string): boolean => {
     const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (foundUser) {
       setUser(foundUser);
@@ -176,9 +176,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       return true;
     }
     return false;
-  };
+  }, [router, users]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     if (currentLogId) {
       const logoutTime = new Date();
       setActivityLogs(prevLogs => 
@@ -199,7 +199,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
     setUser(null);
     router.push('/login');
-  };
+  }, [router, currentLogId]);
 
   const getSubordinates = useCallback((managerId: string, allUsers: User[]): string[] => {
     const subordinates: string[] = [];
@@ -234,7 +234,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return users.filter(u => u.id === user.id);
   }, [user, users, roles, getSubordinates]);
   
-  const addTask = (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => {
+  const addTask = useCallback((task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => {
     const newTask: Task = {
         ...task,
         id: `task-${Date.now()}`,
@@ -245,18 +245,18 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setTasks(prevTasks => [newTask, ...prevTasks]);
     recordAction(`Created task: "${task.title}"`);
-  };
+  }, [recordAction]);
 
-  const updateTask = (updatedTask: Task) => {
+  const updateTask = useCallback((updatedTask: Task) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === updatedTask.id ? { ...task, ...updatedTask } : task
       )
     );
     recordAction(`Updated task details for: "${updatedTask.title}"`);
-  };
+  }, [recordAction]);
 
-  const addComment = (taskId: string, commentText: string) => {
+  const addComment = useCallback((taskId: string, commentText: string) => {
     if (!user) return;
     const newComment: Comment = {
       userId: user.id,
@@ -276,9 +276,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
     const task = tasks.find(t => t.id === taskId);
     recordAction(`Commented on task: "${task?.title}"`);
-  };
+  }, [user, tasks, recordAction]);
   
-  const requestTaskStatusChange = (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']): boolean => {
+  const requestTaskStatusChange = useCallback((taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']): boolean => {
     const task = tasks.find(t => t.id === taskId);
     if (!task || !user || !commentText) return false;
 
@@ -298,9 +298,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     updateTask(updatedTask);
     recordAction(`Requested status change to "${newStatus}" for task: "${task.title}"`);
     return true;
-  };
+  }, [tasks, user, addComment, updateTask, recordAction]);
   
-  const approveTaskStatusChange = (taskId: string, commentText: string) => {
+  const approveTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -334,9 +334,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
     
     updateTask({ ...task, ...updatedTask });
-  };
+  }, [tasks, users, addComment, updateTask, recordAction]);
   
-  const returnTaskStatusChange = (taskId: string, commentText: string) => {
+  const returnTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -365,27 +365,29 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
 
     updateTask({ ...task, ...updatedTask });
-  };
+  }, [tasks, addComment, updateTask, recordAction]);
 
-  const deleteTask = (taskId: string) => {
+  const deleteTask = useCallback((taskId: string) => {
     const taskTitle = tasks.find(t => t.id === taskId)?.title;
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
     recordAction(`Deleted task: "${taskTitle}"`);
-  };
+  }, [tasks, recordAction]);
 
-  const markTaskAsViewed = (taskId: string) => {
+  const markTaskAsViewed = useCallback((taskId: string) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isViewedByAssignee: true } : t));
-  };
+  }, []);
 
-  const addPlannerEvent = (event: Omit<PlannerEvent, 'id' | 'comments'>) => {
+  const addPlannerEvent = useCallback((event: Omit<PlannerEvent, 'id' | 'comments'>) => {
+    if (!user) return;
     const newEvent: PlannerEvent = {
       ...event,
       id: `event-${Date.now()}`,
+      creatorId: user.id,
       comments: [],
     };
     setPlannerEvents(prevEvents => [newEvent, ...prevEvents]);
     recordAction(`Created planner event: "${event.title}"`);
-  };
+  }, [user, recordAction]);
   
   const getExpandedPlannerEvents = useCallback((date: Date, userId: string) => {
     const start = startOfMonth(date);
@@ -427,7 +429,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return expandedEvents;
   }, [plannerEvents]);
 
-  const addPlannerEventComment = (eventId: string, commentText: string) => {
+  const addPlannerEventComment = useCallback((eventId: string, commentText: string) => {
     if (!user) return;
     const newComment: Comment = {
       userId: user.id,
@@ -446,9 +448,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
     const eventTitle = plannerEvents.find(e => e.id === eventId)?.title;
     recordAction(`Commented on event: "${eventTitle}"`);
-  };
+  }, [user, plannerEvents, recordAction]);
 
-  const addDailyPlannerComment = (plannerUserId: string, date: Date, commentText: string) => {
+  const addDailyPlannerComment = useCallback((plannerUserId: string, date: Date, commentText: string) => {
     if (!user) return;
     const dayKey = format(date, 'yyyy-MM-dd');
 
@@ -478,9 +480,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
     const plannerUser = users.find(u => u.id === plannerUserId);
     recordAction(`Commented on ${plannerUser?.name}'s planner for ${dayKey}`);
-  };
+  }, [user, users, recordAction]);
 
-  const addUser = (newUser: Omit<User, 'id' | 'avatar'>) => {
+  const addUser = useCallback((newUser: Omit<User, 'id' | 'avatar'>) => {
     const userToAdd: User = {
       ...newUser,
       id: `user-${Date.now()}`,
@@ -488,24 +490,24 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setUsers(prev => [...prev, userToAdd]);
     recordAction(`Added new user: ${newUser.name}`);
-  };
+  }, [recordAction]);
 
-  const updateUser = (updatedUser: User) => {
+  const updateUser = useCallback((updatedUser: User) => {
     setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
     if (user?.id === updatedUser.id) {
         setUser(updatedUser);
     }
     recordAction(`Updated user profile: ${updatedUser.name}`);
-  };
+  }, [user, recordAction]);
   
-  const deleteUser = (userId: string) => {
+  const deleteUser = useCallback((userId: string) => {
     const userName = users.find(u => u.id === userId)?.name;
     setUsers(prev => prev.filter(u => u.id !== userId));
     setTasks(prev => prev.map(t => t.assigneeId === userId ? {...t, assigneeId: ''} : t));
     recordAction(`Deleted user: ${userName}`);
-  };
+  }, [users, recordAction]);
 
-  const addRole = (roleData: Omit<RoleDefinition, 'id' | 'isEditable'>) => {
+  const addRole = useCallback((roleData: Omit<RoleDefinition, 'id' | 'isEditable'>) => {
     const newRole: RoleDefinition = {
       ...roleData,
       id: `role-${Date.now()}`,
@@ -513,46 +515,46 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setRoles(prev => [...prev, newRole]);
     recordAction(`Added new role: ${newRole.name}`);
-  };
+  }, [recordAction]);
 
-  const updateRole = (updatedRole: RoleDefinition) => {
+  const updateRole = useCallback((updatedRole: RoleDefinition) => {
     setRoles(prev => prev.map(r => r.id === updatedRole.id ? updatedRole : r));
     recordAction(`Updated role: ${updatedRole.name}`);
-  };
+  }, [recordAction]);
 
-  const deleteRole = (roleId: string) => {
+  const deleteRole = useCallback((roleId: string) => {
     const roleName = roles.find(r => r.id === roleId)?.name;
     setRoles(prev => prev.filter(r => r.id !== roleId));
     recordAction(`Deleted role: ${roleName}`);
-  };
+  }, [roles, recordAction]);
 
-  const addProject = (projectName: string) => {
+  const addProject = useCallback((projectName: string) => {
     const newProject: Project = { id: `proj-${Date.now()}`, name: projectName };
     setProjects(prev => [...prev, newProject]);
     recordAction(`Added project: ${projectName}`);
-  };
+  }, [recordAction]);
 
-  const updateProject = (updatedProject: Project) => {
+  const updateProject = useCallback((updatedProject: Project) => {
     setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
     recordAction(`Updated project: ${updatedProject.name}`);
-  };
+  }, [recordAction]);
   
-  const deleteProject = (projectId: string) => {
+  const deleteProject = useCallback((projectId: string) => {
     const projectName = projects.find(p => p.id === projectId)?.name;
     setProjects(prev => prev.filter(p => p.id !== projectId));
     recordAction(`Deleted project: ${projectName}`);
-  };
+  }, [projects, recordAction]);
 
-  const updateProfile = (name: string, email: string, avatar: string) => {
+  const updateProfile = useCallback((name: string, email: string, avatar: string) => {
     if (user) {
         const updatedUser = {...user, name, email, avatar};
         setUser(updatedUser);
         setUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
         recordAction(`Updated own profile`);
     }
-  };
+  }, [user, recordAction]);
 
-  const addManualAchievement = (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => {
+  const addManualAchievement = useCallback((achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => {
     if (!user) return;
     const newAchievement: Achievement = {
       ...achievement,
@@ -565,9 +567,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setAchievements(prev => [...prev, newAchievement]);
     const userName = users.find(u => u.id === achievement.userId)?.name;
     recordAction(`Awarded manual achievement "${achievement.title}" to ${userName}`);
-  };
+  }, [user, users, recordAction]);
   
-  const approveAchievement = (achievementId: string, points: number) => {
+  const approveAchievement = useCallback((achievementId: string, points: number) => {
     setAchievements(prev => prev.map(ach => {
       if (ach.id === achievementId) {
         return { ...ach, status: 'approved', points };
@@ -576,30 +578,30 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }));
     const achTitle = achievements.find(a => a.id === achievementId)?.title;
     recordAction(`Approved achievement: "${achTitle}"`);
-  };
+  }, [achievements, recordAction]);
 
-  const rejectAchievement = (achievementId: string) => {
+  const rejectAchievement = useCallback((achievementId: string) => {
     const achTitle = achievements.find(a => a.id === achievementId)?.title;
     setAchievements(prev => prev.filter(ach => ach.id !== achievementId));
     recordAction(`Rejected achievement: "${achTitle}"`);
-  };
+  }, [achievements, recordAction]);
 
-  const updateManualAchievement = (updatedAchievement: Achievement) => {
+  const updateManualAchievement = useCallback((updatedAchievement: Achievement) => {
     setAchievements(prev => prev.map(ach => ach.id === updatedAchievement.id ? updatedAchievement : ach));
     const userName = users.find(u => u.id === updatedAchievement.userId)?.name;
     recordAction(`Updated manual achievement "${updatedAchievement.title}" for ${userName}`);
-  };
+  }, [users, recordAction]);
 
-  const deleteManualAchievement = (achievementId: string) => {
+  const deleteManualAchievement = useCallback((achievementId: string) => {
     const achievement = achievements.find(a => a.id === achievementId);
     if (achievement) {
         const userName = users.find(u => u.id === achievement.userId)?.name;
         recordAction(`Deleted manual achievement "${achievement.title}" for ${userName}`);
     }
     setAchievements(prev => prev.filter(ach => ach.id !== achievementId));
-  };
+  }, [achievements, users, recordAction]);
 
-  const updateBranding = (name: string, logo: string | null) => {
+  const updateBranding = useCallback((name: string, logo: string | null) => {
     setAppName(name);
     localStorage.setItem('appName', name);
     if (logo) {
@@ -610,9 +612,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('appLogo');
     }
     recordAction(`Updated app branding.`);
-  };
+  }, [recordAction]);
 
-  const addInternalRequest = (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'forwardedTo'>) => {
+  const addInternalRequest = useCallback((request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'forwardedTo'>) => {
     if (!user) return;
     const newRequest: InternalRequest = {
       ...request,
@@ -625,9 +627,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setInternalRequests(prev => [newRequest, ...prev]);
     recordAction(`Created internal request for ${request.category}`);
-  };
+  }, [user, recordAction]);
 
-  const updateInternalRequest = (updatedRequest: InternalRequest) => {
+  const updateInternalRequest = useCallback((updatedRequest: InternalRequest) => {
     setInternalRequests(prev => prev.map(r => {
       if (r.id === updatedRequest.id) {
         const originalRequest = internalRequests.find(req => req.id === updatedRequest.id);
@@ -641,14 +643,14 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       return r;
     }));
     recordAction(`Updated internal request ID: ${updatedRequest.id}`);
-  };
+  }, [user, internalRequests, recordAction]);
 
-  const deleteInternalRequest = (requestId: string) => {
+  const deleteInternalRequest = useCallback((requestId: string) => {
     setInternalRequests(prev => prev.filter(r => r.id !== requestId));
     recordAction(`Deleted internal request ID: ${requestId}`);
-  };
+  }, [recordAction]);
 
-  const addInternalRequestComment = (requestId: string, commentText: string) => {
+  const addInternalRequestComment = useCallback((requestId: string, commentText: string) => {
     if (!user) return;
     const newComment: Comment = {
       userId: user.id,
@@ -666,15 +668,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
     const request = internalRequests.find(r => r.id === requestId);
     recordAction(`Commented on internal request ID: ${request?.id}`);
-  };
+  }, [user, internalRequests, recordAction]);
 
-  const markRequestAsViewed = (requestId: string) => {
+  const markRequestAsViewed = useCallback((requestId: string) => {
     setInternalRequests(prev => prev.map(r => 
       r.id === requestId ? { ...r, isViewedByRequester: true } : r
     ));
-  };
+  }, []);
   
-  const forwardInternalRequest = (requestId: string, role: Role, comment: string) => {
+  const forwardInternalRequest = useCallback((requestId: string, role: Role, comment: string) => {
     if (!user) return;
     const request = internalRequests.find(r => r.id === requestId);
     if (!request) return;
@@ -697,9 +699,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       return r;
     }));
     recordAction(`Forwarded internal request ID: ${requestId}`);
-  };
+  }, [user, internalRequests, recordAction]);
 
-  const createPpeRequestTask = (data: any) => {
+  const createPpeRequestTask = useCallback((data: any) => {
     if (!user) return;
     const ppeTask = {
       title: `PPE Request: ${data.employeeName}`,
@@ -711,22 +713,22 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       requiresAttachmentForCompletion: false,
     };
     addTask(ppeTask);
-  };
+  }, [user, addTask]);
 
-  const addInventoryItem = (item: Omit<InventoryItem, 'id'>) => {
+  const addInventoryItem = useCallback((item: Omit<InventoryItem, 'id'>) => {
     const newItem: InventoryItem = { ...item, id: `inv-${Date.now()}` };
     setInventoryItems(prev => [newItem, ...prev]);
-  };
+  }, []);
   
-  const updateInventoryItem = (item: InventoryItem) => {
+  const updateInventoryItem = useCallback((item: InventoryItem) => {
     setInventoryItems(prev => prev.map(i => i.id === item.id ? item : i));
-  };
+  }, []);
 
-  const deleteInventoryItem = (itemId: string) => {
+  const deleteInventoryItem = useCallback((itemId: string) => {
     setInventoryItems(prev => prev.filter(i => i.id !== itemId));
-  };
+  }, []);
   
-  const addMultipleInventoryItems = (items: any[]) => {
+  const addMultipleInventoryItems = useCallback((items: any[]) => {
       const newItems: InventoryItem[] = items.map((item, index) => ({
         id: `inv-import-${Date.now()}-${index}`,
         name: item.name,
@@ -741,9 +743,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         tpInspectionDueDate: new Date(item.tpInspectionDueDate).toISOString(),
       }));
       setInventoryItems(prev => [...prev, ...newItems]);
-  };
+  }, [projects]);
   
-  const requestInventoryTransfer = (items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => {
+  const requestInventoryTransfer = useCallback((items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => {
     if (!user) return;
     const newRequest: InventoryTransferRequest = {
         id: `inv-tr-${Date.now()}`,
@@ -756,15 +758,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
     };
     setInventoryTransferRequests(prev => [newRequest, ...prev]);
-  };
+  }, [user]);
 
-  const addInventoryTransferComment = (requestId: string, commentText: string) => {
+  const addInventoryTransferComment = useCallback((requestId: string, commentText: string) => {
     if (!user) return;
      const newComment: Comment = { userId: user.id, text: commentText, date: new Date().toISOString() };
      setInventoryTransferRequests(prev => prev.map(req => req.id === requestId ? { ...req, comments: [...req.comments, newComment] } : req));
-  };
+  }, [user]);
 
-  const approveInventoryTransfer = (requestId: string, comment: string) => {
+  const approveInventoryTransfer = useCallback((requestId: string, comment: string) => {
     addInventoryTransferComment(requestId, comment);
     setInventoryTransferRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Approved' } : req));
     const request = inventoryTransferRequests.find(r => r.id === requestId);
@@ -776,14 +778,14 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
             return item;
         }));
     }
-  };
+  }, [inventoryTransferRequests, projects, addInventoryTransferComment]);
   
-  const rejectInventoryTransfer = (requestId: string, comment: string) => {
+  const rejectInventoryTransfer = useCallback((requestId: string, comment: string) => {
     addInventoryTransferComment(requestId, comment);
     setInventoryTransferRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Rejected' } : req));
-  };
+  }, [addInventoryTransferComment]);
 
-  const addCertificateRequest = (itemId: string, requestType: CertificateRequestType, comment: string) => {
+  const addCertificateRequest = useCallback((itemId: string, requestType: CertificateRequestType, comment: string) => {
     if (!user) return;
     const newRequest: CertificateRequest = {
       id: `cert-req-${Date.now()}`,
@@ -795,9 +797,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
     };
     setCertificateRequests(prev => [newRequest, ...prev]);
-  };
+  }, [user]);
 
-  const requestUTMachineCertificate = (machineId: string, requestType: CertificateRequestType, comment: string) => {
+  const requestUTMachineCertificate = useCallback((machineId: string, requestType: CertificateRequestType, comment: string) => {
     if (!user) return;
     const newRequest: CertificateRequest = {
       id: `cert-req-${Date.now()}`,
@@ -811,9 +813,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setCertificateRequests(prev => [newRequest, ...prev]);
     recordAction(`Requested ${requestType} for UT Machine ID ${machineId}`);
-  };
+  }, [user, recordAction]);
 
-  const addCertificateRequestComment = (requestId: string, commentText: string) => {
+  const addCertificateRequestComment = useCallback((requestId: string, commentText: string) => {
     if (!user) return;
     const newComment: Comment = { userId: user.id, text: commentText, date: new Date().toISOString() };
     setCertificateRequests(prev => prev.map(req => 
@@ -821,9 +823,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       ? { ...req, comments: [...req.comments, newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), isViewedByRequester: user.id !== req.requesterId ? false : true } 
       : req
     ));
-  };
+  }, [user]);
 
-  const fulfillCertificateRequest = (requestId: string, commentText: string) => {
+  const fulfillCertificateRequest = useCallback((requestId: string, commentText: string) => {
     if (!user) return;
     addCertificateRequestComment(requestId, `Request fulfilled: ${commentText}`);
     setCertificateRequests(prev => prev.map(req => 
@@ -831,16 +833,16 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       ? { ...req, status: 'Fulfilled', isViewedByRequester: user.id !== req.requesterId ? false : true } 
       : req
     ));
-  };
+  }, [user, addCertificateRequestComment]);
 
-  const markUTRequestsAsViewed = () => {
+  const markUTRequestsAsViewed = useCallback(() => {
     if (!user) return;
     setCertificateRequests(prev => prev.map(req => 
         (req.requesterId === user.id && req.utMachineId) ? { ...req, isViewedByRequester: true } : req
     ));
-  };
+  }, [user]);
 
-  const addManpowerLog = (logData: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => {
+  const addManpowerLog = useCallback((logData: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => {
     if (!user) return;
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const newLog: ManpowerLog = {
@@ -853,9 +855,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         const otherLogs = prev.filter(l => !(l.date === todayStr && l.projectId === newLog.projectId));
         return [...otherLogs, newLog];
     });
-  };
+  }, [user]);
 
-  const addUTMachine = (machineData: Omit<UTMachine, 'id' | 'usageLog'>) => {
+  const addUTMachine = useCallback((machineData: Omit<UTMachine, 'id' | 'usageLog'>) => {
     if (!user) return;
     const newMachine: UTMachine = {
         ...machineData,
@@ -864,15 +866,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setUtMachines(prev => [newMachine, ...prev]);
     recordAction(`Added new UT Machine: ${newMachine.machineName}`);
-  };
+  }, [user, recordAction]);
 
-  const updateUTMachine = (updatedMachine: UTMachine) => {
+  const updateUTMachine = useCallback((updatedMachine: UTMachine) => {
       if (!user) return;
       setUtMachines(prev => prev.map(m => m.id === updatedMachine.id ? updatedMachine : m));
       recordAction(`Updated UT Machine: ${updatedMachine.machineName}`);
-  };
+  }, [user, recordAction]);
 
-  const addUTMachineLog = (machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => {
+  const addUTMachineLog = useCallback((machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => {
     if (!user) return;
     const newLog: UTMachineUsageLog = {
         ...logData,
@@ -887,16 +889,16 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         return m;
     }));
     recordAction(`Added usage log for UT Machine ID: ${machineId}`);
-  };
+  }, [user, recordAction]);
 
-  const deleteUTMachine = (machineId: string) => {
+  const deleteUTMachine = useCallback((machineId: string) => {
       if (!user) return;
       const machineName = utMachines.find(m => m.id === machineId)?.machineName;
       setUtMachines(prev => prev.filter(m => m.id !== machineId));
       recordAction(`Deleted UT Machine: ${machineName}`);
-  };
+  }, [user, utMachines, recordAction]);
 
-  const addVehicle = (vehicleData: Omit<Vehicle, 'id'>) => {
+  const addVehicle = useCallback((vehicleData: Omit<Vehicle, 'id'>) => {
       if (!user) return;
       const newVehicle: Vehicle = {
           ...vehicleData,
@@ -904,20 +906,20 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       };
       setVehicles(prev => [newVehicle, ...prev]);
       recordAction(`Added new vehicle: ${newVehicle.vehicleNumber}`);
-  };
+  }, [user, recordAction]);
 
-  const updateVehicle = (updatedVehicle: Vehicle) => {
+  const updateVehicle = useCallback((updatedVehicle: Vehicle) => {
       if (!user) return;
       setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
       recordAction(`Updated vehicle: ${updatedVehicle.vehicleNumber}`);
-  };
+  }, [user, recordAction]);
 
-  const deleteVehicle = (vehicleId: string) => {
+  const deleteVehicle = useCallback((vehicleId: string) => {
       if (!user) return;
       const vehicleNumber = vehicles.find(v => v.id === vehicleId)?.vehicleNumber;
       setVehicles(prev => prev.filter(v => v.id !== vehicleId));
       recordAction(`Deleted vehicle: ${vehicleNumber}`);
-  };
+  }, [user, vehicles, recordAction]);
 
   const pendingStoreRequestCount = useMemo(() => {
     if (!user) return 0;
