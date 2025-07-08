@@ -45,13 +45,13 @@ export default function EditUTMachineDialog({ isOpen, setIsOpen, machine }: Edit
   });
 
   useEffect(() => {
-    if (machine) {
+    if (machine && isOpen) {
         form.reset({
             ...machine,
             calibrationDueDate: new Date(machine.calibrationDueDate),
         });
     }
-  }, [machine, form]);
+  }, [machine, isOpen, form]);
 
   const onSubmit = (data: MachineFormValues) => {
     updateUTMachine({

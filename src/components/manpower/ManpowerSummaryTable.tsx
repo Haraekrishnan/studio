@@ -29,7 +29,7 @@ export default function ManpowerSummaryTable() {
         return { summary, totalIn, totalOut };
     }, [projects, manpowerLogs]);
 
-    if (summary.totalIn === 0 && summary.totalOut === 0) {
+    if (todaySummary.totalIn === 0 && todaySummary.totalOut === 0) {
         return <p className="text-muted-foreground text-center py-8">No manpower logged for today.</p>;
     }
 

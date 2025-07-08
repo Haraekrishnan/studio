@@ -49,7 +49,7 @@ export default function EditVehicleDialog({ isOpen, setIsOpen, vehicle }: EditVe
   });
 
   useEffect(() => {
-    if (vehicle) {
+    if (vehicle && isOpen) {
         form.reset({
             ...vehicle,
             vapValidity: new Date(vehicle.vapValidity),
@@ -57,7 +57,7 @@ export default function EditVehicleDialog({ isOpen, setIsOpen, vehicle }: EditVe
             epValidity: new Date(vehicle.epValidity),
         });
     }
-  }, [vehicle, form]);
+  }, [vehicle, isOpen, form]);
 
   const onSubmit = (data: VehicleFormValues) => {
     updateVehicle({

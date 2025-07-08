@@ -75,6 +75,12 @@ interface AppContextType {
   addCertificateRequestComment: (requestId: string, commentText: string) => void;
   fulfillCertificateRequest: (requestId: string, commentText: string) => void;
   addManpowerLog: (log: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => void;
+  addUTMachine: (machine: Omit<UTMachine, 'id' | 'usageLog'>) => void;
+  updateUTMachine: (machine: UTMachine) => void;
+  deleteUTMachine: (machineId: string) => void;
+  addVehicle: (vehicle: Omit<Vehicle, 'id'>) => void;
+  updateVehicle: (vehicle: Vehicle) => void;
+  deleteVehicle: (vehicleId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -738,10 +744,56 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       updatedBy: user.id,
     };
     setManpowerLogs(prev => {
-        // Remove existing log for the same project and day, then add the new one
         const otherLogs = prev.filter(l => !(l.date === todayStr && l.projectId === newLog.projectId));
         return [...otherLogs, newLog];
     });
+  };
+
+  const addUTMachine = (machineData: Omit<UTMachine, 'id' | 'usageLog'>) => {
+    if (!user) return;
+    const newMachine: UTMachine = {
+        ...machineData,
+        id: `ut-${Date.now()}`,
+        usageLog: [],
+    };
+    setUtMachines(prev => [newMachine, ...prev]);
+    recordAction(`Added new UT Machine: ${newMachine.machineName}`);
+  };
+
+  const updateUTMachine = (updatedMachine: UTMachine) => {
+      if (!user) return;
+      setUtMachines(prev => prev.map(m => m.id === updatedMachine.id ? updatedMachine : m));
+      recordAction(`Updated UT Machine: ${updatedMachine.machineName}`);
+  };
+
+  const deleteUTMachine = (machineId: string) => {
+      if (!user) return;
+      const machineName = utMachines.find(m => m.id === machineId)?.machineName;
+      setUtMachines(prev => prev.filter(m => m.id !== machineId));
+      recordAction(`Deleted UT Machine: ${machineName}`);
+  };
+
+  const addVehicle = (vehicleData: Omit<Vehicle, 'id'>) => {
+      if (!user) return;
+      const newVehicle: Vehicle = {
+          ...vehicleData,
+          id: `vh-${Date.now()}`,
+      };
+      setVehicles(prev => [newVehicle, ...prev]);
+      recordAction(`Added new vehicle: ${newVehicle.vehicleNumber}`);
+  };
+
+  const updateVehicle = (updatedVehicle: Vehicle) => {
+      if (!user) return;
+      setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
+      recordAction(`Updated vehicle: ${updatedVehicle.vehicleNumber}`);
+  };
+
+  const deleteVehicle = (vehicleId: string) => {
+      if (!user) return;
+      const vehicleNumber = vehicles.find(v => v.id === vehicleId)?.vehicleNumber;
+      setVehicles(prev => prev.filter(v => v.id !== vehicleId));
+      recordAction(`Deleted vehicle: ${vehicleNumber}`);
   };
 
   const pendingStoreRequestCount = useMemo(() => {
@@ -827,6 +879,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addCertificateRequestComment,
     fulfillCertificateRequest,
     addManpowerLog,
+    addUTMachine,
+    updateUTMachine,
+    deleteUTMachine,
+    addVehicle,
+    updateVehicle,
+    deleteVehicle,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
