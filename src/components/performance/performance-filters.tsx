@@ -6,6 +6,7 @@ import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Button } from '../ui/button';
 import { X } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
+import { cn } from '@/lib/utils';
 
 interface PerformanceFiltersProps {
     users: User[];
@@ -15,6 +16,7 @@ interface PerformanceFiltersProps {
     onDateChange: (range: DateRange | undefined) => void;
     onApply: () => void;
     onClear: () => void;
+    canCompareEmployees: boolean;
 }
 
 export default function PerformanceFilters({ 
@@ -24,7 +26,8 @@ export default function PerformanceFilters({
     dateRange, 
     onDateChange,
     onApply,
-    onClear
+    onClear,
+    canCompareEmployees
 }: PerformanceFiltersProps) {
 
     const userOptions = users.map(user => ({
@@ -35,14 +38,19 @@ export default function PerformanceFilters({
     return (
         <Card>
             <CardContent className="p-4 space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                    <TransferList
-                        options={userOptions}
-                        selected={selectedUserIds}
-                        onChange={onUserChange}
-                        availableTitle="Available Employees"
-                        selectedTitle="Selected for Comparison"
-                    />
+                <div className={cn(
+                    "grid gap-4",
+                    canCompareEmployees ? "md:grid-cols-2" : "md:grid-cols-1"
+                )}>
+                    {canCompareEmployees && (
+                        <TransferList
+                            options={userOptions}
+                            selected={selectedUserIds}
+                            onChange={onUserChange}
+                            availableTitle="Available Employees"
+                            selectedTitle="Selected for Comparison"
+                        />
+                    )}
                      <div className="flex flex-col gap-4 justify-center">
                         <DateRangePicker
                             date={dateRange}
