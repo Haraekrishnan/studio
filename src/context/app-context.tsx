@@ -193,23 +193,44 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const getSubordinatesRef = useRef<(managerId: string) => string[]>();
-
-  getSubordinatesRef.current = (managerId: string): string[] => {
-    let subordinates: string[] = [];
-    const directReports = users.filter(u => u.supervisorId === managerId);
-    for (const report of directReports) {
-      subordinates.push(report.id);
-      if (['Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(report.role)) {
-        subordinates = subordinates.concat(getSubordinatesRef.current!(report.id));
+  const getSubordinates = useCallback((managerId: string): string[] => {
+    const allSubordinates: string[] = [];
+    const queue: string[] = [managerId];
+    const visited = new Set<string>();
+  
+    // Build a map for efficient lookups
+    const userMap = new Map(users.map(u => [u.id, u]));
+    const supervisorMap = new Map<string, string[]>();
+    users.forEach(u => {
+      if (u.supervisorId) {
+        if (!supervisorMap.has(u.supervisorId)) {
+          supervisorMap.set(u.supervisorId, []);
+        }
+        supervisorMap.get(u.supervisorId)!.push(u.id);
+      }
+    });
+  
+    while (queue.length > 0) {
+      const currentManagerId = queue.shift()!;
+      if (visited.has(currentManagerId)) {
+        continue; // Avoid cycles
+      }
+      visited.add(currentManagerId);
+  
+      const directReports = supervisorMap.get(currentManagerId) || [];
+  
+      for (const reportId of directReports) {
+        if (!visited.has(reportId)) {
+          allSubordinates.push(reportId);
+          const reportUser = userMap.get(reportId);
+          if (reportUser && ['Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(reportUser.role)) {
+            queue.push(reportId);
+          }
+        }
       }
     }
-    return subordinates;
-  };
-
-  const getSubordinates = useCallback((managerId: string) => {
-    return getSubordinatesRef.current!(managerId);
-  }, []);
+    return allSubordinates;
+  }, [users]);
   
   const getVisibleUsers = useCallback((): User[] => {
     if (!user) return [];
