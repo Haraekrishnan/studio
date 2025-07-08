@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES } from '@/lib/mock-data';
@@ -193,18 +193,23 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const getSubordinates = useCallback((managerId: string): string[] => {
+  const getSubordinatesRef = useRef<(managerId: string) => string[]>();
+
+  getSubordinatesRef.current = (managerId: string): string[] => {
     let subordinates: string[] = [];
     const directReports = users.filter(u => u.supervisorId === managerId);
     for (const report of directReports) {
       subordinates.push(report.id);
-      // Recurse if the subordinate is also a manager/supervisor type role
       if (['Manager', 'Supervisor', 'HSE', 'Junior Supervisor', 'Junior HSE', 'Store in Charge', 'Assistant Store Incharge'].includes(report.role)) {
-        subordinates = subordinates.concat(getSubordinates(report.id));
+        subordinates = subordinates.concat(getSubordinatesRef.current!(report.id));
       }
     }
     return subordinates;
-  }, [users]);
+  };
+
+  const getSubordinates = useCallback((managerId: string) => {
+    return getSubordinatesRef.current!(managerId);
+  }, []);
   
   const getVisibleUsers = useCallback((): User[] => {
     if (!user) return [];
