@@ -47,7 +47,7 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between h-auto", className)}
+          className={cn("w-full justify-between h-auto min-h-10", className)}
           onClick={() => setOpen(!open)}
         >
           <div className="flex gap-1 flex-wrap">
@@ -58,7 +58,7 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
                   <Badge
                     variant="secondary"
                     key={option.value}
-                    className="mr-1 mb-1"
+                    className="mr-1"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleUnselect(option.value);
@@ -76,7 +76,10 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
                         e.preventDefault();
                         e.stopPropagation();
                       }}
-                      onClick={() => handleUnselect(option.value)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUnselect(option.value);
+                      }}
                     >
                       <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                     </button>
@@ -106,7 +109,6 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
                       } else {
                         onChange([...selected, option.value])
                       }
-                      setOpen(true)
                     }}
                   >
                     <Check
