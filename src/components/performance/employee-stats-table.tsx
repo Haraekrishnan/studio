@@ -22,7 +22,6 @@ export default function EmployeeStatsTable({ data }: EmployeeStatsTableProps) {
           <TableHead>Employee</TableHead>
           <TableHead className="text-center">To Do</TableHead>
           <TableHead className="text-center">In Progress</TableHead>
-          <TableHead className="text-center">Pending</TableHead>
           <TableHead className="text-center">Completed</TableHead>
           <TableHead className="text-center">Overdue</TableHead>
           <TableHead className="text-center">Total Assigned</TableHead>
@@ -45,7 +44,6 @@ export default function EmployeeStatsTable({ data }: EmployeeStatsTableProps) {
             </TableCell>
             <TableCell className="text-center">{user.todo}</TableCell>
             <TableCell className="text-center">{user.inProgress}</TableCell>
-            <TableCell className="text-center">{user.pending}</TableCell>
             <TableCell className="text-center font-medium">{user.completed}</TableCell>
             <TableCell className="text-center">
               {user.overdue > 0 ? (
@@ -59,7 +57,7 @@ export default function EmployeeStatsTable({ data }: EmployeeStatsTableProps) {
         ))}
          {data.length === 0 && (
           <TableRow>
-            <TableCell colSpan={7} className="h-24 text-center">
+            <TableCell colSpan={6} className="h-24 text-center">
               No data available for the selected filters.
             </TableCell>
           </TableRow>

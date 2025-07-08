@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
-import { CalendarIcon, Send, ThumbsUp, ThumbsDown, Paperclip, Upload, X, BellRing, CheckCircle, Clock } from 'lucide-react';
+import { CalendarIcon, Send, ThumbsUp, ThumbsDown, Paperclip, Upload, X, BellRing, CheckCircle, Clock, UserRoundCog } from 'lucide-react';
 import type { Task, Priority, TaskStatus, Role, Comment, ApprovalState } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -61,6 +61,8 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
 
   const creator = useMemo(() => users.find(u => u.id === taskToDisplay.creatorId), [users, taskToDisplay.creatorId]);
   const assignee = useMemo(() => users.find(u => u.id === taskToDisplay.assigneeId), [users, taskToDisplay.assigneeId]);
+  const pendingAssignee = useMemo(() => users.find(u => u.id === taskToDisplay.pendingAssigneeId), [users, taskToDisplay.pendingAssigneeId]);
+
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -98,8 +100,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
 
     return allVisibleUsers.filter(assignee => {
       const assigneeRoleLevel = roleHierarchy[assignee.role];
-      // Allow assigning to self or to roles lower in the hierarchy
-      return assignee.id === user.id || assigneeRoleLevel <= userRoleLevel;
+      return assigneeRoleLevel <= userRoleLevel;
     });
   }, [user, allVisibleUsers]);
 
@@ -154,32 +155,57 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     }
     if (action === 'approve') {
         approveTaskStatusChange(taskToDisplay.id, newComment);
-        toast({ title: 'Status Approved', description: 'The task status has been updated.' });
+        toast({ title: 'Request Approved', description: 'The task has been updated.' });
     } else {
         returnTaskStatusChange(taskToDisplay.id, newComment);
-        toast({ title: 'Status Change Returned', description: 'The task has been returned to the assignee.' });
+        toast({ title: 'Request Returned', description: 'The task has been returned to the assignee.' });
     }
     setNewComment('');
     setIsOpen(false);
   };
 
   const onSubmit = (data: TaskFormValues) => {
-    const updatedData: Partial<Task> = {
-      ...data,
-      dueDate: data.dueDate.toISOString(),
-    };
+    if (!user) return;
     
-    if (isAdmin && isCompleted && data.assigneeId) {
-        updatedData.status = 'To Do';
-        updatedData.completionDate = undefined;
-        updatedData.approvalState = 'none';
-    }
+    const hasAssigneeChanged = data.assigneeId !== taskToDisplay.assigneeId;
 
-    updateTask({
-      ...taskToDisplay,
-      ...updatedData,
-    });
-    toast({ title: 'Task Updated', description: `"${data.title}" has been successfully updated.` });
+    const updatedData: Partial<Task> = {
+        ...data,
+        dueDate: data.dueDate.toISOString(),
+    };
+
+    if (hasAssigneeChanged) {
+        const canAutoApproveReassignment = user.role === 'Admin' || user.role === 'Manager';
+        const newAssignee = users.find(u => u.id === data.assigneeId);
+        if (!newAssignee) return;
+
+        addComment(taskToDisplay.id, `Reassignment requested to ${newAssignee.name}. ${newComment}`);
+
+        if (canAutoApproveReassignment) {
+            updateTask({ ...taskToDisplay, ...updatedData });
+            toast({ title: 'Task Reassigned', description: `Task has been assigned to ${newAssignee.name}` });
+        } else {
+            const reassignmentRequest: Partial<Task> = {
+                ...updatedData,
+                pendingAssigneeId: data.assigneeId,
+                status: 'Pending Approval',
+                previousStatus: taskToDisplay.status,
+                approvalState: 'pending',
+            };
+            updateTask({ ...taskToDisplay, ...reassignmentRequest });
+            toast({ title: 'Reassignment Requested', description: 'Your request has been sent for approval.' });
+        }
+    } else {
+        if (isAdmin && isCompleted) {
+            updatedData.status = 'To Do';
+            updatedData.completionDate = undefined;
+            updatedData.approvalState = 'none';
+        }
+        updateTask({ ...taskToDisplay, ...updatedData });
+        toast({ title: 'Task Updated', description: `"${data.title}" has been successfully updated.` });
+    }
+    
+    setIsOpen(false);
   };
   
   const canReassign = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE' || user?.role === 'Store in Charge') && (!isCompleted || isAdmin);
@@ -217,12 +243,21 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
           <DialogDescription>
             Assigned by <span className='font-semibold'>{creator?.name}</span> to <span className='font-semibold'>{assignee?.name}</span>.
           </DialogDescription>
-          {taskToDisplay.status === 'Pending Approval' && taskToDisplay.previousStatus && taskToDisplay.pendingStatus && (
+          {taskToDisplay.status === 'Pending Approval' && taskToDisplay.pendingStatus && (
             <Alert variant="default" className="mt-2">
                 <BellRing className="h-4 w-4" />
-                <AlertTitle>Approval Request</AlertTitle>
+                <AlertTitle>Status Change Request</AlertTitle>
                 <AlertDescription>
-                    {assignee?.name} requests to change status from <Badge variant="secondary">{taskToDisplay.previousStatus}</Badge> to <Badge variant="secondary">{taskToDisplay.pendingStatus}</Badge>. Please review the comments.
+                    {assignee?.name} requests to change status from <Badge variant="secondary">{taskToDisplay.previousStatus}</Badge> to <Badge variant="secondary">{taskToDisplay.pendingStatus}</Badge>. Please review comments.
+                </AlertDescription>
+            </Alert>
+          )}
+           {taskToDisplay.status === 'Pending Approval' && taskToDisplay.pendingAssigneeId && (
+            <Alert variant="default" className="mt-2">
+                <UserRoundCog className="h-4 w-4" />
+                <AlertTitle>Reassignment Request</AlertTitle>
+                <AlertDescription>
+                   Request to reassign task to <span className='font-semibold'>{pendingAssignee?.name}</span>. Please review comments and approve or return.
                 </AlertDescription>
             </Alert>
           )}

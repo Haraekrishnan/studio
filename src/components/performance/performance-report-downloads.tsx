@@ -17,7 +17,6 @@ export default function PerformanceReportDownloads({ data }: PerformanceReportDo
       'Role': user.role,
       'To Do': user.todo,
       'In Progress': user.inProgress,
-      'Pending': user.pending,
       'Completed': user.completed,
       'Overdue': user.overdue,
       'Total Assigned': user.total,
@@ -33,13 +32,12 @@ export default function PerformanceReportDownloads({ data }: PerformanceReportDo
     doc.text('Performance Analysis Report', 14, 16);
     
     (doc as any).autoTable({
-      head: [['Employee', 'Role', 'To Do', 'In Progress', 'Pending', 'Completed', 'Overdue', 'Total']],
+      head: [['Employee', 'Role', 'To Do', 'In Progress', 'Completed', 'Overdue', 'Total']],
       body: data.map(user => [
         user.name,
         user.role,
         user.todo,
         user.inProgress,
-        user.pending,
         user.completed,
         user.overdue,
         user.total,

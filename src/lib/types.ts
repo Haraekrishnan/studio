@@ -79,6 +79,7 @@ export interface Task {
   previousStatus?: TaskStatus;
   pendingStatus?: TaskStatus; 
   approvalState: ApprovalState;
+  pendingAssigneeId?: string | null;
   attachment?: {
     url: string;
     name: string;
