@@ -16,12 +16,12 @@ import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { CalendarIcon, Send, ThumbsUp, ThumbsDown, Paperclip, Upload, X, BellRing } from 'lucide-react';
 import type { Task, Priority, TaskStatus, Role, Comment, ApprovalState } from '@/lib/types';
-import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import Link from 'next/link';
 
 const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -52,30 +52,32 @@ const roleHierarchy: Record<Role, number> = {
 };
 
 export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDialogProps) {
-  const { user, users, updateTask, getVisibleUsers, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, addComment } = useAppContext();
+  const { user, users, tasks, updateTask, getVisibleUsers, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, addComment } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
   const [attachment, setAttachment] = useState<File | null>(null);
 
-  const creator = useMemo(() => users.find(u => u.id === task.creatorId), [users, task.creatorId]);
-  const assignee = useMemo(() => users.find(u => u.id === task.assigneeId), [users, task.assigneeId]);
+  const taskToDisplay = useMemo(() => tasks.find(t => t.id === task.id) || task, [tasks, task]);
+
+  const creator = useMemo(() => users.find(u => u.id === taskToDisplay.creatorId), [users, taskToDisplay.creatorId]);
+  const assignee = useMemo(() => users.find(u => u.id === taskToDisplay.assigneeId), [users, taskToDisplay.assigneeId]);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
   });
 
   useEffect(() => {
-    if (task && isOpen) {
+    if (taskToDisplay && isOpen) {
       form.reset({
-        title: task.title,
-        description: task.description,
-        assigneeId: task.assigneeId,
-        dueDate: new Date(task.dueDate),
-        priority: task.priority,
+        title: taskToDisplay.title,
+        description: taskToDisplay.description,
+        assigneeId: taskToDisplay.assigneeId,
+        dueDate: new Date(taskToDisplay.dueDate),
+        priority: taskToDisplay.priority,
       });
       setAttachment(null); // Reset attachment on open
     }
-  }, [task, form, isOpen]);
+  }, [taskToDisplay, form, isOpen]);
 
   const allVisibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
 
@@ -99,7 +101,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user) return;
-    addComment(task.id, newComment);
+    addComment(taskToDisplay.id, newComment);
     setNewComment('');
   };
   
@@ -109,7 +111,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
       return;
     }
 
-    if (newStatus === 'Completed' && task.requiresAttachmentForCompletion && !attachment && !task.attachment) {
+    if (newStatus === 'Completed' && taskToDisplay.requiresAttachmentForCompletion && !attachment && !taskToDisplay.attachment) {
       toast({ variant: 'destructive', title: 'Attachment required', description: 'This task requires a file attachment for completion.' });
       return;
     }
@@ -122,13 +124,13 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                 name: attachment.name,
                 url: e.target?.result as string,
             };
-            requestTaskStatusChange(task.id, newStatus, newComment, fileData);
+            requestTaskStatusChange(taskToDisplay.id, newStatus, newComment, fileData);
             setNewComment('');
             setIsOpen(false);
         };
         reader.readAsDataURL(attachment);
     } else {
-        requestTaskStatusChange(task.id, newStatus, newComment);
+        requestTaskStatusChange(taskToDisplay.id, newStatus, newComment);
         setNewComment('');
         setIsOpen(false);
     }
@@ -141,10 +143,10 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         return;
     }
     if (action === 'approve') {
-        approveTaskStatusChange(task.id, newComment);
+        approveTaskStatusChange(taskToDisplay.id, newComment);
         toast({ title: 'Status Approved', description: 'The task status has been updated.' });
     } else {
-        returnTaskStatusChange(task.id, newComment);
+        returnTaskStatusChange(taskToDisplay.id, newComment);
         toast({ title: 'Status Change Returned', description: 'The task has been returned to the assignee.' });
     }
     setNewComment('');
@@ -153,7 +155,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
 
   const onSubmit = (data: TaskFormValues) => {
     updateTask({
-      ...task,
+      ...taskToDisplay,
       ...data,
       dueDate: data.dueDate.toISOString(),
     });
@@ -161,11 +163,11 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
   };
   
   const canReassign = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE' || user?.role === 'Store in Charge';
-  const isApprover = user?.id === task.creatorId || user?.id === assignee?.supervisorId;
-  const isAssignee = user?.id === task.assigneeId;
+  const isApprover = user?.id === taskToDisplay.creatorId || user?.id === assignee?.supervisorId;
+  const isAssignee = user?.id === taskToDisplay.assigneeId;
 
   const renderActionButtons = () => {
-    if (task.status === 'Pending Approval') {
+    if (taskToDisplay.status === 'Pending Approval') {
         if (isApprover) {
             return (
                 <div className='flex gap-2'>
@@ -177,10 +179,10 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         return <p className='text-sm text-center text-muted-foreground p-2 bg-muted rounded-md'>Awaiting approval from {creator?.name}</p>
     }
     if (isAssignee) {
-        if (task.status === 'To Do') {
+        if (taskToDisplay.status === 'To Do') {
             return <Button onClick={() => handleRequestStatusChange('In Progress')} className="w-full">Start Progress</Button>
         }
-        if (task.status === 'In Progress') {
+        if (taskToDisplay.status === 'In Progress') {
             return <Button onClick={() => handleRequestStatusChange('Completed')} className="w-full">Request Completion</Button>
         }
     }
@@ -191,17 +193,17 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-4xl grid-rows-[auto,1fr,auto]">
         <DialogHeader>
-          <DialogTitle>Task Details: {task.title}</DialogTitle>
+          <DialogTitle>Task Details: {taskToDisplay.title}</DialogTitle>
           <DialogDescription>
             Assigned by <span className='font-semibold'>{creator?.name}</span> to <span className='font-semibold'>{assignee?.name}</span>. 
-            Due {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}.
+            Due {formatDistanceToNow(new Date(taskToDisplay.dueDate), { addSuffix: true })}.
           </DialogDescription>
-          {task.status === 'Pending Approval' && task.previousStatus && task.pendingStatus && (
+          {taskToDisplay.status === 'Pending Approval' && taskToDisplay.previousStatus && taskToDisplay.pendingStatus && (
             <Alert variant="default" className="mt-2">
                 <BellRing className="h-4 w-4" />
                 <AlertTitle>Approval Request</AlertTitle>
                 <AlertDescription>
-                    {assignee?.name} requests to change status from <Badge variant="secondary">{task.previousStatus}</Badge> to <Badge variant="secondary">{task.pendingStatus}</Badge>. Please review the comments.
+                    {assignee?.name} requests to change status from <Badge variant="secondary">{taskToDisplay.previousStatus}</Badge> to <Badge variant="secondary">{taskToDisplay.pendingStatus}</Badge>. Please review the comments.
                 </AlertDescription>
             </Alert>
           )}
@@ -278,9 +280,9 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                 <h3 className="text-lg font-semibold">Comments & Activity</h3>
                 <ScrollArea className="flex-1 h-64 pr-4 border-b">
                     <div className="space-y-4">
-                        {(task.comments || []).map((comment, index) => {
+                        {(taskToDisplay.comments || []).map((comment, index) => {
                             const commentUser = users.find(u => u.id === comment.userId);
-                            const isApprovalComment = index === 0 && task.status === 'Pending Approval';
+                            const isApprovalComment = index === 0 && taskToDisplay.status === 'Pending Approval';
                             return (
                                 <div key={index} className={cn("flex items-start gap-3", isApprovalComment && "p-2 rounded-lg bg-amber-100 dark:bg-amber-900/20")}>
                                     <Avatar className="h-8 w-8"><AvatarImage src={commentUser?.avatar} /><AvatarFallback>{commentUser?.name.charAt(0)}</AvatarFallback></Avatar>
@@ -291,21 +293,31 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                                 </div>
                             )
                         })}
-                        {(task.comments || []).length === 0 && <p className="text-sm text-center text-muted-foreground py-4">No comments yet.</p>}
+                        {(taskToDisplay.comments || []).length === 0 && <p className="text-sm text-center text-muted-foreground py-4">No comments yet.</p>}
                     </div>
                 </ScrollArea>
-                {task.requiresAttachmentForCompletion && isAssignee && task.status === 'In Progress' && (
+                {taskToDisplay.attachment && (
+                  <div>
+                    <Label>Attachment</Label>
+                    <div className="mt-1 flex items-center justify-between p-2 rounded-md border text-sm">
+                        <Link href={taskToDisplay.attachment.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline">
+                            <Paperclip className="h-4 w-4"/><span>{taskToDisplay.attachment.name}</span>
+                        </Link>
+                    </div>
+                  </div>
+                )}
+                {taskToDisplay.requiresAttachmentForCompletion && isAssignee && taskToDisplay.status === 'In Progress' && (
                   <div>
                     <Label>Attachment for Completion</Label>
-                    {!attachment && !task.attachment &&
+                    {!attachment && !taskToDisplay.attachment &&
                       <div className="relative mt-1">
                         <Button asChild variant="outline" size="sm"><Label htmlFor="file-upload"><Upload className="mr-2"/>Upload File</Label></Button>
                         <Input id="file-upload" type="file" onChange={handleFileChange} className="hidden"/>
                       </div>
                     }
-                    {(attachment || task.attachment) && (
+                    {attachment && (
                       <div className="mt-1 flex items-center justify-between p-2 rounded-md border text-sm">
-                          <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{attachment?.name || task.attachment?.name}</span></div>
+                          <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{attachment.name}</span></div>
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setAttachment(null)}><X className="h-4 w-4"/></Button>
                       </div>
                     )}

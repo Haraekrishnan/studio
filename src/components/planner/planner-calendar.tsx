@@ -18,7 +18,7 @@ interface PlannerCalendarProps {
 }
 
 export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps) {
-  const { users, getExpandedPlannerEvents, addPlannerEventComment, dailyPlannerComments, addDailyPlannerComment } = useAppContext();
+  const { users, plannerEvents, getExpandedPlannerEvents, addPlannerEventComment, dailyPlannerComments, addDailyPlannerComment } = useAppContext();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [eventComment, setEventComment] = useState('');
@@ -54,6 +54,10 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
     addDailyPlannerComment(selectedUserId, selectedDate, dailyComment);
     setDailyComment('');
   };
+  
+  const getEventFromId = (eventId: string) => {
+    return plannerEvents.find(e => e.id === eventId);
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -94,6 +98,8 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
                             selectedDayEvents.map((event, index) => {
                                 const creator = users.find(u => u.id === event.creatorId);
                                 const eventUser = users.find(u => u.id === event.userId);
+                                const liveEvent = getEventFromId(event.id);
+
                                 return (
                                     <Collapsible key={`${event.id}-${index}`} open={activeCollapsible === event.id} onOpenChange={(isOpen) => setActiveCollapsible(isOpen ? event.id : null)}>
                                         <Card className="bg-muted/50">
@@ -115,7 +121,7 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
                                                     <div className="mt-4 pt-4 border-t">
                                                         <h4 className='text-sm font-semibold mb-2'>Event Comments</h4>
                                                         <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
-                                                            {(event.comments || []).length > 0 ? (event.comments || []).map((comment, idx) => {
+                                                            {(liveEvent?.comments || []).length > 0 ? (liveEvent?.comments || []).map((comment, idx) => {
                                                                 const commentUser = users.find(u => u.id === comment.userId);
                                                                 return (
                                                                     <div key={idx} className="flex items-start gap-2">

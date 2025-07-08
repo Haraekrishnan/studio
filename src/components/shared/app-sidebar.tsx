@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, Clock, History, Archive } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, Clock, History, Archive, Users2, Wrench, Car } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
@@ -29,6 +29,9 @@ export function AppSidebar() {
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/activity-tracker', icon: Clock, label: 'Activity Tracker' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
+    { href: '/manpower', icon: Users2, label: 'Manpower' },
+    { href: '/ut-machine-status', icon: Wrench, label: 'UT Machine Status' },
+    { href: '/vehicle-status', icon: Car, label: 'Vehicle Status' },
   ];
 
   return (
@@ -45,7 +48,7 @@ export function AppSidebar() {
             <h1 className="text-xl font-bold">{appName}</h1>
         </Link>
       </div>
-      <nav className="flex-1 px-4">
+      <nav className="flex-1 px-4 overflow-y-auto">
         <ul className="space-y-2">
           {navItems.map(item => (
             <li key={item.href}>
@@ -57,7 +60,7 @@ export function AppSidebar() {
                 <Link href={item.href} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                  {item.notification > 0 && (
+                  {(item.notification && item.notification > 0) && (
                     <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
                       {item.notification}
                     </Badge>
