@@ -22,14 +22,15 @@ export default function VehicleStatusPage() {
         return userRole?.permissions.includes('manage_vehicles');
     }, [user, roles]);
 
+    const thirtyDaysFromNow = useMemo(() => addDays(new Date(), 30), []);
+
     const expiringVehicles = useMemo(() => {
-        const thirtyDaysFromNow = addDays(new Date(), 30);
         return vehicles.filter(v => 
             isBefore(new Date(v.vapValidity), thirtyDaysFromNow) ||
             isBefore(new Date(v.sdpValidity), thirtyDaysFromNow) ||
             isBefore(new Date(v.epValidity), thirtyDaysFromNow)
         );
-    }, [vehicles]);
+    }, [vehicles, thirtyDaysFromNow]);
 
     const handleEdit = (vehicle: Vehicle) => {
         setSelectedVehicle(vehicle);
