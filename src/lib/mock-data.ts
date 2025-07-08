@@ -18,7 +18,7 @@ export const ROLES: RoleDefinition[] = [
       'manage_users', 'assign_supervisors', 'create_tasks', 'reassign_tasks', 'delete_tasks', 
       'grant_manual_achievements', 'approve_manual_achievements', 
       'view_all_activity', 'view_all_users', 'manage_inventory',
-      'manage_manpower', 'manage_ut_machines', 'manage_vehicles'
+      'manage_manpower', 'manage_ut_machines', 'manage_ut_machine_logs', 'manage_vehicles'
     ],
     isEditable: false,
   },

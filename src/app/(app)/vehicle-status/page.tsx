@@ -3,14 +3,15 @@ import { useState, useMemo } from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, AlertTriangle } from 'lucide-react';
 import VehicleTable from '@/components/vehicle/VehicleTable';
 import AddVehicleDialog from '@/components/vehicle/AddVehicleDialog';
 import type { Vehicle } from '@/lib/types';
 import EditVehicleDialog from '@/components/vehicle/EditVehicleDialog';
+import { addDays, isBefore, format } from 'date-fns';
 
 export default function VehicleStatusPage() {
-    const { user, roles } = useAppContext();
+    const { user, roles, vehicles } = useAppContext();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
@@ -20,6 +21,15 @@ export default function VehicleStatusPage() {
         const userRole = roles.find(r => r.name === user.role);
         return userRole?.permissions.includes('manage_vehicles');
     }, [user, roles]);
+
+    const expiringVehicles = useMemo(() => {
+        const thirtyDaysFromNow = addDays(new Date(), 30);
+        return vehicles.filter(v => 
+            isBefore(new Date(v.vapValidity), thirtyDaysFromNow) ||
+            isBefore(new Date(v.sdpValidity), thirtyDaysFromNow) ||
+            isBefore(new Date(v.epValidity), thirtyDaysFromNow)
+        );
+    }, [vehicles]);
 
     const handleEdit = (vehicle: Vehicle) => {
         setSelectedVehicle(vehicle);
@@ -46,6 +56,27 @@ export default function VehicleStatusPage() {
                     </Button>
                 )}
             </div>
+
+            {expiringVehicles.length > 0 && canManage && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Expiring Documents</CardTitle>
+                        <CardDescription>The following vehicles have documents expiring within the next 30 days.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {expiringVehicles.map((v, i) => (
+                                <div key={i} className="text-sm p-2 bg-amber-50 dark:bg-amber-900/20 rounded-md">
+                                    <span className="font-semibold">{v.vehicleNumber} ({v.driverName})</span>: 
+                                    {isBefore(new Date(v.vapValidity), thirtyDaysFromNow) && ` VAP expires ${format(new Date(v.vapValidity), 'dd-MM-yyyy')}. `}
+                                    {isBefore(new Date(v.sdpValidity), thirtyDaysFromNow) && ` SDP expires ${format(new Date(v.sdpValidity), 'dd-MM-yyyy')}. `}
+                                    {isBefore(new Date(v.epValidity), thirtyDaysFromNow) && ` EP expires ${format(new Date(v.epValidity), 'dd-MM-yyyy')}. `}
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <Card>
                 <CardHeader>

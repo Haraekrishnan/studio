@@ -32,7 +32,7 @@ const vehicleSchema = z.object({
   vapValidity: z.date(),
   sdpValidity: z.date(),
   epValidity: z.date(),
-  status: z.string().min(1),
+  status: z.enum(['Operational', 'In Workshop', 'Unavailable']),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -116,7 +116,24 @@ export default function EditVehicleDialog({ isOpen, setIsOpen, vehicle }: EditVe
                     <div><Label>SDP Validity</Label><Controller control={form.control} name="sdpValidity" render={({ field }) => (<Popover><PopoverTrigger asChild><Button variant="outline" className={cn('w-full justify-start', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>)}/>{form.formState.errors.sdpValidity && <p className="text-xs text-destructive">{form.formState.errors.sdpValidity.message}</p>}</div>
                     <div><Label>EP Validity</Label><Controller control={form.control} name="epValidity" render={({ field }) => (<Popover><PopoverTrigger asChild><Button variant="outline" className={cn('w-full justify-start', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>)}/>{form.formState.errors.epValidity && <p className="text-xs text-destructive">{form.formState.errors.epValidity.message}</p>}</div>
                 </div>
-                <div><Label>Status</Label><Input {...form.register('status')} />{form.formState.errors.status && <p className="text-xs text-destructive">{form.formState.errors.status.message}</p>}</div>
+                <div>
+                    <Label>Status</Label>
+                    <Controller
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger><SelectValue placeholder="Select status..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Operational">Operational</SelectItem>
+                                    <SelectItem value="In Workshop">In Workshop</SelectItem>
+                                    <SelectItem value="Unavailable">Unavailable</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {form.formState.errors.status && <p className="text-xs text-destructive">{form.formState.errors.status.message}</p>}
+                </div>
             </div>
             </ScrollArea>
             <DialogFooter className="mt-4">

@@ -6,7 +6,7 @@ import { format, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { MoreHorizontal, Edit, Trash2, FileText, ShieldQuestion } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, ShieldQuestion, BookMarked } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import type { UTMachine } from '@/lib/types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -15,9 +15,10 @@ import RequestUTMachineCertificateDialog from './RequestUTMachineCertificateDial
 
 interface UTMachineTableProps {
   onEdit: (machine: UTMachine) => void;
+  onLogManager: (machine: UTMachine) => void;
 }
 
-export default function UTMachineTable({ onEdit }: UTMachineTableProps) {
+export default function UTMachineTable({ onEdit, onLogManager }: UTMachineTableProps) {
     const { user, roles, utMachines, projects, deleteUTMachine } = useAppContext();
     const { toast } = useToast();
     const [isCertRequestOpen, setIsCertRequestOpen] = useState(false);
@@ -85,6 +86,7 @@ export default function UTMachineTable({ onEdit }: UTMachineTableProps) {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onSelect={() => onLogManager(machine)}><BookMarked className="mr-2 h-4 w-4"/>Usage Log</DropdownMenuItem>
                                         <DropdownMenuItem onSelect={() => handleRequestCert(machine)}><ShieldQuestion className="mr-2 h-4 w-4"/>Request Certificate</DropdownMenuItem>
                                         {canManage && <DropdownMenuItem onSelect={() => onEdit(machine)}><Edit className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>}
                                         {canManage && <AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem></AlertDialogTrigger>}

@@ -16,6 +16,7 @@ export const ALL_PERMISSIONS = [
   'manage_inventory',
   'manage_manpower',
   'manage_ut_machines',
+  'manage_ut_machine_logs',
   'manage_vehicles',
 ] as const;
 export type Permission = (typeof ALL_PERMISSIONS)[number];
@@ -190,18 +191,32 @@ export interface ManpowerLog {
   updatedBy: string; // userId
 }
 
+export interface UTMachineUsageLog {
+  id: string;
+  date: string; // ISO Date
+  cableNumber: string;
+  probeNumber: string;
+  areaOfWorking: string;
+  usedBy: string; // user name or id
+  jobDetails: string;
+  remarks: string;
+  loggedBy: string; // userId
+}
+
 export interface UTMachine {
   id: string;
   machineName: string;
   serialNumber: string;
   projectId: string;
-  unit: string; // e.g., 'Unit A', 'Unit B'
-  calibrationDueDate: string; // ISO Date
+  unit: string;
+  calibrationDueDate: string;
   probeDetails: string;
   cableDetails: string;
-  status: string; // Daily status update
-  usageLog: { date: string; updatedBy: string; status: string }[];
+  status: string;
+  usageLog: UTMachineUsageLog[];
 }
+
+export type VehicleStatus = 'Operational' | 'In Workshop' | 'Unavailable';
 
 export interface Vehicle {
   id: string;
@@ -215,8 +230,8 @@ export interface Vehicle {
   driverLicenseNumber: string;
   driverEpNumber: string;
   driverSdpNumber: string;
-  vapValidity: string; // ISO Date
-  sdpValidity: string; // ISO Date
-  epValidity: string; // ISO Date
-  status: string; // Daily status update
+  vapValidity: string;
+  sdpValidity: string;
+  epValidity: string;
+  status: VehicleStatus;
 }

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle } from '@/lib/types';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES } from '@/lib/mock-data';
 import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
@@ -78,6 +78,7 @@ interface AppContextType {
   addUTMachine: (machine: Omit<UTMachine, 'id' | 'usageLog'>) => void;
   updateUTMachine: (machine: UTMachine) => void;
   deleteUTMachine: (machineId: string) => void;
+  addUTMachineLog: (machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => void;
   addVehicle: (vehicle: Omit<Vehicle, 'id'>) => void;
   updateVehicle: (vehicle: Vehicle) => void;
   deleteVehicle: (vehicleId: string) => void;
@@ -245,7 +246,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return users.filter(u => u.id === user.id);
   }, [user, users, roles, getSubordinates]);
   
-  const addTask = (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState'>) => {
+  const addTask = (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'completionDateIsMandatory'>) => {
     const newTask: Task = {
         ...task,
         id: `task-${Date.now()}`,
@@ -797,6 +798,23 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       recordAction(`Updated UT Machine: ${updatedMachine.machineName}`);
   };
 
+  const addUTMachineLog = (machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => {
+    if (!user) return;
+    const newLog: UTMachineUsageLog = {
+        ...logData,
+        id: `utlog-${Date.now()}`,
+        date: new Date().toISOString(),
+        loggedBy: user.id,
+    };
+    setUtMachines(prev => prev.map(m => {
+        if (m.id === machineId) {
+            return { ...m, usageLog: [newLog, ...(m.usageLog || [])] };
+        }
+        return m;
+    }));
+    recordAction(`Added usage log for UT Machine ID: ${machineId}`);
+  };
+
   const deleteUTMachine = (machineId: string) => {
       if (!user) return;
       const machineName = utMachines.find(m => m.id === machineId)?.machineName;
@@ -846,7 +864,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         const vapDate = new Date(v.vapValidity);
         const sdpDate = new Date(v.sdpValidity);
         const epDate = new Date(v.epValidity);
-        const isExpiring = isBefore(vapDate, thirtyDaysFromNow) || isBefore(sdpDate, thirtyDaysFromNow) || isBefore(epDate, thirtyDaysFromNow);
+        const isExpiring = isBefore(vapDate, thirtyDaysFromNow) ||
+                           isBefore(sdpDate, thirtyDaysFromNow) ||
+                           isBefore(epDate, thirtyDaysFromNow);
         return isExpiring;
     }).length;
   }, [vehicles]);
@@ -944,6 +964,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addManpowerLog,
     addUTMachine,
     updateUTMachine,
+    addUTMachineLog,
     deleteUTMachine,
     addVehicle,
     updateVehicle,
