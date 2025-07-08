@@ -80,6 +80,7 @@ interface AppContextType {
   addCertificateRequestComment: (requestId: string, commentText: string) => void;
   fulfillCertificateRequest: (requestId: string, commentText: string) => void;
   markUTRequestsAsViewed: () => void;
+  acknowledgeFulfilledUTRequest: (requestId: string) => void;
   addManpowerLog: (log: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => void;
   addUTMachine: (machine: Omit<UTMachine, 'id' | 'usageLog'>) => void;
   updateUTMachine: (machine: UTMachine) => void;
@@ -835,6 +836,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     ));
   }, [user, addCertificateRequestComment]);
 
+  const acknowledgeFulfilledUTRequest = useCallback((requestId: string) => {
+    if (!user) return;
+    setCertificateRequests(prev => prev.filter(req => req.id !== requestId));
+    recordAction(`Acknowledged fulfilled certificate request ID: ${requestId}`);
+  }, [user, recordAction]);
+
   const markUTRequestsAsViewed = useCallback(() => {
     if (!user) return;
     setCertificateRequests(prev => prev.map(req => 
@@ -1082,6 +1089,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addCertificateRequestComment,
     fulfillCertificateRequest,
     markUTRequestsAsViewed,
+    acknowledgeFulfilledUTRequest,
     addManpowerLog,
     addUTMachine,
     updateUTMachine,
