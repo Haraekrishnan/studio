@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { User } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import EmployeePerformanceChart from '@/components/performance/performance-chart';
@@ -11,27 +11,38 @@ import PerformanceFilters from '@/components/performance/performance-filters';
 import PerformanceReportDownloads from '@/components/performance/performance-report-downloads';
 
 export default function PerformancePage() {
-    const { users, tasks, getVisibleUsers } = useAppContext();
+    const { users, tasks, getVisibleUsers, plannerEvents } = useAppContext();
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [dateRange, setDateRange] = useState<DateRange | undefined>();
+    const [activeFilters, setActiveFilters] = useState({
+        userIds: [] as string[],
+        dates: undefined as DateRange | undefined,
+    });
 
     const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
 
     const performanceData = useMemo(() => {
-        const usersToDisplay = selectedUserIds.length > 0 
-            ? visibleUsers.filter(u => selectedUserIds.includes(u.id))
+        const usersToDisplay = activeFilters.userIds.length > 0 
+            ? visibleUsers.filter(u => activeFilters.userIds.includes(u.id))
             : visibleUsers;
 
-        const tasksToConsider = dateRange?.from
-            ? tasks.filter(t => t.dueDate && isWithinInterval(new Date(t.dueDate), { start: dateRange.from!, end: dateRange.to || dateRange.from! }))
+        const tasksToConsider = activeFilters.dates?.from
+            ? tasks.filter(t => t.dueDate && isWithinInterval(new Date(t.dueDate), { start: activeFilters.dates!.from!, end: activeFilters.dates.to || activeFilters.dates.from! }))
             : tasks;
+            
+        const plannerEventsToConsider = activeFilters.dates?.from
+            ? plannerEvents.filter(e => e.date && isWithinInterval(new Date(e.date), { start: activeFilters.dates!.from!, end: activeFilters.dates.to || activeFilters.dates.from! }))
+            : plannerEvents;
 
         return usersToDisplay.map(user => {
             const userTasks = tasksToConsider.filter(task => task.assigneeId === user.id);
+            const userPlannerEvents = plannerEventsToConsider.filter(e => e.creatorId === user.id);
+
             const completed = userTasks.filter(t => t.status === 'Completed').length;
             const inProgress = userTasks.filter(t => t.status === 'In Progress' || t.status === 'Pending Approval').length;
             const todo = userTasks.filter(t => t.status === 'To Do').length;
             const overdue = userTasks.filter(t => t.status === 'Overdue').length;
+            const planningScore = userPlannerEvents.length * 2; // 2 points per event planned
 
             return { 
                 name: user.name, 
@@ -40,10 +51,21 @@ export default function PerformancePage() {
                 inProgress,
                 todo,
                 overdue,
+                planningScore,
                 total: userTasks.length
             };
         });
-    }, [visibleUsers, tasks, selectedUserIds, dateRange]);
+    }, [visibleUsers, tasks, plannerEvents, activeFilters]);
+
+    const handleApplyFilters = useCallback(() => {
+        setActiveFilters({ userIds: selectedUserIds, dates: dateRange });
+    }, [selectedUserIds, dateRange]);
+
+    const handleClearFilters = useCallback(() => {
+        setSelectedUserIds([]);
+        setDateRange(undefined);
+        setActiveFilters({ userIds: [], dates: undefined });
+    }, []);
 
 
     return (
@@ -53,29 +75,23 @@ export default function PerformancePage() {
                 <p className="text-muted-foreground">Review individual and team performance metrics.</p>
             </div>
             
+            <PerformanceFilters 
+                users={visibleUsers}
+                selectedUserIds={selectedUserIds}
+                onUserChange={setSelectedUserIds}
+                dateRange={dateRange}
+                onDateChange={setDateRange}
+                onApply={handleApplyFilters}
+                onClear={handleClearFilters}
+            />
+
             <Card>
                 <CardHeader className="flex-col md:flex-row md:items-center md:justify-between">
                    <div>
-                     <CardTitle>Filters</CardTitle>
-                     <CardDescription>Select users and a date range to analyze performance.</CardDescription>
+                     <CardTitle>Task Status Distribution</CardTitle>
+                     <CardDescription>A column chart showing workload and status for selected employees.</CardDescription>
                    </div>
                    <PerformanceReportDownloads data={performanceData} />
-                </CardHeader>
-                <CardContent>
-                    <PerformanceFilters 
-                        users={visibleUsers}
-                        selectedUserIds={selectedUserIds}
-                        onUserChange={setSelectedUserIds}
-                        dateRange={dateRange}
-                        onDateChange={setDateRange}
-                    />
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Task Status Distribution</CardTitle>
-                    <CardDescription>A column chart showing workload and status for selected employees.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <EmployeePerformanceChart data={performanceData} />

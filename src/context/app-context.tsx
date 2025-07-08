@@ -297,21 +297,38 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   
   const approveTaskStatusChange = (taskId: string, commentText: string) => {
     const task = tasks.find(t => t.id === taskId);
-    if (!task || !task.pendingStatus) return;
+    if (!task) return;
 
     addComment(taskId, `Request Approved: ${commentText}`);
-    const isCompleting = task.pendingStatus === 'Completed';
+    
+    let updatedTask: Partial<Task>;
 
-    const updatedTask = {
-      ...task,
-      status: task.pendingStatus,
-      completionDate: isCompleting ? new Date().toISOString() : task.completionDate,
-      pendingStatus: undefined,
-      previousStatus: undefined,
-      approvalState: 'approved' as ApprovalState,
-    };
-    updateTask(updatedTask);
-    recordAction(`Approved status change for task: "${task.title}"`);
+    if (task.pendingAssigneeId) { // It's a reassignment request
+        const newAssignee = users.find(u => u.id === task.pendingAssigneeId);
+        updatedTask = {
+            assigneeId: task.pendingAssigneeId,
+            status: task.previousStatus || 'To Do',
+            pendingAssigneeId: undefined,
+            previousStatus: undefined,
+            approvalState: 'none',
+            isViewedByAssignee: false,
+        };
+        recordAction(`Approved reassignment of task "${task.title}" to ${newAssignee?.name}`);
+    } else if (task.pendingStatus) { // It's a status change request
+        const isCompleting = task.pendingStatus === 'Completed';
+        updatedTask = {
+            status: task.pendingStatus,
+            completionDate: isCompleting ? new Date().toISOString() : task.completionDate,
+            pendingStatus: undefined,
+            previousStatus: undefined,
+            approvalState: 'approved',
+        };
+        recordAction(`Approved status change for task: "${task.title}"`);
+    } else {
+        return; // Nothing to approve
+    }
+    
+    updateTask({ ...task, ...updatedTask });
   };
   
   const returnTaskStatusChange = (taskId: string, commentText: string) => {
@@ -319,15 +336,30 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (!task) return;
 
     addComment(taskId, `Request Returned: ${commentText}`);
-    const updatedTask = {
-      ...task,
-      status: task.previousStatus || 'In Progress', // Revert to a sensible state
-      pendingStatus: undefined,
-      previousStatus: undefined,
-      approvalState: 'returned' as ApprovalState,
-    };
-    updateTask(updatedTask);
-    recordAction(`Returned task "${task.title}" to status "${updatedTask.status}"`);
+    
+    let updatedTask: Partial<Task>;
+
+    if (task.pendingAssigneeId) { // It's a reassignment request being returned
+        updatedTask = {
+            status: task.previousStatus || 'To Do',
+            pendingAssigneeId: undefined,
+            previousStatus: undefined,
+            approvalState: 'returned',
+        };
+        recordAction(`Returned (rejected) reassignment of task "${task.title}"`);
+    } else if (task.pendingStatus) { // It's a status change request being returned
+        updatedTask = {
+            status: task.previousStatus || 'In Progress',
+            pendingStatus: undefined,
+            previousStatus: undefined,
+            approvalState: 'returned',
+        };
+        recordAction(`Returned task "${task.title}" to status "${updatedTask.status}"`);
+    } else {
+        return;
+    }
+
+    updateTask({ ...task, ...updatedTask });
   };
 
   const deleteTask = (taskId: string) => {

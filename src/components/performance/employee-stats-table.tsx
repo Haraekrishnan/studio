@@ -24,6 +24,7 @@ export default function EmployeeStatsTable({ data }: EmployeeStatsTableProps) {
           <TableHead className="text-center">In Progress</TableHead>
           <TableHead className="text-center">Completed</TableHead>
           <TableHead className="text-center">Overdue</TableHead>
+          <TableHead className="text-center">Planning Score</TableHead>
           <TableHead className="text-center">Total Assigned</TableHead>
         </TableRow>
       </TableHeader>
@@ -52,12 +53,13 @@ export default function EmployeeStatsTable({ data }: EmployeeStatsTableProps) {
                 0
               )}
             </TableCell>
+            <TableCell className="text-center">{user.planningScore}</TableCell>
             <TableCell className="text-center font-semibold">{user.total}</TableCell>
           </TableRow>
         ))}
          {data.length === 0 && (
           <TableRow>
-            <TableCell colSpan={6} className="h-24 text-center">
+            <TableCell colSpan={7} className="h-24 text-center">
               No data available for the selected filters.
             </TableCell>
           </TableRow>

@@ -19,6 +19,7 @@ export default function PerformanceReportDownloads({ data }: PerformanceReportDo
       'In Progress': user.inProgress,
       'Completed': user.completed,
       'Overdue': user.overdue,
+      'Planning Score': user.planningScore,
       'Total Assigned': user.total,
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -32,7 +33,7 @@ export default function PerformanceReportDownloads({ data }: PerformanceReportDo
     doc.text('Performance Analysis Report', 14, 16);
     
     (doc as any).autoTable({
-      head: [['Employee', 'Role', 'To Do', 'In Progress', 'Completed', 'Overdue', 'Total']],
+      head: [['Employee', 'Role', 'To Do', 'In Progress', 'Completed', 'Overdue', 'Planning', 'Total']],
       body: data.map(user => [
         user.name,
         user.role,
@@ -40,6 +41,7 @@ export default function PerformanceReportDownloads({ data }: PerformanceReportDo
         user.inProgress,
         user.completed,
         user.overdue,
+        user.planningScore,
         user.total,
       ]),
       startY: 20,

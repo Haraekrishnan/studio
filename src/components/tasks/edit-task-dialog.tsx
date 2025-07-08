@@ -100,7 +100,8 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
 
     return allVisibleUsers.filter(assignee => {
       const assigneeRoleLevel = roleHierarchy[assignee.role];
-      return assigneeRoleLevel <= userRoleLevel;
+      // Allow assigning to self or to roles lower in the hierarchy
+      return assignee.id === user.id || assigneeRoleLevel < userRoleLevel;
     });
   }, [user, allVisibleUsers]);
 

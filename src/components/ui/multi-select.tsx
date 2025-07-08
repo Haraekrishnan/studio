@@ -6,7 +6,7 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Command, CommandGroup, CommandItem } from "@/components/ui/command"
+import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 
 interface Option {
     value: string;
@@ -47,6 +47,8 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
   }
   
   const selectedObjects = selected.map(value => options.find(option => option.value === value)).filter(Boolean) as Option[];
+
+  const filteredOptions = options.filter(option => !selected.includes(option.value));
 
 
   return (
@@ -89,28 +91,30 @@ export function MultiSelect({ options, selected, onChange, placeholder = "Select
         </div>
       </div>
       <div className="relative mt-2">
-        {open && options.length > 0 ? (
+        {open && filteredOptions.length > 0 ? (
           <div className="absolute w-full z-10 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
-            <CommandGroup className="h-full overflow-auto">
-              {options.map((option) => {
-                return (
-                  <CommandItem
-                    key={option.value}
-                    onMouseDown={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                    }}
-                    onSelect={() => {
-                        setInputValue("")
-                        onChange([...selected, option.value])
-                    }}
-                    className={"cursor-pointer"}
-                  >
-                    {option.label}
-                  </CommandItem>
-                )
-              })}
-            </CommandGroup>
+            <CommandList>
+                <CommandGroup className="h-full overflow-auto">
+                {filteredOptions.map((option) => {
+                    return (
+                    <CommandItem
+                        key={option.value}
+                        onMouseDown={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                        }}
+                        onSelect={() => {
+                            setInputValue("")
+                            onChange([...selected, option.value])
+                        }}
+                        className={"cursor-pointer"}
+                    >
+                        {option.label}
+                    </CommandItem>
+                    )
+                })}
+                </CommandGroup>
+            </CommandList>
           </div>
         ) : null}
       </div>
