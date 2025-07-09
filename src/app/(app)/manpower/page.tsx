@@ -11,8 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import ManpowerReportDownloads from '@/components/manpower/ManpowerReportDownloads';
+import ManpowerLogReportDownloads from '@/components/manpower/ManpowerLogReportDownloads';
 import Link from 'next/link';
 
 export default function ManpowerPage() {
@@ -72,7 +71,7 @@ export default function ManpowerPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Generate Manpower Report</CardTitle>
-                    <CardDescription>Select a date range to generate a downloadable Excel report.</CardDescription>
+                    <CardDescription>Select a date range to generate a downloadable Excel report of daily logs.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
                      <Popover>
@@ -109,7 +108,7 @@ export default function ManpowerPage() {
                           />
                         </PopoverContent>
                       </Popover>
-                      <ManpowerReportDownloads dateRange={reportDateRange} />
+                      <ManpowerLogReportDownloads dateRange={reportDateRange} />
                 </CardContent>
             </Card>
 
