@@ -80,7 +80,7 @@ export default function AchievementsPage() {
         const manualAchievements = achievementsInPeriod.filter(a => a.userId === u.id && a.type === 'manual' && a.status === 'approved');
         const manualPoints = manualAchievements.reduce((sum, a) => sum + a.points, 0);
 
-        const planningPoints = plannerEventsInPeriod.filter(e => e.creatorId === u.id).length * 1; // 1 point per event created
+        const planningPoints = plannerEventsInPeriod.filter(e => e.creatorId === u.id).length * 2; // 2 points per event planned
 
         return {
           user: u,
