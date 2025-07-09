@@ -9,17 +9,19 @@ import ManpowerProfileDialog from '@/components/manpower/ManpowerProfileDialog';
 import type { ManpowerProfile } from '@/lib/types';
 import ManpowerSummary from '@/components/manpower/ManpowerSummary';
 import ManpowerFilters, { type ManpowerFilterValues } from '@/components/manpower/ManpowerFilters';
-import { isWithinInterval } from 'date-fns';
+import { isWithinInterval, addDays, isBefore, format } from 'date-fns';
 import ManpowerReportDownloads from '@/components/manpower/ManpowerReportDownloads';
 
 export default function ManpowerListPage() {
-    const { user, roles, manpowerProfiles } = useAppContext();
+    const { user, roles, manpowerProfiles, projects } = useAppContext();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState<ManpowerProfile | null>(null);
     const [filters, setFilters] = useState<ManpowerFilterValues>({
         status: 'all',
         trade: 'all',
         returnDateRange: undefined,
+        projectId: 'all',
+        expiryDateRange: undefined,
     });
 
     const canManage = useMemo(() => {
@@ -28,11 +30,39 @@ export default function ManpowerListPage() {
         return userRole?.permissions.includes('manage_manpower_list');
     }, [user, roles]);
     
+    const expiringProfiles = useMemo(() => {
+        if (!canManage) return [];
+        const thirtyDaysFromNow = addDays(new Date(), 30);
+        
+        return manpowerProfiles.map(p => {
+            const expiringDocs: string[] = [];
+            const checkDate = (dateStr: string | undefined, name: string) => {
+                if (dateStr && isBefore(new Date(dateStr), thirtyDaysFromNow)) {
+                    expiringDocs.push(`${name} on ${format(new Date(dateStr), 'dd-MM-yyyy')}`);
+                }
+            };
+    
+            checkDate(p.passIssueDate, 'Pass');
+            checkDate(p.woValidity, 'WO');
+            checkDate(p.wcPolicyValidity, 'WC Policy');
+            checkDate(p.labourContractValidity, 'Labour Contract');
+            checkDate(p.medicalExpiryDate, 'Medical');
+            checkDate(p.safetyExpiryDate, 'Safety');
+            checkDate(p.irataValidity, 'IRATA');
+            checkDate(p.contractValidity, 'Contract');
+            
+            return { profile: p, expiringDocs };
+        }).filter(item => item.expiringDocs.length > 0);
+    }, [manpowerProfiles, canManage]);
+
     const filteredProfiles = useMemo(() => {
         return manpowerProfiles.filter(profile => {
-            const { status, trade, returnDateRange } = filters;
+            const { status, trade, returnDateRange, projectId, expiryDateRange } = filters;
             if (status !== 'all' && profile.status !== status) return false;
             if (trade !== 'all' && profile.trade !== trade) return false;
+
+            const project = projects.find(p => p.id === profile.eicName);
+            if(projectId !== 'all' && project?.name !== projectId) return false;
 
             if (returnDateRange?.from) {
                 const returnDate = profile.rejoinedDate ? new Date(profile.rejoinedDate) : (profile.leaveEndDate ? new Date(profile.leaveEndDate) : null);
@@ -44,9 +74,26 @@ export default function ManpowerListPage() {
                     return false;
                 }
             }
+            
+            if (expiryDateRange?.from) {
+                const datesToCheck = [
+                    profile.passIssueDate, profile.woValidity, profile.wcPolicyValidity, 
+                    profile.labourContractValidity, profile.medicalExpiryDate, 
+                    profile.safetyExpiryDate, profile.irataValidity, profile.contractValidity
+                ];
+                const fallsInRange = datesToCheck.some(dateStr => {
+                    if (!dateStr) return false;
+                    const expiryDate = new Date(dateStr);
+                    const from = expiryDateRange.from!;
+                    const to = expiryDateRange.to || from;
+                    return isWithinInterval(expiryDate, { start: from, end: to });
+                });
+                if (!fallsInRange) return false;
+            }
+
             return true;
         });
-    }, [manpowerProfiles, filters]);
+    }, [manpowerProfiles, filters, projects]);
 
 
     const handleEdit = (profile: ManpowerProfile) => {
@@ -93,6 +140,24 @@ export default function ManpowerListPage() {
                     </Button>
                 </div>
             </div>
+
+            {expiringProfiles.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Expiring Documents</CardTitle>
+                        <CardDescription>The following manpower have documents expiring within the next 30 days.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {expiringProfiles.map(item => (
+                                <div key={item.profile.id} className="text-sm p-2 bg-amber-50 dark:bg-amber-900/20 rounded-md">
+                                    <span className="font-semibold">{item.profile.name} ({item.profile.trade})</span>: {item.expiringDocs.join(', ')}
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <ManpowerSummary />
             

@@ -10,7 +10,7 @@ import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount } = useAppContext();
   const pathname = usePathname();
 
   const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
@@ -40,7 +40,7 @@ export function AppSidebar() {
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
-    { href: '/manpower', icon: Users2, label: 'Manpower' },
+    { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: Gamepad2, label: 'UT Machine Status', notification: utMachineNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
   ];

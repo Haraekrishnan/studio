@@ -17,12 +17,14 @@ import {
 interface DateRangePickerProps extends React.ComponentProps<"div"> {
     date: DateRange | undefined;
     onDateChange: (date: DateRange | undefined) => void;
+    placeholder?: string;
 }
 
 export function DateRangePicker({
   className,
   date,
-  onDateChange
+  onDateChange,
+  placeholder = "Pick a date range"
 }: DateRangePickerProps) {
   return (
     <div className={cn("grid gap-2", className)}>
@@ -32,7 +34,7 @@ export function DateRangePicker({
             id="date"
             variant={"outline"}
             className={cn(
-              "w-[300px] justify-start text-left font-normal",
+              "w-[250px] justify-start text-left font-normal",
               !date && "text-muted-foreground"
             )}
           >
@@ -47,7 +49,7 @@ export function DateRangePicker({
                 format(date.from, "LLL dd, y")
               )
             ) : (
-              <span>Pick a date range</span>
+              <span>{placeholder}</span>
             )}
           </Button>
         </PopoverTrigger>

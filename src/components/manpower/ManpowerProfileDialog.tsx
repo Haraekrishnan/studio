@@ -239,14 +239,14 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
                     
                     {/* Column 2 */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold border-b pb-2">Validity Dates</h3>
-                        <div><Label>WO Validity</Label><DatePickerController name="woValidity" control={form.control} /></div>
-                        <div><Label>WC Policy Validity</Label><DatePickerController name="wcPolicyValidity" control={form.control} /></div>
-                        <div><Label>Labour Contract Validity</Label><DatePickerController name="labourContractValidity" control={form.control} /></div>
+                        <h3 className="text-lg font-semibold border-b pb-2">Expiry Dates</h3>
+                        <div><Label>WO Expiry Date</Label><DatePickerController name="woValidity" control={form.control} /></div>
+                        <div><Label>WC Policy Expiry Date</Label><DatePickerController name="wcPolicyValidity" control={form.control} /></div>
+                        <div><Label>Labour Contract Expiry Date</Label><DatePickerController name="labourContractValidity" control={form.control} /></div>
                         <div><Label>Medical Expiry Date</Label><DatePickerController name="medicalExpiryDate" control={form.control} /></div>
                         <div><Label>Safety Expiry Date</Label><DatePickerController name="safetyExpiryDate" control={form.control} /></div>
-                        <div><Label>IRATA Validity</Label><DatePickerController name="irataValidity" control={form.control} /></div>
-                        <div><Label>Contract Validity</Label><DatePickerController name="contractValidity" control={form.control} /></div>
+                        <div><Label>IRATA Expiry Date</Label><DatePickerController name="irataValidity" control={form.control} /></div>
+                        <div><Label>Contract Expiry Date</Label><DatePickerController name="contractValidity" control={form.control} /></div>
                         <div><Label>Remarks</Label><Textarea {...form.register('remarks')} /></div>
                         
                         <Separator className="my-4" />

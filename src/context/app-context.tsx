@@ -96,6 +96,7 @@ interface AppContextType {
   deleteVehicle: (vehicleId: string) => void;
   expiringVehicleDocsCount: number;
   expiringUtMachineCalibrationsCount: number;
+  expiringManpowerCount: number;
   pendingTaskApprovalCount: number;
   myNewTaskCount: number;
 }
@@ -1011,6 +1012,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const userRole = roles.find(r => r.name === user.role);
     return userRole?.permissions.includes('manage_ut_machines') ?? false;
   }, [user, roles]);
+  
+  const canManageManpowerList = useMemo(() => {
+    if (!user) return false;
+    const userRole = roles.find(r => r.name === user.role);
+    return userRole?.permissions.includes('manage_manpower_list');
+  }, [user, roles]);
 
   const expiringVehicleDocsCount = useMemo(() => {
     if (!canManageVehicles) return 0;
@@ -1031,6 +1038,31 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const thirtyDaysFromNow = addDays(new Date(), 30);
     return utMachines.filter(m => isBefore(new Date(m.calibrationDueDate), thirtyDaysFromNow)).length;
   }, [utMachines, canManageUtMachines]);
+  
+  const expiringManpowerCount = useMemo(() => {
+    if (!canManageManpowerList) return 0;
+    const thirtyDaysFromNow = addDays(new Date(), 30);
+    const expiringProfiles = new Set<string>();
+
+    manpowerProfiles.forEach(p => {
+        const datesToCheck = [
+            p.passIssueDate, p.woValidity, p.wcPolicyValidity, 
+            p.labourContractValidity, p.medicalExpiryDate, 
+            p.safetyExpiryDate, p.irataValidity, p.contractValidity
+        ];
+        
+        datesToCheck.forEach(dateStr => {
+            if (dateStr) {
+                const date = new Date(dateStr);
+                if (isBefore(date, thirtyDaysFromNow)) {
+                    expiringProfiles.add(p.id);
+                }
+            }
+        });
+    });
+    return expiringProfiles.size;
+  }, [manpowerProfiles, canManageManpowerList]);
+
 
   const pendingTaskApprovalCount = useMemo(() => {
     if (!user) return 0;
@@ -1147,6 +1179,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     deleteVehicle,
     expiringVehicleDocsCount,
     expiringUtMachineCalibrationsCount,
+    expiringManpowerCount,
     pendingTaskApprovalCount,
     myNewTaskCount,
   };
