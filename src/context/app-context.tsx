@@ -2,9 +2,9 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, MANPOWER_PROFILES } from '@/lib/mock-data';
-import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, MANPOWER_PROFILES, MANAGEMENT_REQUESTS } from '@/lib/mock-data';
+import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format, differenceInDays } from 'date-fns';
 
 interface AppContextType {
   user: User | null;
@@ -26,6 +26,7 @@ interface AppContextType {
   appName: string;
   appLogo: string | null;
   internalRequests: InternalRequest[];
+  managementRequests: ManagementRequest[];
   pendingStoreRequestCount: number;
   myRequestUpdateCount: number;
   pendingCertificateRequestCount: number;
@@ -70,6 +71,7 @@ interface AppContextType {
   addInternalRequestComment: (requestId: string, commentText: string) => void;
   markRequestAsViewed: (requestId: string) => void;
   forwardInternalRequest: (requestId: string, role: Role, comment: string) => void;
+  escalateInternalRequest: (requestId: string, reason: string) => void;
   createPpeRequestTask: (data: any) => void;
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
   updateInventoryItem: (item: InventoryItem) => void;
@@ -94,6 +96,10 @@ interface AppContextType {
   addVehicle: (vehicle: Omit<Vehicle, 'id'>) => void;
   updateVehicle: (vehicle: Vehicle) => void;
   deleteVehicle: (vehicleId: string) => void;
+  addManagementRequest: (request: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isViewedByRecipient'>) => void;
+  updateManagementRequest: (updatedRequest: ManagementRequest) => void;
+  addManagementRequestComment: (requestId: string, commentText: string) => void;
+  markManagementRequestAsViewed: (requestId: string) => void;
   expiringVehicleDocsCount: number;
   expiringUtMachineCalibrationsCount: number;
   expiringManpowerCount: number;
@@ -121,6 +127,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [utMachines, setUtMachines] = useState<UTMachine[]>(UT_MACHINES);
   const [vehicles, setVehicles] = useState<Vehicle[]>(VEHICLES);
   const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
+  const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>(MANAGEMENT_REQUESTS);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const [appName, setAppName] = useState('Aries Marine - Task Management System');
   const [appLogo, setAppLogo] = useState<string | null>(null);
@@ -711,6 +718,33 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }));
     recordAction(`Forwarded internal request ID: ${requestId}`);
   }, [user, internalRequests, recordAction]);
+  
+  const escalateInternalRequest = useCallback((requestId: string, reason: string) => {
+      if (!user) return;
+      const request = internalRequests.find(r => r.id === requestId);
+      if (!request) return;
+      
+      const escalationComment: Comment = {
+          userId: user.id,
+          text: `Request escalated to management. Reason: ${reason}`,
+          date: new Date().toISOString(),
+      };
+      
+      setInternalRequests(prev => prev.map(r => {
+        if (r.id === requestId) {
+          return {
+            ...r,
+            forwardedTo: 'Manager',
+            status: 'Pending',
+            comments: [escalationComment, ...(r.comments || [])],
+            isViewedByRequester: false,
+          };
+        }
+        return r;
+      }));
+      recordAction(`Escalated internal request ID: ${requestId}`);
+  }, [user, internalRequests, recordAction]);
+
 
   const createPpeRequestTask = useCallback((data: any) => {
     if (!user) return;
@@ -968,6 +1002,76 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       recordAction(`Deleted vehicle: ${vehicleNumber}`);
   }, [user, vehicles, recordAction]);
 
+  const addManagementRequest = useCallback((request: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isViewedByRecipient'>) => {
+    if (!user) return;
+    const newRequest: ManagementRequest = {
+        ...request,
+        id: `mreq-${Date.now()}`,
+        requesterId: user.id,
+        date: new Date().toISOString(),
+        status: 'Pending',
+        comments: [{ userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
+        isViewedByRequester: true,
+        isViewedByRecipient: false,
+    };
+    setManagementRequests(prev => [newRequest, ...prev]);
+    recordAction(`Created management request: ${request.subject}`);
+  }, [user, recordAction]);
+
+  const updateManagementRequest = useCallback((updatedRequest: ManagementRequest) => {
+      if (!user) return;
+      const originalRequest = managementRequests.find(r => r.id === updatedRequest.id);
+      
+      setManagementRequests(prev => prev.map(r => {
+          if (r.id === updatedRequest.id) {
+              const isStatusChange = originalRequest && originalRequest.status !== updatedRequest.status;
+              const isRecipientAction = user.id === r.recipientId;
+              const isRequesterAction = user.id === r.requesterId;
+              
+              return {
+                  ...updatedRequest,
+                  isViewedByRecipient: isRequesterAction ? false : r.isViewedByRecipient,
+                  isViewedByRequester: isRecipientAction ? false : r.isViewedByRequester,
+              };
+          }
+          return r;
+      }));
+      recordAction(`Updated management request: ${updatedRequest.subject}`);
+  }, [user, managementRequests, recordAction]);
+
+  const addManagementRequestComment = useCallback((requestId: string, commentText: string) => {
+    if (!user) return;
+    const newComment: Comment = {
+        userId: user.id,
+        text: commentText,
+        date: new Date().toISOString(),
+    };
+    setManagementRequests(prev => prev.map(r => {
+        if (r.id === requestId) {
+            return {
+                ...r,
+                comments: [...(r.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+                isViewedByRecipient: user.id === r.requesterId ? false : r.isViewedByRecipient,
+                isViewedByRequester: user.id === r.recipientId ? false : r.isViewedByRequester,
+            };
+        }
+        return r;
+    }));
+    const request = managementRequests.find(r => r.id === requestId);
+    recordAction(`Commented on management request: ${request?.subject}`);
+  }, [user, managementRequests, recordAction]);
+
+  const markManagementRequestAsViewed = useCallback((requestId: string) => {
+    if (!user) return;
+    setManagementRequests(prev => prev.map(r => {
+        if (r.id === requestId) {
+            if (user.id === r.requesterId) return { ...r, isViewedByRequester: true };
+            if (user.id === r.recipientId) return { ...r, isViewedByRecipient: true };
+        }
+        return r;
+    }));
+  }, [user]);
+
   const pendingStoreRequestCount = useMemo(() => {
     if (!user) return 0;
     const isStorePersonnel = ['Store in Charge', 'Assistant Store Incharge'].includes(user.role);
@@ -1109,6 +1213,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     appName,
     appLogo,
     internalRequests,
+    managementRequests,
     pendingStoreRequestCount,
     myRequestUpdateCount,
     pendingCertificateRequestCount,
@@ -1116,67 +1221,72 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     myFulfilledUTRequests,
     workingManpowerCount,
     onLeaveManpowerCount,
-    login,
-    logout,
-    addTask,
-    updateTask,
-    deleteTask,
-    addPlannerEvent,
-    getExpandedPlannerEvents,
-    getVisibleUsers,
-    addUser,
-    updateUser,
-    deleteUser,
-    addRole,
-    updateRole,
-    deleteRole,
-    addProject,
-    updateProject,
-    deleteProject,
-    updateProfile,
-    requestTaskStatusChange,
-    approveTaskStatusChange,
-    returnTaskStatusChange,
-    addComment,
-    markTaskAsViewed,
-    addManualAchievement,
-    approveAchievement,
-    rejectAchievement,
-    updateManualAchievement,
-    deleteManualAchievement,
-    addPlannerEventComment,
-    addDailyPlannerComment,
-    updateBranding,
-    addInternalRequest,
-    updateInternalRequest,
-    deleteInternalRequest,
-    addInternalRequestComment,
-    markRequestAsViewed,
-    forwardInternalRequest,
-    createPpeRequestTask,
-    addInventoryItem,
-    updateInventoryItem,
-    deleteInventoryItem,
-    addMultipleInventoryItems,
-    requestInventoryTransfer,
-    approveInventoryTransfer,
-    rejectInventoryTransfer,
-    addCertificateRequest,
-    requestUTMachineCertificate,
-    addCertificateRequestComment,
-    fulfillCertificateRequest,
-    markUTRequestsAsViewed,
-    acknowledgeFulfilledUTRequest,
-    addManpowerLog,
-    addManpowerProfile,
-    updateManpowerProfile,
-    addUTMachine,
-    updateUTMachine,
-    addUTMachineLog,
-    deleteUTMachine,
-    addVehicle,
-    updateVehicle,
-    deleteVehicle,
+    login: useCallback(login, [router, users]),
+    logout: useCallback(logout, [router, currentLogId]),
+    addTask: useCallback(addTask, [recordAction]),
+    updateTask: useCallback(updateTask, [recordAction]),
+    deleteTask: useCallback(deleteTask, [tasks, recordAction]),
+    addPlannerEvent: useCallback(addPlannerEvent, [user, recordAction]),
+    getExpandedPlannerEvents: useCallback(getExpandedPlannerEvents, [plannerEvents]),
+    getVisibleUsers: useCallback(getVisibleUsers, [user, users, roles, getSubordinates]),
+    addUser: useCallback(addUser, [recordAction]),
+    updateUser: useCallback(updateUser, [user, recordAction]),
+    deleteUser: useCallback(deleteUser, [users, recordAction]),
+    addRole: useCallback(addRole, [recordAction]),
+    updateRole: useCallback(updateRole, [recordAction]),
+    deleteRole: useCallback(deleteRole, [roles, recordAction]),
+    addProject: useCallback(addProject, [recordAction]),
+    updateProject: useCallback(updateProject, [recordAction]),
+    deleteProject: useCallback(deleteProject, [projects, recordAction]),
+    updateProfile: useCallback(updateProfile, [user, recordAction]),
+    requestTaskStatusChange: useCallback(requestTaskStatusChange, [tasks, user, addComment, updateTask, recordAction]),
+    approveTaskStatusChange: useCallback(approveTaskStatusChange, [tasks, users, addComment, updateTask, recordAction]),
+    returnTaskStatusChange: useCallback(returnTaskStatusChange, [tasks, addComment, updateTask, recordAction]),
+    addComment: useCallback(addComment, [user, tasks, recordAction]),
+    markTaskAsViewed: useCallback(markTaskAsViewed, []),
+    addManualAchievement: useCallback(addManualAchievement, [user, users, recordAction]),
+    approveAchievement: useCallback(approveAchievement, [achievements, recordAction]),
+    rejectAchievement: useCallback(rejectAchievement, [achievements, recordAction]),
+    updateManualAchievement: useCallback(updateManualAchievement, [users, recordAction]),
+    deleteManualAchievement: useCallback(deleteManualAchievement, [achievements, users, recordAction]),
+    addPlannerEventComment: useCallback(addPlannerEventComment, [user, plannerEvents, recordAction]),
+    addDailyPlannerComment: useCallback(addDailyPlannerComment, [user, users, recordAction]),
+    updateBranding: useCallback(updateBranding, [recordAction]),
+    addInternalRequest: useCallback(addInternalRequest, [user, recordAction]),
+    updateInternalRequest: useCallback(updateInternalRequest, [user, internalRequests, recordAction]),
+    deleteInternalRequest: useCallback(deleteInternalRequest, [recordAction]),
+    addInternalRequestComment: useCallback(addInternalRequestComment, [user, internalRequests, recordAction]),
+    markRequestAsViewed: useCallback(markRequestAsViewed, []),
+    forwardInternalRequest: useCallback(forwardInternalRequest, [user, internalRequests, recordAction]),
+    escalateInternalRequest: useCallback(escalateInternalRequest, [user, internalRequests, recordAction]),
+    createPpeRequestTask: useCallback(createPpeRequestTask, [user, addTask]),
+    addInventoryItem: useCallback(addInventoryItem, []),
+    updateInventoryItem: useCallback(updateInventoryItem, []),
+    deleteInventoryItem: useCallback(deleteInventoryItem, []),
+    addMultipleInventoryItems: useCallback(addMultipleInventoryItems, [projects]),
+    requestInventoryTransfer: useCallback(requestInventoryTransfer, [user]),
+    approveInventoryTransfer: useCallback(approveInventoryTransfer, [inventoryTransferRequests, projects, addInventoryTransferComment]),
+    rejectInventoryTransfer: useCallback(rejectInventoryTransfer, [addInventoryTransferComment]),
+    addCertificateRequest: useCallback(addCertificateRequest, [user]),
+    requestUTMachineCertificate: useCallback(requestUTMachineCertificate, [user, recordAction]),
+    addCertificateRequestComment: useCallback(addCertificateRequestComment, [user]),
+    fulfillCertificateRequest: useCallback(fulfillCertificateRequest, [user, recordAction, certificateRequests]),
+    markUTRequestsAsViewed: useCallback(markUTRequestsAsViewed, [user]),
+    acknowledgeFulfilledUTRequest: useCallback(acknowledgeFulfilledUTRequest, [user, recordAction]),
+    addManpowerLog: useCallback(addManpowerLog, [user]),
+    addManpowerProfile: useCallback(addManpowerProfile, [user]),
+    updateManpowerProfile: useCallback(updateManpowerProfile, [user]),
+    addUTMachine: useCallback(addUTMachine, [user, recordAction]),
+    updateUTMachine: useCallback(updateUTMachine, [user, recordAction]),
+    addUTMachineLog: useCallback(addUTMachineLog, [user, recordAction]),
+    deleteUTMachine: useCallback(deleteUTMachine, [user, utMachines, recordAction]),
+    addVehicle: useCallback(addVehicle, [user, recordAction]),
+    updateVehicle: useCallback(updateVehicle, [user, recordAction]),
+    deleteVehicle: useCallback(deleteVehicle, [user, vehicles, recordAction]),
+    addManagementRequest: useCallback(addManagementRequest, [user, recordAction]),
+    updateManagementRequest: useCallback(updateManagementRequest, [user, managementRequests, recordAction]),
+    addManagementRequestComment: useCallback(addManagementRequestComment, [user, managementRequests, recordAction]),
+    markManagementRequestAsViewed: useCallback(markManagementRequestAsViewed, [user]),
     expiringVehicleDocsCount,
     expiringUtMachineCalibrationsCount,
     expiringManpowerCount,
