@@ -13,6 +13,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import ManpowerLogReportDownloads from '@/components/manpower/ManpowerLogReportDownloads';
 import Link from 'next/link';
+import { Calendar } from '@/components/ui/calendar';
 
 export default function ManpowerPage() {
     const { user, roles, manpowerLogs } = useAppContext();
