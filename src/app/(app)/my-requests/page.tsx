@@ -7,35 +7,38 @@ import Link from 'next/link';
 import { ExternalLink, GanttChartSquare, PlusCircle } from 'lucide-react';
 import NewInternalRequestDialog from '@/components/requests/new-internal-request-dialog';
 import InternalRequestTable from '@/components/requests/internal-request-table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import NewManagementRequestDialog from '@/components/requests/NewManagementRequestDialog';
+import ManagementRequestTable from '@/components/requests/ManagementRequestTable';
 
 export default function MyRequestsPage() {
-    const { user, internalRequests } = useAppContext();
+    const { user, internalRequests, managementRequests } = useAppContext();
     const [isNewRequestDialogOpen, setIsNewRequestDialogOpen] = useState(false);
+    const [isNewMgmtRequestDialogOpen, setIsNewMgmtRequestDialogOpen] = useState(false);
 
     const isApprover = useMemo(() => {
         if (!user) return false;
         return ['Admin', 'Manager', 'Store in Charge', 'Assistant Store Incharge'].includes(user.role);
     }, [user]);
 
-    const visibleRequests = useMemo(() => {
+    const visibleInternalRequests = useMemo(() => {
         if (!user) return [];
         
         const isStorePersonnel = ['Store in Charge', 'Assistant Store Incharge'].includes(user.role);
         const isAdminOrManager = ['Admin', 'Manager'].includes(user.role);
 
         return internalRequests.filter(req => {
-            // Requester can always see their own requests
             if (req.requesterId === user.id) return true;
-            
-            // Admins and Managers see all requests
             if (isAdminOrManager) return true;
-            
-            // Store personnel see all requests (view button will be disabled for forwarded ones)
             if (isStorePersonnel) return true;
-            
             return false;
         }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [internalRequests, user]);
+    
+    const visibleManagementRequests = useMemo(() => {
+        if (!user) return [];
+        return managementRequests.filter(req => req.requesterId === user.id || req.recipientId === user.id);
+    }, [managementRequests, user]);
 
     return (
         <div className="space-y-8">
@@ -43,7 +46,7 @@ export default function MyRequestsPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">My Requests</h1>
                     <p className="text-muted-foreground">
-                        Track your submitted internal requests or create a new PPE request.
+                        Track your submitted requests or create a new PPE request.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -61,25 +64,55 @@ export default function MyRequestsPage() {
                     </Button>
                 </div>
             </div>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Internal Store Requests</CardTitle>
-                        <CardDescription>
-                            {isApprover ? "Review and manage all internal store requests." : "Track your submitted requests."}
-                        </CardDescription>
-                    </div>
-                    <Button onClick={() => setIsNewRequestDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        New Request
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    <InternalRequestTable requests={visibleRequests} />
-                </CardContent>
-            </Card>
+            
+            <Tabs defaultValue="store-requests">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="store-requests">Internal Store Requests</TabsTrigger>
+                    <TabsTrigger value="management-requests">Management Requests</TabsTrigger>
+                </TabsList>
+                <TabsContent value="store-requests">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Internal Store Requests</CardTitle>
+                                <CardDescription>
+                                    {isApprover ? "Review and manage all internal store requests." : "Track your submitted requests."}
+                                </CardDescription>
+                            </div>
+                            <Button onClick={() => setIsNewRequestDialogOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                New Store Request
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <InternalRequestTable requests={visibleInternalRequests} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="management-requests">
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Management Requests</CardTitle>
+                                <CardDescription>
+                                    Direct requests to supervisors and management for non-store items.
+                                </CardDescription>
+                            </div>
+                            <Button onClick={() => setIsNewMgmtRequestDialogOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                New Management Request
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <ManagementRequestTable requests={visibleManagementRequests} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
 
             <NewInternalRequestDialog isOpen={isNewRequestDialogOpen} setIsOpen={setIsNewRequestDialogOpen} />
+            <NewManagementRequestDialog isOpen={isNewMgmtRequestDialogOpen} setIsOpen={setIsNewMgmtRequestDialogOpen} />
         </div>
     );
 }

@@ -103,6 +103,19 @@ export interface InternalRequest {
   forwardedTo?: Role;
 }
 
+export interface ManagementRequest {
+  id: string;
+  requesterId: string;
+  recipientId: string;
+  subject: string;
+  details: string;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'In Progress';
+  date: string;
+  comments?: Comment[];
+  isViewedByRequester: boolean;
+  isViewedByRecipient: boolean;
+}
+
 export interface PlannerEvent {
   id: string;
   title: string;

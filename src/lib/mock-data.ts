@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile, Trade } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile, Trade, ManagementRequest } from './types';
 import { sub, add, format } from 'date-fns';
 import { ALL_PERMISSIONS } from './types';
 
@@ -243,7 +243,7 @@ export const INTERNAL_REQUESTS: InternalRequest[] = [
         unit: 'Nos',
         location: 'Head Office',
         status: 'Pending',
-        date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
         comments: [{ userId: '19', text: 'Requesting stationery for the design team.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() }],
         isViewedByRequester: true
     },
@@ -262,6 +262,21 @@ export const INTERNAL_REQUESTS: InternalRequest[] = [
             { userId: '22', text: 'Approved. Please collect from the main store.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
         ],
         isViewedByRequester: false
+    }
+];
+
+export const MANAGEMENT_REQUESTS: ManagementRequest[] = [
+    {
+        id: 'mreq-1',
+        requesterId: '13', // Rinu Sam
+        recipientId: '4', // Albin Raju
+        subject: 'Request for additional training',
+        details: 'I would like to request enrollment in the advanced project management course to improve my skills.',
+        status: 'Pending',
+        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        comments: [{ userId: '13', text: 'Request submitted.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }],
+        isViewedByRequester: true,
+        isViewedByRecipient: false,
     }
 ];
 

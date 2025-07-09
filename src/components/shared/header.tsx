@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Users2, Car, Gamepad2 } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Users2, Car, HardHat } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
@@ -24,8 +24,8 @@ export default function Header() {
 
   const taskNotificationCount = pendingTaskApprovalCount + myNewTaskCount;
 
-  let utMachineNotificationCount = myCertificateRequestUpdateCount;
-  if (canManageUtMachines) utMachineNotificationCount += expiringUtMachineCalibrationsCount;
+  let equipmentNotificationCount = myCertificateRequestUpdateCount;
+  if (canManageUtMachines) equipmentNotificationCount += expiringUtMachineCalibrationsCount;
 
   let vehicleNotificationCount = 0;
   if (canManageVehicles) vehicleNotificationCount += expiringVehicleDocsCount;
@@ -42,7 +42,7 @@ export default function Header() {
     if (pathname.startsWith('/activity-tracker')) return 'Activity Tracker';
     if (pathname.startsWith('/store-inventory')) return 'Store Inventory';
     if (pathname.startsWith('/manpower')) return 'Manpower';
-    if (pathname.startsWith('/ut-machine-status')) return 'UT Machine Status';
+    if (pathname.startsWith('/ut-machine-status')) return 'Equipment Status';
     if (pathname.startsWith('/vehicle-status')) return 'Vehicle Status';
     return 'Task Management System';
   };
@@ -58,7 +58,7 @@ export default function Header() {
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
-    { href: '/ut-machine-status', icon: Gamepad2, label: 'UT Machine Status', notification: utMachineNotificationCount },
+    { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
   ];
 

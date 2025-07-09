@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Car, Bell, Gamepad2 } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Car, HardHat } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
@@ -24,8 +24,8 @@ export function AppSidebar() {
   
   const taskNotificationCount = pendingTaskApprovalCount + myNewTaskCount;
 
-  let utMachineNotificationCount = myCertificateRequestUpdateCount;
-  if (canManageUtMachines) utMachineNotificationCount += expiringUtMachineCalibrationsCount;
+  let equipmentNotificationCount = myCertificateRequestUpdateCount;
+  if (canManageUtMachines) equipmentNotificationCount += expiringUtMachineCalibrationsCount;
 
   let vehicleNotificationCount = 0;
   if (canManageVehicles) vehicleNotificationCount += expiringVehicleDocsCount;
@@ -41,7 +41,7 @@ export function AppSidebar() {
     { href: '/account', icon: Users, label: 'Employees' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
-    { href: '/ut-machine-status', icon: Gamepad2, label: 'UT Machine Status', notification: utMachineNotificationCount },
+    { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
   ];
 

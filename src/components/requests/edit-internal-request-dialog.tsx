@@ -10,8 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { format, formatDistanceToNow } from 'date-fns';
-import { Send, Trash2, Forward } from 'lucide-react';
+import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
+import { Send, Trash2, Forward, AlertTriangle } from 'lucide-react';
 import type { InternalRequest, InternalRequestCategory, InternalRequestStatus, Comment, Role } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -47,36 +47,34 @@ const statusOptions: InternalRequestStatus[] = ['Pending', 'Approved', 'On Hold'
 const categoryOptions: InternalRequestCategory[] = ['Site Items', 'RA Equipments', 'Stationery', 'Other'];
 
 export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }: EditInternalRequestDialogProps) {
-  const { user, users, updateInternalRequest, addInternalRequestComment, deleteInternalRequest, markRequestAsViewed, forwardInternalRequest } = useAppContext();
+  const { user, users, updateInternalRequest, addInternalRequestComment, deleteInternalRequest, markRequestAsViewed, forwardInternalRequest, escalateInternalRequest } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
   const [forwardComment, setForwardComment] = useState('');
   const [isForwarding, setIsForwarding] = useState(false);
+  const [escalationReason, setEscalationReason] = useState('');
+  const [isEscalating, setIsEscalating] = useState(false);
 
   const requester = useMemo(() => users.find(u => u.id === request.requesterId), [users, request.requesterId]);
   
   const isStorePersonnel = useMemo(() => user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge', [user]);
   const isAdminOrManager = useMemo(() => user?.role === 'Admin' || user?.role === 'Manager', [user]);
   const isAdmin = useMemo(() => user?.role === 'Admin', [user]);
+  const isRequester = useMemo(() => user?.id === request.requesterId, [user, request.requesterId]);
   
-  const isFinalStatus = useMemo(() => ['Approved', 'Allotted', 'Rejected'].includes(request.status), [request.status]);
+  const isFinalStatus = useMemo(() => ['Allotted', 'Rejected'].includes(request.status), [request.status]);
   const isForwarded = useMemo(() => !!request.forwardedTo, [request.forwardedTo]);
 
   const canEditFields = useMemo(() => {
     if (isAdmin) return true;
     if (isFinalStatus) return false;
-    
-    if (isForwarded) {
-      return isAdminOrManager;
-    }
-    
+    if (isForwarded) return isAdminOrManager;
     return isStorePersonnel;
   }, [isAdmin, isFinalStatus, isForwarded, isAdminOrManager, isStorePersonnel]);
   
   const canChangeStatus = canEditFields;
-  
   const canForward = useMemo(() => isStorePersonnel && !isForwarded && !isFinalStatus, [isStorePersonnel, isForwarded, isFinalStatus]);
-  
+  const canEscalate = useMemo(() => isRequester && !isForwarded && request.status === 'Pending' && differenceInDays(new Date(), new Date(request.date)) > 3, [isRequester, isForwarded, request]);
   const canDelete = isAdmin;
 
   const form = useForm<RequestFormValues>({
@@ -125,6 +123,18 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
     toast({ title: 'Request Forwarded', description: 'The request has been sent to management.' });
     setIsForwarding(false);
     setForwardComment('');
+    setIsOpen(false);
+  };
+  
+  const handleEscalateRequest = () => {
+    if (!escalationReason.trim()) {
+        toast({ variant: 'destructive', title: 'Reason Required', description: 'Please provide a reason for escalation.' });
+        return;
+    }
+    escalateInternalRequest(request.id, escalationReason);
+    toast({ title: 'Request Escalated', description: 'The request has been escalated to management.' });
+    setIsEscalating(false);
+    setEscalationReason('');
     setIsOpen(false);
   };
   
@@ -202,6 +212,11 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
                 {canForward && (
                     <Button type="button" variant="outline" className="w-full" onClick={() => setIsForwarding(true)}>
                         <Forward className="mr-2 h-4 w-4" /> Forward to Management
+                    </Button>
+                )}
+                {canEscalate && (
+                    <Button type="button" variant="destructive" className="w-full" onClick={() => setIsEscalating(true)}>
+                        <AlertTriangle className="mr-2 h-4 w-4" /> Escalate Request
                     </Button>
                 )}
                 {canDelete && (
@@ -284,6 +299,25 @@ export default function EditInternalRequestDialog({ isOpen, setIsOpen, request }
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleForwardRequest}>Forward</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+     <AlertDialog open={isEscalating} onOpenChange={setIsEscalating}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Escalate Request to Management?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This request has been pending for more than 3 days. You can escalate it to management for review. Please provide a reason.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <Textarea 
+                placeholder="Reason for escalation..."
+                value={escalationReason}
+                onChange={(e) => setEscalationReason(e.target.value)}
+            />
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleEscalateRequest}>Escalate</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
