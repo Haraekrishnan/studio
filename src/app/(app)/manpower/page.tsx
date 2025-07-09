@@ -16,9 +16,10 @@ import Link from 'next/link';
 import { Calendar } from '@/components/ui/calendar';
 
 export default function ManpowerPage() {
-    const { user, roles, manpowerLogs } = useAppContext();
+    const { user, roles } = useAppContext();
     const [isLogDialogOpen, setIsLogDialogOpen] = useState(false);
     const [reportDateRange, setReportDateRange] = useState<DateRange | undefined>();
+    const [summaryDate, setSummaryDate] = useState<Date | undefined>(new Date());
 
     const canManageManpower = useMemo(() => {
         if (!user) return false;
@@ -61,11 +62,39 @@ export default function ManpowerPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Today's Manpower Summary</CardTitle>
-                    <CardDescription>An overview of manpower counts for today across all projects.</CardDescription>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div>
+                            <CardTitle>
+                                {summaryDate && format(summaryDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') 
+                                    ? "Today's Manpower Summary"
+                                    : `Manpower Summary for ${summaryDate ? format(summaryDate, 'dd LLL, yyyy') : '...'}`
+                                }
+                            </CardTitle>
+                            <CardDescription>An overview of manpower counts across all projects for the selected date.</CardDescription>
+                        </div>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant={'outline'}
+                                className={cn('w-full sm:w-[240px] justify-start text-left font-normal', !summaryDate && 'text-muted-foreground')}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {summaryDate ? format(summaryDate, 'PPP') : <span>Pick a date</span>}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                              <Calendar
+                                mode="single"
+                                selected={summaryDate}
+                                onSelect={setSummaryDate}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <ManpowerSummaryTable />
+                    <ManpowerSummaryTable selectedDate={summaryDate} />
                 </CardContent>
             </Card>
             

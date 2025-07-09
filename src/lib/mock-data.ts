@@ -84,6 +84,7 @@ export const PROJECTS: Project[] = [
     { id: 'proj-4', name: 'JPC' },
     { id: 'proj-5', name: 'SOLAR' },
     { id: 'proj-6', name: 'Head Office' },
+    { id: 'proj-7', name: 'Pass Section' },
 ];
 
 export const USERS: User[] = [

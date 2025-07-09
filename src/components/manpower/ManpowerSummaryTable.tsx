@@ -4,18 +4,26 @@ import { useAppContext } from '@/context/app-context';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 
-export default function ManpowerSummaryTable() {
+interface ManpowerSummaryTableProps {
+    selectedDate: Date | undefined;
+}
+
+export default function ManpowerSummaryTable({ selectedDate }: ManpowerSummaryTableProps) {
     const { projects, manpowerLogs } = useAppContext();
 
-    const todaySummary = useMemo(() => {
-        const todayStr = format(new Date(), 'yyyy-MM-dd');
-        const todayLogs = manpowerLogs.filter(log => log.date === todayStr);
+    const summary = useMemo(() => {
+        if (!selectedDate) {
+            return { summary: [], totalIn: 0, totalOut: 0 };
+        }
+
+        const dateStr = format(selectedDate, 'yyyy-MM-dd');
+        const logsForDate = manpowerLogs.filter(log => log.date === dateStr);
 
         let totalIn = 0;
         let totalOut = 0;
         
-        const summary = projects.map(project => {
-            const log = todayLogs.find(l => l.projectId === project.id);
+        const summaryData = projects.map(project => {
+            const log = logsForDate.find(l => l.projectId === project.id);
             totalIn += log?.countIn || 0;
             totalOut += log?.countOut || 0;
             return {
@@ -26,11 +34,11 @@ export default function ManpowerSummaryTable() {
             };
         });
         
-        return { summary, totalIn, totalOut };
-    }, [projects, manpowerLogs]);
+        return { summary: summaryData, totalIn, totalOut };
+    }, [projects, manpowerLogs, selectedDate]);
 
-    if (todaySummary.totalIn === 0 && todaySummary.totalOut === 0) {
-        return <p className="text-muted-foreground text-center py-8">No manpower logged for today.</p>;
+    if (summary.totalIn === 0 && summary.totalOut === 0) {
+        return <p className="text-muted-foreground text-center py-8">No manpower logged for {selectedDate ? format(selectedDate, 'dd LLL, yyyy') : 'the selected date'}.</p>;
     }
 
     return (
@@ -43,7 +51,7 @@ export default function ManpowerSummaryTable() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {todaySummary.summary.map(row => (
+                {summary.summary.map(row => (
                     <TableRow key={row.projectId}>
                         <TableCell className="font-medium">{row.projectName}</TableCell>
                         <TableCell className="text-center">{row.countIn}</TableCell>
@@ -52,8 +60,8 @@ export default function ManpowerSummaryTable() {
                 ))}
                 <TableRow className="font-bold bg-muted/50">
                     <TableCell>Total</TableCell>
-                    <TableCell className="text-center">{todaySummary.totalIn}</TableCell>
-                    <TableCell className="text-center">{todaySummary.totalOut}</TableCell>
+                    <TableCell className="text-center">{summary.totalIn}</TableCell>
+                    <TableCell className="text-center">{summary.totalOut}</TableCell>
                 </TableRow>
             </TableBody>
         </Table>
