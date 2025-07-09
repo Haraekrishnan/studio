@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { DateRange } from 'react-day-picker';
-import { format } from 'date-fns';
+import { format, eachDayOfInterval, differenceInDays } from 'date-fns';
 
 interface UTMachineReportDownloadsProps {
   machine: UTMachine;
@@ -32,23 +32,63 @@ export default function UTMachineReportDownloads({ machine, dateRange }: UTMachi
         return;
     }
 
-    const dataToExport = logsToExport.map(log => {
+    // Prepare detailed logs sheet
+    const detailedLogsData = logsToExport.map(log => {
       const logger = users.find(u => u.id === log.loggedBy);
       return {
         'Date': format(new Date(log.date), 'dd-MM-yyyy'),
+        'Status': log.status,
         'Cable Number': log.cableNumber,
         'Probe Number': log.probeNumber,
         'Area of Working': log.areaOfWorking,
         'Used By': log.usedBy,
         'Job Details': log.jobDetails,
+        'Reason (if Idle/Other)': log.reason || 'N/A',
         'Remarks': log.remarks,
         'Logged By': logger?.name || 'N/A'
       };
     });
+    const detailedWorksheet = XLSX.utils.json_to_sheet(detailedLogsData);
+    
+    // Prepare summary sheet
+    let summaryData = [];
+    if (dateRange?.from && dateRange?.to) {
+        const totalDaysInRange = differenceInDays(dateRange.to, dateRange.from) + 1;
+        const loggedDates = new Set(logsToExport.map(log => format(new Date(log.date), 'yyyy-MM-dd')));
+        
+        let activeDays = 0;
+        let idleDays = 0;
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const uniqueDayLogs = new Map<string, UTMachineUsageLog>();
+        logsToExport.forEach(log => {
+            const day = format(new Date(log.date), 'yyyy-MM-dd');
+            if (!uniqueDayLogs.has(day)) {
+                uniqueDayLogs.set(day, log);
+            }
+        });
+        
+        uniqueDayLogs.forEach(log => {
+            if(log.status === 'Active') activeDays++;
+            else idleDays++;
+        });
+
+        const offDays = totalDaysInRange - loggedDates.size;
+
+        summaryData.push({ Statistic: 'Start Date', Value: format(dateRange.from, 'dd-MM-yyyy') });
+        summaryData.push({ Statistic: 'End Date', Value: format(dateRange.to, 'dd-MM-yyyy') });
+        summaryData.push({ Statistic: 'Total Days in Period', Value: totalDaysInRange });
+        summaryData.push({ Statistic: 'Total Logged Days', Value: loggedDates.size });
+        summaryData.push({ Statistic: 'Active Days', Value: activeDays });
+        summaryData.push({ Statistic: 'Idle/Other Days', Value: idleDays });
+        summaryData.push({ Statistic: 'Off Days (No Log)', Value: offDays });
+    }
+    const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
+
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'UT Machine Usage Log');
+    XLSX.utils.book_append_sheet(workbook, detailedWorksheet, 'Detailed Usage Log');
+    if (summaryData.length > 0) {
+        XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Usage Summary');
+    }
     
     const fileName = `UT_Log_${machine.serialNumber}.xlsx`;
     XLSX.writeFile(workbook, fileName);

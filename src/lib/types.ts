@@ -15,6 +15,7 @@ export const ALL_PERMISSIONS = [
   'view_subordinates_users',
   'manage_inventory',
   'manage_manpower',
+  'manage_manpower_list',
   'manage_ut_machines',
   'manage_ut_machine_logs',
   'manage_vehicles',
@@ -197,6 +198,8 @@ export interface ManpowerLog {
   updatedBy: string; // userId
 }
 
+export type UTMachineUsageStatus = 'Active' | 'IDLE' | 'Others';
+
 export interface UTMachineUsageLog {
   id: string;
   date: string; // ISO Date
@@ -207,6 +210,8 @@ export interface UTMachineUsageLog {
   jobDetails: string;
   remarks: string;
   loggedBy: string; // userId
+  status: UTMachineUsageStatus;
+  reason?: string;
 }
 
 export interface UTMachine {
@@ -229,6 +234,7 @@ export interface Vehicle {
   vehicleNumber: string;
   vehicleDetails: string;
   seatingCapacity: number;
+  currentManpower?: number;
   driverName: string;
   supervisorId: string;
   projectId: string;
@@ -240,4 +246,19 @@ export interface Vehicle {
   sdpValidity: string;
   epValidity: string;
   status: VehicleStatus;
+}
+
+export type ManpowerDocumentStatus = 'Collected' | 'Pending';
+
+export interface ManpowerDocument {
+    name: string;
+    status: ManpowerDocumentStatus;
+}
+
+export interface ManpowerProfile {
+    id: string;
+    name: string;
+    trade: string;
+    documentFolderUrl?: string;
+    documents: ManpowerDocument[];
 }

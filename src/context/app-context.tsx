@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES } from '@/lib/mock-data';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, MANPOWER_PROFILES } from '@/lib/mock-data';
 import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format } from 'date-fns';
 
 interface AppContextType {
@@ -20,6 +20,7 @@ interface AppContextType {
   achievements: Achievement[];
   activityLogs: ActivityLog[];
   manpowerLogs: ManpowerLog[];
+  manpowerProfiles: ManpowerProfile[];
   utMachines: UTMachine[];
   vehicles: Vehicle[];
   appName: string;
@@ -82,6 +83,8 @@ interface AppContextType {
   markUTRequestsAsViewed: () => void;
   acknowledgeFulfilledUTRequest: (requestId: string) => void;
   addManpowerLog: (log: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => void;
+  addManpowerProfile: (profile: Omit<ManpowerProfile, 'id'>) => void;
+  updateManpowerProfile: (profile: ManpowerProfile) => void;
   addUTMachine: (machine: Omit<UTMachine, 'id' | 'usageLog'>) => void;
   updateUTMachine: (machine: UTMachine) => void;
   deleteUTMachine: (machineId: string) => void;
@@ -111,6 +114,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
   const [manpowerLogs, setManpowerLogs] = useState<ManpowerLog[]>(MANPOWER_LOGS);
+  const [manpowerProfiles, setManpowerProfiles] = useState<ManpowerProfile[]>(MANPOWER_PROFILES);
   const [utMachines, setUtMachines] = useState<UTMachine[]>(UT_MACHINES);
   const [vehicles, setVehicles] = useState<Vehicle[]>(VEHICLES);
   const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
@@ -883,6 +887,20 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
   }, [user]);
 
+  const addManpowerProfile = useCallback((profileData: Omit<ManpowerProfile, 'id'>) => {
+    if (!user) return;
+    const newProfile: ManpowerProfile = {
+        ...profileData,
+        id: `mpprof-${Date.now()}`
+    };
+    setManpowerProfiles(prev => [newProfile, ...prev]);
+  }, [user]);
+  
+  const updateManpowerProfile = useCallback((profile: ManpowerProfile) => {
+    if (!user) return;
+    setManpowerProfiles(prev => prev.map(p => p.id === profile.id ? profile : p));
+  }, [user]);
+
   const addUTMachine = useCallback((machineData: Omit<UTMachine, 'id' | 'usageLog'>) => {
     if (!user) return;
     const newMachine: UTMachine = {
@@ -1048,6 +1066,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     achievements,
     activityLogs,
     manpowerLogs,
+    manpowerProfiles,
     utMachines,
     vehicles,
     appName,
@@ -1110,6 +1129,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     markUTRequestsAsViewed,
     acknowledgeFulfilledUTRequest,
     addManpowerLog,
+    addManpowerProfile,
+    updateManpowerProfile,
     addUTMachine,
     updateUTMachine,
     addUTMachineLog,

@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar } from '../ui/calendar';
 import UTMachineReportDownloads from './UTMachineReportDownloads';
+import { Badge } from '../ui/badge';
 
 
 interface UTMachineLogManagerDialogProps {
@@ -89,6 +90,7 @@ export default function UTMachineLogManagerDialog({ isOpen, setIsOpen, machine: 
                             <TableHead>Date</TableHead>
                             <TableHead>Job Details</TableHead>
                             <TableHead>Used By</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Logged By</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -100,12 +102,13 @@ export default function UTMachineLogManagerDialog({ isOpen, setIsOpen, machine: 
                                     <TableCell>{format(new Date(log.date), 'dd-MM-yyyy')}</TableCell>
                                     <TableCell>{log.jobDetails}</TableCell>
                                     <TableCell>{log.usedBy}</TableCell>
+                                    <TableCell><Badge variant={log.status === 'Active' ? 'secondary' : 'outline'}>{log.status}</Badge></TableCell>
                                     <TableCell>{logger?.name || 'N/A'}</TableCell>
                                 </TableRow>
                             )
                         }) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center text-muted-foreground h-24">No usage logs recorded.</TableCell>
+                                <TableCell colSpan={5} className="text-center text-muted-foreground h-24">No usage logs recorded.</TableCell>
                             </TableRow>
                         )}
                     </TableBody>

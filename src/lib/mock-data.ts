@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile } from './types';
 import { sub, add, format } from 'date-fns';
 import { ALL_PERMISSIONS } from './types';
 
@@ -18,7 +18,8 @@ export const ROLES: RoleDefinition[] = [
       'manage_users', 'assign_supervisors', 'create_tasks', 'reassign_tasks', 'delete_tasks', 
       'grant_manual_achievements', 'approve_manual_achievements', 
       'view_all_activity', 'view_all_users', 'manage_inventory',
-      'manage_manpower', 'manage_ut_machines', 'manage_ut_machine_logs', 'manage_vehicles'
+      'manage_manpower', 'manage_ut_machines', 'manage_ut_machine_logs', 'manage_vehicles',
+      'manage_manpower_list'
     ],
     isEditable: false,
   },
@@ -299,8 +300,33 @@ export const UT_MACHINES: UTMachine[] = [
 ];
 
 export const VEHICLES: Vehicle[] = [
-    { id: 'vh-1', vehicleNumber: 'DXB 12345', vehicleDetails: 'Toyota HiAce 2022', seatingCapacity: 14, driverName: 'Ali Khan', supervisorId: '3', projectId: 'proj-1', vapNumber: 'VAP-001', driverLicenseNumber: 'DL-001', driverEpNumber: 'EP-001', driverSdpNumber: 'SDP-001', vapValidity: add(new Date(), { months: 6 }).toISOString(), sdpValidity: add(new Date(), { years: 1 }).toISOString(), epValidity: add(new Date(), { years: 2 }).toISOString(), status: 'Operational' },
-    { id: 'vh-2', vehicleNumber: 'SHJ 54321', vehicleDetails: 'Nissan Urvan 2021', seatingCapacity: 12, driverName: 'Babu Raj', supervisorId: '4', projectId: 'proj-2', vapNumber: 'VAP-002', driverLicenseNumber: 'DL-002', driverEpNumber: 'EP-002', driverSdpNumber: 'SDP-002', vapValidity: add(new Date(), { days: 25 }).toISOString(), sdpValidity: add(new Date(), { months: 8 }).toISOString(), epValidity: add(new Date(), { years: 1 }).toISOString(), status: 'In Workshop' },
+    { id: 'vh-1', vehicleNumber: 'DXB 12345', vehicleDetails: 'Toyota HiAce 2022', seatingCapacity: 14, currentManpower: 10, driverName: 'Ali Khan', supervisorId: '3', projectId: 'proj-1', vapNumber: 'VAP-001', driverLicenseNumber: 'DL-001', driverEpNumber: 'EP-001', driverSdpNumber: 'SDP-001', vapValidity: add(new Date(), { months: 6 }).toISOString(), sdpValidity: add(new Date(), { years: 1 }).toISOString(), epValidity: add(new Date(), { years: 2 }).toISOString(), status: 'Operational' },
+    { id: 'vh-2', vehicleNumber: 'SHJ 54321', vehicleDetails: 'Nissan Urvan 2021', seatingCapacity: 12, currentManpower: 13, driverName: 'Babu Raj', supervisorId: '4', projectId: 'proj-2', vapNumber: 'VAP-002', driverLicenseNumber: 'DL-002', driverEpNumber: 'EP-002', driverSdpNumber: 'SDP-002', vapValidity: add(new Date(), { days: 25 }).toISOString(), sdpValidity: add(new Date(), { months: 8 }).toISOString(), epValidity: add(new Date(), { years: 1 }).toISOString(), status: 'In Workshop' },
+];
+
+export const MANPOWER_PROFILES: ManpowerProfile[] = [
+    {
+        id: 'mp-prof-1',
+        name: 'John Doe',
+        trade: 'Welder',
+        documentFolderUrl: 'https://example.com/docs/john-doe',
+        documents: [
+            { name: 'Passport', status: 'Collected' },
+            { name: 'Visa', status: 'Collected' },
+            { name: 'Emirates ID', status: 'Pending' },
+        ]
+    },
+    {
+        id: 'mp-prof-2',
+        name: 'Peter Jones',
+        trade: 'Electrician',
+        documentFolderUrl: 'https://example.com/docs/peter-jones',
+        documents: [
+            { name: 'Passport', status: 'Collected' },
+            { name: 'Visa', status: 'Collected' },
+            { name: 'Emirates ID', status: 'Collected' },
+        ]
+    }
 ];
 
 

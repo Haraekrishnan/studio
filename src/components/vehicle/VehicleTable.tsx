@@ -43,6 +43,7 @@ export default function VehicleTable({ onEdit }: VehicleTableProps) {
                 <TableRow>
                     <TableHead>Vehicle No.</TableHead>
                     <TableHead>Driver</TableHead>
+                    <TableHead>Usage</TableHead>
                     <TableHead>Supervisor</TableHead>
                     <TableHead>Project</TableHead>
                     <TableHead>VAP Validity</TableHead>
@@ -54,10 +55,14 @@ export default function VehicleTable({ onEdit }: VehicleTableProps) {
                 {vehicles.map(vehicle => {
                     const supervisor = users.find(u => u.id === vehicle.supervisorId);
                     const project = projects.find(p => p.id === vehicle.projectId);
+                    const isOverCapacity = vehicle.currentManpower && vehicle.currentManpower > vehicle.seatingCapacity;
                     return (
                         <TableRow key={vehicle.id}>
                             <TableCell className="font-medium">{vehicle.vehicleNumber}</TableCell>
                             <TableCell>{vehicle.driverName}</TableCell>
+                            <TableCell className={cn(isOverCapacity && 'text-destructive font-bold')}>
+                                {vehicle.currentManpower || 0}/{vehicle.seatingCapacity}
+                            </TableCell>
                             <TableCell>{supervisor?.name || 'N/A'}</TableCell>
                             <TableCell>{project?.name || 'N/A'}</TableCell>
                             <TableCell className={cn(isDatePast(vehicle.vapValidity) && 'text-destructive font-bold')}>

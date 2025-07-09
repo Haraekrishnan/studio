@@ -21,6 +21,7 @@ const vehicleSchema = z.object({
   vehicleNumber: z.string().min(1),
   vehicleDetails: z.string().min(1),
   seatingCapacity: z.coerce.number().min(1),
+  currentManpower: z.coerce.number().min(0).optional(),
   driverName: z.string().min(1),
   supervisorId: z.string().min(1, 'Supervisor is required'),
   projectId: z.string().min(1, 'Project is required'),
@@ -49,10 +50,18 @@ export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialog
 
   const form = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
-    defaultValues: { status: 'Operational' },
+    defaultValues: { status: 'Operational', currentManpower: 0 },
   });
 
   const onSubmit = (data: VehicleFormValues) => {
+    if (data.currentManpower && data.currentManpower > data.seatingCapacity) {
+        toast({
+            variant: 'destructive',
+            title: 'Capacity Exceeded',
+            description: `Manpower usage (${data.currentManpower}) exceeds seating capacity (${data.seatingCapacity}).`,
+        });
+    }
+
     addVehicle({
       ...data,
       vapValidity: data.vapValidity.toISOString(),
@@ -65,7 +74,7 @@ export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialog
   };
 
   const handleOpenChange = (open: boolean) => {
-    if (!open) form.reset({ status: 'Operational' });
+    if (!open) form.reset({ status: 'Operational', currentManpower: 0 });
     setIsOpen(open);
   };
 
@@ -80,9 +89,12 @@ export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialog
             <div className="space-y-4 pr-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div><Label>Vehicle No.</Label><Input {...form.register('vehicleNumber')} />{form.formState.errors.vehicleNumber && <p className="text-xs text-destructive">{form.formState.errors.vehicleNumber.message}</p>}</div>
-                    <div><Label>Seating Capacity</Label><Input type="number" {...form.register('seatingCapacity')} />{form.formState.errors.seatingCapacity && <p className="text-xs text-destructive">{form.formState.errors.seatingCapacity.message}</p>}</div>
+                    <div><Label>Vehicle Details</Label><Input {...form.register('vehicleDetails')} />{form.formState.errors.vehicleDetails && <p className="text-xs text-destructive">{form.formState.errors.vehicleDetails.message}</p>}</div>
                 </div>
-                <div><Label>Vehicle Details</Label><Input {...form.register('vehicleDetails')} />{form.formState.errors.vehicleDetails && <p className="text-xs text-destructive">{form.formState.errors.vehicleDetails.message}</p>}</div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Seating Capacity</Label><Input type="number" {...form.register('seatingCapacity')} />{form.formState.errors.seatingCapacity && <p className="text-xs text-destructive">{form.formState.errors.seatingCapacity.message}</p>}</div>
+                    <div><Label>Current Manpower</Label><Input type="number" {...form.register('currentManpower')} />{form.formState.errors.currentManpower && <p className="text-xs text-destructive">{form.formState.errors.currentManpower.message}</p>}</div>
+                </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                     <div>

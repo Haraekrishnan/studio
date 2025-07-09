@@ -5,7 +5,7 @@ import { useAppContext } from '@/context/app-context';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import ManpowerSummaryTable from '@/components/manpower/ManpowerSummaryTable';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Users } from 'lucide-react';
 import ManpowerLogDialog from '@/components/manpower/ManpowerLogDialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import ManpowerReportDownloads from '@/components/manpower/ManpowerReportDownloads';
+import Link from 'next/link';
 
 export default function ManpowerPage() {
     const { user, roles, manpowerLogs } = useAppContext();
@@ -25,6 +26,12 @@ export default function ManpowerPage() {
         return userRole?.permissions.includes('manage_manpower');
     }, [user, roles]);
 
+    const canManageManpowerList = useMemo(() => {
+        if (!user) return false;
+        const userRole = roles.find(r => r.name === user.role);
+        return userRole?.permissions.includes('manage_manpower_list');
+    }, [user, roles]);
+
     const canLogForProject = user?.role === 'Supervisor' || user?.role === 'Junior Supervisor' || canManageManpower;
 
     return (
@@ -34,12 +41,22 @@ export default function ManpowerPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Manpower Details</h1>
                     <p className="text-muted-foreground">Track daily manpower logs and generate reports.</p>
                 </div>
-                {canLogForProject && (
-                    <Button onClick={() => setIsLogDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Log Manpower
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    {canManageManpowerList && (
+                        <Button asChild variant="outline">
+                            <Link href="/manpower-list">
+                                <Users className="mr-2 h-4 w-4" />
+                                Manpower List
+                            </Link>
+                        </Button>
+                    )}
+                    {canLogForProject && (
+                        <Button onClick={() => setIsLogDialogOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Log Manpower
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <Card>
