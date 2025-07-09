@@ -23,6 +23,7 @@ export default function AccountPage() {
   const { toast } = useToast();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [password, setPassword] = useState('');
   const [avatar, setAvatar] = useState(user?.avatar || '');
   const [isAddEmployeeDialogOpen, setIsAddEmployeeDialogOpen] = useState(false);
   const [isEditEmployeeDialogOpen, setIsEditEmployeeDialogOpen] = useState(false);
@@ -63,11 +64,12 @@ export default function AccountPage() {
 
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(name, email, avatar);
+    updateProfile(name, email, avatar, password);
     toast({
       title: 'Profile Updated',
       description: 'Your profile information has been saved.',
     });
+    setPassword('');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,6 +151,10 @@ export default function AccountPage() {
                 <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">New Password</Label>
+                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Leave blank to keep current password" />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="avatar-upload">Change Profile Picture</Label>

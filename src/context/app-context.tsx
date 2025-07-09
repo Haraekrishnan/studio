@@ -47,7 +47,7 @@ interface AppContextType {
   addProject: (projectName: string) => void;
   updateProject: (updatedProject: Project) => void;
   deleteProject: (projectId: string) => void;
-  updateProfile: (name: string, email: string, avatar: string) => void;
+  updateProfile: (name: string, email: string, avatar: string, password?: string) => void;
   requestTaskStatusChange: (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']) => boolean;
   approveTaskStatusChange: (taskId: string, commentText: string) => void;
   returnTaskStatusChange: (taskId: string, commentText: string) => void;
@@ -546,9 +546,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Deleted project: ${projectName}`);
   }, [projects, recordAction]);
 
-  const updateProfile = useCallback((name: string, email: string, avatar: string) => {
+  const updateProfile = useCallback((name: string, email: string, avatar: string, password?: string) => {
     if (user) {
         const updatedUser = {...user, name, email, avatar};
+        if (password) {
+            updatedUser.password = password;
+        }
         setUser(updatedUser);
         setUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
         recordAction(`Updated own profile`);
