@@ -18,6 +18,9 @@ export const ALL_PERMISSIONS = [
   'manage_manpower_list',
   'manage_ut_machines',
   'manage_ut_machine_logs',
+  'manage_dft_machines',
+  'manage_mobile_sims',
+  'manage_other_equipment',
   'manage_vehicles',
 ] as const;
 export type Permission = (typeof ALL_PERMISSIONS)[number];
@@ -191,6 +194,8 @@ export interface CertificateRequest {
     id: string;
     itemId?: string;
     utMachineId?: string;
+    dftMachineId?: string;
+    otherEquipmentId?: string;
     requesterId: string;
     requestType: CertificateRequestType;
     status: CertificateRequestStatus;
@@ -211,19 +216,19 @@ export interface ManpowerLog {
   updatedBy: string; // userId
 }
 
-export type UTMachineUsageStatus = 'Active' | 'IDLE' | 'Others';
+export type EquipmentUsageStatus = 'Active' | 'IDLE' | 'Others';
 
-export interface UTMachineUsageLog {
+export interface UsageLog {
   id: string;
   date: string; // ISO Date
-  cableNumber: string;
-  probeNumber: string;
-  areaOfWorking: string;
-  usedBy: string; // user name or id
-  jobDetails: string;
+  cableNumber?: string;
+  probeNumber?: string;
+  areaOfWorking?: string;
+  usedBy?: string; // user name or id
+  jobDetails?: string;
   remarks: string;
   loggedBy: string; // userId
-  status: UTMachineUsageStatus;
+  status: EquipmentUsageStatus;
   reason?: string;
 }
 
@@ -237,7 +242,41 @@ export interface UTMachine {
   probeDetails: string;
   cableDetails: string;
   status: string;
-  usageLog: UTMachineUsageLog[];
+  usageLog: UsageLog[];
+}
+
+export interface DftMachine {
+  id: string;
+  machineName: string;
+  serialNumber: string;
+  projectId: string;
+  unit: string;
+  calibrationDueDate: string;
+  probeDetails: string;
+  cableDetails: string;
+  status: string;
+  usageLog: UsageLog[];
+}
+
+export interface MobileSim {
+  id: string;
+  type: 'Mobile' | 'SIM';
+  provider: string;
+  number: string;
+  allottedToUserId: string;
+  allotmentDate: string;
+  projectId: string;
+  status: 'Active' | 'Inactive' | 'Returned';
+  remarks?: string;
+}
+
+export interface OtherEquipment {
+  id: string;
+  name: string;
+  serialNumber: string;
+  projectId: string;
+  status: string;
+  remarks?: string;
 }
 
 export type VehicleStatus = 'Operational' | 'In Workshop' | 'Unavailable';

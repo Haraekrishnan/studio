@@ -6,19 +6,48 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, AlertTriangle, CheckCircle } from 'lucide-react';
 import UTMachineTable from '@/components/ut-machine/UTMachineTable';
 import AddUTMachineDialog from '@/components/ut-machine/AddUTMachineDialog';
-import type { UTMachine } from '@/lib/types';
+import type { UTMachine, DftMachine, MobileSim, OtherEquipment } from '@/lib/types';
 import EditUTMachineDialog from '@/components/ut-machine/EditUTMachineDialog';
 import { addDays, isBefore, format, formatDistanceToNow } from 'date-fns';
 import UTMachineLogManagerDialog from '@/components/ut-machine/UTMachineLogManagerDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AddDftMachineDialog from '@/components/dft-machine/AddDftMachineDialog';
+import DftMachineTable from '@/components/dft-machine/DftMachineTable';
+import EditDftMachineDialog from '@/components/dft-machine/EditDftMachineDialog';
+import DftMachineLogManagerDialog from '@/components/dft-machine/DftMachineLogManagerDialog';
+import AddMobileSimDialog from '@/components/mobile-sim/AddMobileSimDialog';
+import MobileSimTable from '@/components/mobile-sim/MobileSimTable';
+import EditMobileSimDialog from '@/components/mobile-sim/EditMobileSimDialog';
+import AddOtherEquipmentDialog from '@/components/other-equipment/AddOtherEquipmentDialog';
+import OtherEquipmentTable from '@/components/other-equipment/OtherEquipmentTable';
+import EditOtherEquipmentDialog from '@/components/other-equipment/EditOtherEquipmentDialog';
 
 export default function EquipmentStatusPage() {
-    const { user, roles, utMachines, users, myFulfilledUTRequests, markUTRequestsAsViewed, acknowledgeFulfilledUTRequest } = useAppContext();
-    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [isLogManagerOpen, setIsLogManagerOpen] = useState(false);
-    const [selectedMachine, setSelectedMachine] = useState<UTMachine | null>(null);
+    const { user, roles, utMachines, dftMachines, mobileSims, otherEquipments, users, myFulfilledUTRequests, markUTRequestsAsViewed, acknowledgeFulfilledUTRequest } = useAppContext();
+    
+    // UT Machine State
+    const [isAddUTMachineOpen, setIsAddUTMachineOpen] = useState(false);
+    const [isEditUTMachineOpen, setIsEditUTMachineOpen] = useState(false);
+    const [isUTLogManagerOpen, setIsUTLogManagerOpen] = useState(false);
+    const [selectedUTMachine, setSelectedUTMachine] = useState<UTMachine | null>(null);
+
+    // DFT Machine State
+    const [isAddDftMachineOpen, setIsAddDftMachineOpen] = useState(false);
+    const [isEditDftMachineOpen, setIsEditDftMachineOpen] = useState(false);
+    const [isDftLogManagerOpen, setIsDftLogManagerOpen] = useState(false);
+    const [selectedDftMachine, setSelectedDftMachine] = useState<DftMachine | null>(null);
+    
+    // Mobile/SIM State
+    const [isAddMobileSimOpen, setIsAddMobileSimOpen] = useState(false);
+    const [isEditMobileSimOpen, setIsEditMobileSimOpen] = useState(false);
+    const [selectedMobileSim, setSelectedMobileSim] = useState<MobileSim | null>(null);
+    
+    // Other Equipment State
+    const [isAddOtherEquipmentOpen, setIsAddOtherEquipmentOpen] = useState(false);
+    const [isEditOtherEquipmentOpen, setIsEditOtherEquipmentOpen] = useState(false);
+    const [selectedOtherEquipment, setSelectedOtherEquipment] = useState<OtherEquipment | null>(null);
+
 
     useEffect(() => {
         if (user) {
@@ -26,10 +55,28 @@ export default function EquipmentStatusPage() {
         }
     }, [user, markUTRequestsAsViewed]);
 
-    const canManage = useMemo(() => {
+    const canManageUT = useMemo(() => {
         if (!user) return false;
         const userRole = roles.find(r => r.name === user.role);
         return userRole?.permissions.includes('manage_ut_machines');
+    }, [user, roles]);
+    
+    const canManageDft = useMemo(() => {
+        if (!user) return false;
+        const userRole = roles.find(r => r.name === user.role);
+        return userRole?.permissions.includes('manage_dft_machines');
+    }, [user, roles]);
+
+    const canManageMobile = useMemo(() => {
+        if (!user) return false;
+        const userRole = roles.find(r => r.name === user.role);
+        return userRole?.permissions.includes('manage_mobile_sims');
+    }, [user, roles]);
+
+    const canManageOther = useMemo(() => {
+        if (!user) return false;
+        const userRole = roles.find(r => r.name === user.role);
+        return userRole?.permissions.includes('manage_other_equipment');
     }, [user, roles]);
 
     const expiringMachines = useMemo(() => {
@@ -37,20 +84,23 @@ export default function EquipmentStatusPage() {
         return utMachines.filter(m => isBefore(new Date(m.calibrationDueDate), thirtyDaysFromNow));
     }, [utMachines]);
 
-    const handleEdit = (machine: UTMachine) => {
-        setSelectedMachine(machine);
-        setIsEditDialogOpen(true);
-    };
+    // UT Handlers
+    const handleEditUT = (machine: UTMachine) => { setSelectedUTMachine(machine); setIsEditUTMachineOpen(true); };
+    const handleAddUT = () => { setSelectedUTMachine(null); setIsAddUTMachineOpen(true); };
+    const handleLogManagerUT = (machine: UTMachine) => { setSelectedUTMachine(machine); setIsUTLogManagerOpen(true); };
+    
+    // DFT Handlers
+    const handleEditDft = (machine: DftMachine) => { setSelectedDftMachine(machine); setIsEditDftMachineOpen(true); };
+    const handleAddDft = () => { setSelectedDftMachine(null); setIsAddDftMachineOpen(true); };
+    const handleLogManagerDft = (machine: DftMachine) => { setSelectedDftMachine(machine); setIsDftLogManagerOpen(true); };
 
-    const handleAdd = () => {
-        setSelectedMachine(null);
-        setIsAddDialogOpen(true);
-    };
+    // Mobile/SIM Handlers
+    const handleEditMobile = (item: MobileSim) => { setSelectedMobileSim(item); setIsEditMobileSimOpen(true); };
+    const handleAddMobile = () => { setSelectedMobileSim(null); setIsAddMobileSimOpen(true); };
 
-    const handleLogManager = (machine: UTMachine) => {
-        setSelectedMachine(machine);
-        setIsLogManagerOpen(true);
-    };
+    // Other Equipment Handlers
+    const handleEditOther = (item: OtherEquipment) => { setSelectedOtherEquipment(item); setIsEditOtherEquipmentOpen(true); };
+    const handleAddOther = () => { setSelectedOtherEquipment(null); setIsAddOtherEquipmentOpen(true); };
 
     return (
         <div className="space-y-8">
@@ -61,7 +111,7 @@ export default function EquipmentStatusPage() {
                 </div>
             </div>
 
-            <Tabs defaultValue="ut-machines">
+            <Tabs defaultValue="ut-machines" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="ut-machines">UT Machines</TabsTrigger>
                     <TabsTrigger value="dft-machines">DFT Machines</TabsTrigger>
@@ -70,8 +120,8 @@ export default function EquipmentStatusPage() {
                 </TabsList>
                 <TabsContent value="ut-machines" className="mt-4 space-y-4">
                     <div className="flex justify-end">
-                        {canManage && (
-                            <Button onClick={handleAdd}>
+                        {canManageUT && (
+                            <Button onClick={handleAddUT}>
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Add UT Machine
                             </Button>
@@ -110,7 +160,7 @@ export default function EquipmentStatusPage() {
                             </CardContent>
                         </Card>
                     )}
-                    {canManage && expiringMachines.length > 0 && (
+                    {canManageUT && expiringMachines.length > 0 && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Expiring Calibrations</CardTitle>
@@ -127,43 +177,68 @@ export default function EquipmentStatusPage() {
                             </CardContent>
                         </Card>
                     )}
-
                     <Card>
-                        <CardHeader>
-                            <CardTitle>UT Machine List</CardTitle>
-                            <CardDescription>A comprehensive list of all UT machines.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <UTMachineTable onEdit={handleEdit} onLogManager={handleLogManager} />
-                        </CardContent>
+                        <CardHeader><CardTitle>UT Machine List</CardTitle><CardDescription>A comprehensive list of all UT machines.</CardDescription></CardHeader>
+                        <CardContent><UTMachineTable onEdit={handleEditUT} onLogManager={handleLogManagerUT} /></CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="dft-machines">
-                    <Card><CardHeader><CardTitle>DFT Machines</CardTitle><CardDescription>Coming soon.</CardDescription></CardHeader><CardContent className="h-48 flex items-center justify-center"><p className="text-muted-foreground">This feature is under development.</p></CardContent></Card>
+                <TabsContent value="dft-machines" className="mt-4 space-y-4">
+                     <div className="flex justify-end">
+                        {canManageDft && (
+                            <Button onClick={handleAddDft}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add DFT Machine
+                            </Button>
+                        )}
+                    </div>
+                    <Card>
+                        <CardHeader><CardTitle>DFT Machine List</CardTitle><CardDescription>A comprehensive list of all DFT machines.</CardDescription></CardHeader>
+                        <CardContent><DftMachineTable onEdit={handleEditDft} onLogManager={handleLogManagerDft} /></CardContent>
+                    </Card>
                 </TabsContent>
-                <TabsContent value="mobile-sim">
-                    <Card><CardHeader><CardTitle>Mobile & SIM Allotment</CardTitle><CardDescription>Coming soon.</CardDescription></CardHeader><CardContent className="h-48 flex items-center justify-center"><p className="text-muted-foreground">This feature is under development.</p></CardContent></Card>
+                <TabsContent value="mobile-sim" className="mt-4 space-y-4">
+                     <div className="flex justify-end">
+                        {canManageMobile && (
+                            <Button onClick={handleAddMobile}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add Mobile/SIM
+                            </Button>
+                        )}
+                    </div>
+                     <Card>
+                        <CardHeader><CardTitle>Mobile & SIM Allotment</CardTitle><CardDescription>List of all company-provided mobiles and SIM cards.</CardDescription></CardHeader>
+                        <CardContent><MobileSimTable onEdit={handleEditMobile} /></CardContent>
+                    </Card>
                 </TabsContent>
-                 <TabsContent value="other-equipment">
-                    <Card><CardHeader><CardTitle>Other Equipment & Usage</CardTitle><CardDescription>Coming soon.</CardDescription></CardHeader><CardContent className="h-48 flex items-center justify-center"><p className="text-muted-foreground">This feature is under development.</p></CardContent></Card>
+                 <TabsContent value="other-equipment" className="mt-4 space-y-4">
+                     <div className="flex justify-end">
+                        {canManageOther && (
+                            <Button onClick={handleAddOther}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add Equipment
+                            </Button>
+                        )}
+                    </div>
+                    <Card>
+                        <CardHeader><CardTitle>Other Equipment & Usage</CardTitle><CardDescription>List of all other company equipment.</CardDescription></CardHeader>
+                        <CardContent><OtherEquipmentTable onEdit={handleEditOther} /></CardContent>
+                    </Card>
                 </TabsContent>
             </Tabs>
 
-            <AddUTMachineDialog isOpen={isAddDialogOpen} setIsOpen={setIsAddDialogOpen} />
-            {selectedMachine && (
-                <EditUTMachineDialog 
-                    isOpen={isEditDialogOpen} 
-                    setIsOpen={setIsEditDialogOpen} 
-                    machine={selectedMachine}
-                />
-            )}
-            {selectedMachine && (
-                <UTMachineLogManagerDialog
-                    isOpen={isLogManagerOpen}
-                    setIsOpen={setIsLogManagerOpen}
-                    machine={selectedMachine}
-                />
-            )}
+            <AddUTMachineDialog isOpen={isAddUTMachineOpen} setIsOpen={setIsAddUTMachineOpen} />
+            {selectedUTMachine && (<EditUTMachineDialog isOpen={isEditUTMachineOpen} setIsOpen={setIsEditUTMachineOpen} machine={selectedUTMachine}/>)}
+            {selectedUTMachine && (<UTMachineLogManagerDialog isOpen={isUTLogManagerOpen} setIsOpen={setIsUTLogManagerOpen} machine={selectedUTMachine}/>)}
+
+            <AddDftMachineDialog isOpen={isAddDftMachineOpen} setIsOpen={setIsAddDftMachineOpen} />
+            {selectedDftMachine && (<EditDftMachineDialog isOpen={isEditDftMachineOpen} setIsOpen={setIsEditDftMachineOpen} machine={selectedDftMachine} />)}
+            {selectedDftMachine && (<DftMachineLogManagerDialog isOpen={isDftLogManagerOpen} setIsOpen={setIsDftLogManagerOpen} machine={selectedDftMachine} />)}
+        
+            <AddMobileSimDialog isOpen={isAddMobileSimOpen} setIsOpen={setIsAddMobileSimOpen} />
+            {selectedMobileSim && (<EditMobileSimDialog isOpen={isEditMobileSimOpen} setIsOpen={setIsEditMobileSimOpen} item={selectedMobileSim} />)}
+        
+            <AddOtherEquipmentDialog isOpen={isAddOtherEquipmentOpen} setIsOpen={setIsAddOtherEquipmentOpen} />
+            {selectedOtherEquipment && (<EditOtherEquipmentDialog isOpen={isEditOtherEquipmentOpen} setIsOpen={setIsEditOtherEquipmentOpen} item={selectedOtherEquipment} />)}
         </div>
     );
 }

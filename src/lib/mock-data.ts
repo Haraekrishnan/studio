@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile, Trade, ManagementRequest } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment } from './types';
 import { sub, add, format } from 'date-fns';
 import { ALL_PERMISSIONS } from './types';
 
@@ -19,7 +19,7 @@ export const ROLES: RoleDefinition[] = [
       'grant_manual_achievements', 'approve_manual_achievements', 
       'view_all_activity', 'view_all_users', 'manage_inventory',
       'manage_manpower', 'manage_ut_machines', 'manage_ut_machine_logs', 'manage_vehicles',
-      'manage_manpower_list'
+      'manage_manpower_list', 'manage_dft_machines', 'manage_mobile_sims', 'manage_other_equipment',
     ],
     isEditable: false,
   },
@@ -58,7 +58,8 @@ export const ROLES: RoleDefinition[] = [
     name: 'Store in Charge',
     permissions: [
       'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
-      'view_subordinates_activity', 'view_subordinates_users', 'manage_inventory'
+      'view_subordinates_activity', 'view_subordinates_users', 'manage_inventory',
+      'manage_ut_machines', 'manage_dft_machines', 'manage_mobile_sims', 'manage_other_equipment'
     ],
     isEditable: false,
   },
@@ -313,6 +314,11 @@ export const UT_MACHINES: UTMachine[] = [
     { id: 'ut-1', machineName: 'Krautkramer USM 36', serialNumber: 'UTM-001', projectId: 'proj-1', unit: 'Unit A', calibrationDueDate: add(new Date(), { months: 3 }).toISOString(), probeDetails: '5MHz Dual Crystal', cableDetails: 'Standard RG-58', status: 'In Service', usageLog: [] },
     { id: 'ut-2', machineName: 'Olympus EPOCH 650', serialNumber: 'UTM-002', projectId: 'proj-2', unit: 'Unit B', calibrationDueDate: add(new Date(), { days: 20 }).toISOString(), probeDetails: '2.25MHz Single Crystal', cableDetails: 'Heavy Duty', status: 'In Service', usageLog: [] },
 ];
+
+export const DFT_MACHINES: DftMachine[] = [];
+export const MOBILE_SIMS: MobileSim[] = [];
+export const OTHER_EQUIPMENTS: OtherEquipment[] = [];
+
 
 export const VEHICLES: Vehicle[] = [
     { id: 'vh-1', vehicleNumber: 'DXB 12345', vehicleDetails: 'Toyota HiAce 2022', seatingCapacity: 14, currentManpower: 10, driverName: 'Ali Khan', supervisorId: '3', projectId: 'proj-1', vapNumber: 'VAP-001', driverLicenseNumber: 'DL-001', driverEpNumber: 'EP-001', driverSdpNumber: 'SDP-001', vapValidity: add(new Date(), { months: 6 }).toISOString(), sdpValidity: add(new Date(), { years: 1 }).toISOString(), epValidity: add(new Date(), { years: 2 }).toISOString(), status: 'Operational' },
