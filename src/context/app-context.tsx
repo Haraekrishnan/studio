@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, MANPOWER_PROFILES, MANAGEMENT_REQUESTS } from '@/lib/mock-data';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS } from '@/lib/mock-data';
 import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format, differenceInDays } from 'date-fns';
 
 interface AppContextType {
@@ -22,6 +22,9 @@ interface AppContextType {
   manpowerLogs: ManpowerLog[];
   manpowerProfiles: ManpowerProfile[];
   utMachines: UTMachine[];
+  dftMachines: DftMachine[];
+  mobileSims: MobileSim[];
+  otherEquipments: OtherEquipment[];
   vehicles: Vehicle[];
   appName: string;
   appLogo: string | null;
@@ -93,6 +96,15 @@ interface AppContextType {
   updateUTMachine: (machine: UTMachine) => void;
   deleteUTMachine: (machineId: string) => void;
   addUTMachineLog: (machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => void;
+  addDftMachine: (machine: Omit<DftMachine, 'id' | 'usageLog'>) => void;
+  updateDftMachine: (machine: DftMachine) => void;
+  deleteDftMachine: (machineId: string) => void;
+  addMobileSim: (item: Omit<MobileSim, 'id'>) => void;
+  updateMobileSim: (item: MobileSim) => void;
+  deleteMobileSim: (itemId: string) => void;
+  addOtherEquipment: (item: Omit<OtherEquipment, 'id'>) => void;
+  updateOtherEquipment: (item: OtherEquipment) => void;
+  deleteOtherEquipment: (itemId: string) => void;
   addVehicle: (vehicle: Omit<Vehicle, 'id'>) => void;
   updateVehicle: (vehicle: Vehicle) => void;
   deleteVehicle: (vehicleId: string) => void;
@@ -125,6 +137,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [manpowerLogs, setManpowerLogs] = useState<ManpowerLog[]>(MANPOWER_LOGS);
   const [manpowerProfiles, setManpowerProfiles] = useState<ManpowerProfile[]>(MANPOWER_PROFILES);
   const [utMachines, setUtMachines] = useState<UTMachine[]>(UT_MACHINES);
+  const [dftMachines, setDftMachines] = useState<DftMachine[]>(DFT_MACHINES);
+  const [mobileSims, setMobileSims] = useState<MobileSim[]>(MOBILE_SIMS);
+  const [otherEquipments, setOtherEquipments] = useState<OtherEquipment[]>(OTHER_EQUIPMENTS);
   const [vehicles, setVehicles] = useState<Vehicle[]>(VEHICLES);
   const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
   const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>(MANAGEMENT_REQUESTS);
@@ -979,6 +994,66 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       recordAction(`Deleted UT Machine: ${machineName}`);
   }, [user, utMachines, recordAction]);
 
+  const addDftMachine = useCallback((machineData: Omit<DftMachine, 'id' | 'usageLog'>) => {
+    if (!user) return;
+    const newMachine: DftMachine = { ...machineData, id: `dft-${Date.now()}`, usageLog: [] };
+    setDftMachines(prev => [newMachine, ...prev]);
+    recordAction(`Added new DFT Machine: ${newMachine.machineName}`);
+  }, [user, recordAction]);
+
+  const updateDftMachine = useCallback((updatedMachine: DftMachine) => {
+    if (!user) return;
+    setDftMachines(prev => prev.map(m => m.id === updatedMachine.id ? updatedMachine : m));
+    recordAction(`Updated DFT Machine: ${updatedMachine.machineName}`);
+  }, [user, recordAction]);
+
+  const deleteDftMachine = useCallback((machineId: string) => {
+    if (!user) return;
+    const machineName = dftMachines.find(m => m.id === machineId)?.machineName;
+    setDftMachines(prev => prev.filter(m => m.id !== machineId));
+    recordAction(`Deleted DFT Machine: ${machineName}`);
+  }, [user, dftMachines, recordAction]);
+
+  const addMobileSim = useCallback((itemData: Omit<MobileSim, 'id'>) => {
+    if (!user) return;
+    const newItem: MobileSim = { ...itemData, id: `ms-${Date.now()}` };
+    setMobileSims(prev => [newItem, ...prev]);
+    recordAction(`Added new Mobile/SIM: ${newItem.number}`);
+  }, [user, recordAction]);
+
+  const updateMobileSim = useCallback((updatedItem: MobileSim) => {
+    if (!user) return;
+    setMobileSims(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+    recordAction(`Updated Mobile/SIM: ${updatedItem.number}`);
+  }, [user, recordAction]);
+
+  const deleteMobileSim = useCallback((itemId: string) => {
+    if (!user) return;
+    const itemNumber = mobileSims.find(i => i.id === itemId)?.number;
+    setMobileSims(prev => prev.filter(i => i.id !== itemId));
+    recordAction(`Deleted Mobile/SIM: ${itemNumber}`);
+  }, [user, mobileSims, recordAction]);
+
+  const addOtherEquipment = useCallback((itemData: Omit<OtherEquipment, 'id'>) => {
+    if (!user) return;
+    const newItem: OtherEquipment = { ...itemData, id: `oe-${Date.now()}` };
+    setOtherEquipments(prev => [newItem, ...prev]);
+    recordAction(`Added new equipment: ${newItem.name}`);
+  }, [user, recordAction]);
+
+  const updateOtherEquipment = useCallback((updatedItem: OtherEquipment) => {
+    if (!user) return;
+    setOtherEquipments(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+    recordAction(`Updated equipment: ${updatedItem.name}`);
+  }, [user, recordAction]);
+
+  const deleteOtherEquipment = useCallback((itemId: string) => {
+    if (!user) return;
+    const itemName = otherEquipments.find(i => i.id === itemId)?.name;
+    setOtherEquipments(prev => prev.filter(i => i.id !== itemId));
+    recordAction(`Deleted equipment: ${itemName}`);
+  }, [user, otherEquipments, recordAction]);
+
   const addVehicle = useCallback((vehicleData: Omit<Vehicle, 'id'>) => {
       if (!user) return;
       const newVehicle: Vehicle = {
@@ -1209,6 +1284,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     manpowerLogs,
     manpowerProfiles,
     utMachines,
+    dftMachines,
+    mobileSims,
+    otherEquipments,
     vehicles,
     appName,
     appLogo,
@@ -1221,72 +1299,81 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     myFulfilledUTRequests,
     workingManpowerCount,
     onLeaveManpowerCount,
-    login: useCallback(login, [router, users]),
-    logout: useCallback(logout, [router, currentLogId]),
-    addTask: useCallback(addTask, [recordAction]),
-    updateTask: useCallback(updateTask, [recordAction]),
-    deleteTask: useCallback(deleteTask, [tasks, recordAction]),
-    addPlannerEvent: useCallback(addPlannerEvent, [user, recordAction]),
-    getExpandedPlannerEvents: useCallback(getExpandedPlannerEvents, [plannerEvents]),
-    getVisibleUsers: useCallback(getVisibleUsers, [user, users, roles, getSubordinates]),
-    addUser: useCallback(addUser, [recordAction]),
-    updateUser: useCallback(updateUser, [user, recordAction]),
-    deleteUser: useCallback(deleteUser, [users, recordAction]),
-    addRole: useCallback(addRole, [recordAction]),
-    updateRole: useCallback(updateRole, [recordAction]),
-    deleteRole: useCallback(deleteRole, [roles, recordAction]),
-    addProject: useCallback(addProject, [recordAction]),
-    updateProject: useCallback(updateProject, [recordAction]),
-    deleteProject: useCallback(deleteProject, [projects, recordAction]),
-    updateProfile: useCallback(updateProfile, [user, recordAction]),
-    requestTaskStatusChange: useCallback(requestTaskStatusChange, [tasks, user, addComment, updateTask, recordAction]),
-    approveTaskStatusChange: useCallback(approveTaskStatusChange, [tasks, users, addComment, updateTask, recordAction]),
-    returnTaskStatusChange: useCallback(returnTaskStatusChange, [tasks, addComment, updateTask, recordAction]),
-    addComment: useCallback(addComment, [user, tasks, recordAction]),
-    markTaskAsViewed: useCallback(markTaskAsViewed, []),
-    addManualAchievement: useCallback(addManualAchievement, [user, users, recordAction]),
-    approveAchievement: useCallback(approveAchievement, [achievements, recordAction]),
-    rejectAchievement: useCallback(rejectAchievement, [achievements, recordAction]),
-    updateManualAchievement: useCallback(updateManualAchievement, [users, recordAction]),
-    deleteManualAchievement: useCallback(deleteManualAchievement, [achievements, users, recordAction]),
-    addPlannerEventComment: useCallback(addPlannerEventComment, [user, plannerEvents, recordAction]),
-    addDailyPlannerComment: useCallback(addDailyPlannerComment, [user, users, recordAction]),
-    updateBranding: useCallback(updateBranding, [recordAction]),
-    addInternalRequest: useCallback(addInternalRequest, [user, recordAction]),
-    updateInternalRequest: useCallback(updateInternalRequest, [user, internalRequests, recordAction]),
-    deleteInternalRequest: useCallback(deleteInternalRequest, [recordAction]),
-    addInternalRequestComment: useCallback(addInternalRequestComment, [user, internalRequests, recordAction]),
-    markRequestAsViewed: useCallback(markRequestAsViewed, []),
-    forwardInternalRequest: useCallback(forwardInternalRequest, [user, internalRequests, recordAction]),
-    escalateInternalRequest: useCallback(escalateInternalRequest, [user, internalRequests, recordAction]),
-    createPpeRequestTask: useCallback(createPpeRequestTask, [user, addTask]),
-    addInventoryItem: useCallback(addInventoryItem, []),
-    updateInventoryItem: useCallback(updateInventoryItem, []),
-    deleteInventoryItem: useCallback(deleteInventoryItem, []),
-    addMultipleInventoryItems: useCallback(addMultipleInventoryItems, [projects]),
-    requestInventoryTransfer: useCallback(requestInventoryTransfer, [user]),
-    approveInventoryTransfer: useCallback(approveInventoryTransfer, [inventoryTransferRequests, projects, addInventoryTransferComment]),
-    rejectInventoryTransfer: useCallback(rejectInventoryTransfer, [addInventoryTransferComment]),
-    addCertificateRequest: useCallback(addCertificateRequest, [user]),
-    requestUTMachineCertificate: useCallback(requestUTMachineCertificate, [user, recordAction]),
-    addCertificateRequestComment: useCallback(addCertificateRequestComment, [user]),
-    fulfillCertificateRequest: useCallback(fulfillCertificateRequest, [user, recordAction, certificateRequests]),
-    markUTRequestsAsViewed: useCallback(markUTRequestsAsViewed, [user]),
-    acknowledgeFulfilledUTRequest: useCallback(acknowledgeFulfilledUTRequest, [user, recordAction]),
-    addManpowerLog: useCallback(addManpowerLog, [user]),
-    addManpowerProfile: useCallback(addManpowerProfile, [user]),
-    updateManpowerProfile: useCallback(updateManpowerProfile, [user]),
-    addUTMachine: useCallback(addUTMachine, [user, recordAction]),
-    updateUTMachine: useCallback(updateUTMachine, [user, recordAction]),
-    addUTMachineLog: useCallback(addUTMachineLog, [user, recordAction]),
-    deleteUTMachine: useCallback(deleteUTMachine, [user, utMachines, recordAction]),
-    addVehicle: useCallback(addVehicle, [user, recordAction]),
-    updateVehicle: useCallback(updateVehicle, [user, recordAction]),
-    deleteVehicle: useCallback(deleteVehicle, [user, vehicles, recordAction]),
-    addManagementRequest: useCallback(addManagementRequest, [user, recordAction]),
-    updateManagementRequest: useCallback(updateManagementRequest, [user, managementRequests, recordAction]),
-    addManagementRequestComment: useCallback(addManagementRequestComment, [user, managementRequests, recordAction]),
-    markManagementRequestAsViewed: useCallback(markManagementRequestAsViewed, [user]),
+    login,
+    logout,
+    addTask,
+    updateTask,
+    deleteTask,
+    addPlannerEvent,
+    getExpandedPlannerEvents,
+    getVisibleUsers,
+    addUser,
+    updateUser,
+    deleteUser,
+    addRole,
+    updateRole,
+    deleteRole,
+    addProject,
+    updateProject,
+    deleteProject,
+    updateProfile,
+    requestTaskStatusChange,
+    approveTaskStatusChange,
+    returnTaskStatusChange,
+    addComment,
+    markTaskAsViewed,
+    addManualAchievement,
+    approveAchievement,
+    rejectAchievement,
+    updateManualAchievement,
+    deleteManualAchievement,
+    addPlannerEventComment,
+    addDailyPlannerComment,
+    updateBranding,
+    addInternalRequest,
+    updateInternalRequest,
+    deleteInternalRequest,
+    addInternalRequestComment,
+    markRequestAsViewed,
+    forwardInternalRequest,
+    escalateInternalRequest,
+    createPpeRequestTask,
+    addInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    addMultipleInventoryItems,
+    requestInventoryTransfer,
+    approveInventoryTransfer,
+    rejectInventoryTransfer,
+    addCertificateRequest,
+    requestUTMachineCertificate,
+    addCertificateRequestComment,
+    fulfillCertificateRequest,
+    markUTRequestsAsViewed,
+    acknowledgeFulfilledUTRequest,
+    addManpowerLog,
+    addManpowerProfile,
+    updateManpowerProfile,
+    addUTMachine,
+    updateUTMachine,
+    deleteUTMachine,
+    addUTMachineLog,
+    addDftMachine,
+    updateDftMachine,
+    deleteDftMachine,
+    addMobileSim,
+    updateMobileSim,
+    deleteMobileSim,
+    addOtherEquipment,
+    updateOtherEquipment,
+    deleteOtherEquipment,
+    addVehicle,
+    updateVehicle,
+    deleteVehicle,
+    addManagementRequest,
+    updateManagementRequest,
+    addManagementRequestComment,
+    markManagementRequestAsViewed,
     expiringVehicleDocsCount,
     expiringUtMachineCalibrationsCount,
     expiringManpowerCount,
