@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile, Trade } from './types';
 import { sub, add, format } from 'date-fns';
 import { ALL_PERMISSIONS } from './types';
 
@@ -304,27 +304,49 @@ export const VEHICLES: Vehicle[] = [
     { id: 'vh-2', vehicleNumber: 'SHJ 54321', vehicleDetails: 'Nissan Urvan 2021', seatingCapacity: 12, currentManpower: 13, driverName: 'Babu Raj', supervisorId: '4', projectId: 'proj-2', vapNumber: 'VAP-002', driverLicenseNumber: 'DL-002', driverEpNumber: 'EP-002', driverSdpNumber: 'SDP-002', vapValidity: add(new Date(), { days: 25 }).toISOString(), sdpValidity: add(new Date(), { months: 8 }).toISOString(), epValidity: add(new Date(), { years: 1 }).toISOString(), status: 'In Workshop' },
 ];
 
+export const TRADES: Trade[] = ['RA Level 1', 'RA Level 2', 'RA Level 3', 'HSE', 'Supervisor', 'Document Controller', 'Cook'];
+export const RA_TRADES: Trade[] = ['RA Level 1', 'RA Level 2', 'RA Level 3'];
+export const MANDATORY_DOCS = ['Aadhar Card', 'CV', 'Pan Card', 'Personal Details', 'Form A', 'Induction', 'Signed Contract', 'Medical Report'];
+
 export const MANPOWER_PROFILES: ManpowerProfile[] = [
     {
         id: 'mp-prof-1',
         name: 'John Doe',
-        trade: 'Welder',
-        documentFolderUrl: 'https://example.com/docs/john-doe',
+        trade: 'RA Level 1',
+        status: 'Working',
+        epNumber: 'EP12345',
+        plantName: 'SEZ',
+        eicName: 'EIC-A',
+        joiningDate: new Date().toISOString(),
         documents: [
-            { name: 'Passport', status: 'Collected' },
-            { name: 'Visa', status: 'Collected' },
-            { name: 'Emirates ID', status: 'Pending' },
+            { name: 'Aadhar Card', details: '1234 5678 9012', status: 'Collected' },
+            { name: 'CV', details: '', status: 'Collected' },
+            { name: 'Pan Card', details: 'ABCDE1234F', status: 'Received' },
+            { name: 'Personal Details', details: '', status: 'Pending' },
+            { name: 'Form A', details: '', status: 'Pending' },
+            { name: 'Induction', details: '', status: 'Pending' },
+            { name: 'Signed Contract', details: '', status: 'Pending' },
+            { name: 'Medical Report', details: '', status: 'Pending' },
+            { name: 'IRATA Certificate', details: 'IRATA-9876', status: 'Collected' },
         ]
     },
     {
         id: 'mp-prof-2',
         name: 'Peter Jones',
-        trade: 'Electrician',
-        documentFolderUrl: 'https://example.com/docs/peter-jones',
+        trade: 'Supervisor',
+        status: 'On Leave',
+        leaveType: 'Annual',
+        leaveStartDate: sub(new Date(), {days: 5}).toISOString(),
+        leaveEndDate: add(new Date(), {days: 25}).toISOString(),
         documents: [
-            { name: 'Passport', status: 'Collected' },
-            { name: 'Visa', status: 'Collected' },
-            { name: 'Emirates ID', status: 'Collected' },
+            { name: 'Aadhar Card', details: '2345 6789 0123', status: 'Collected' },
+            { name: 'CV', details: '', status: 'Collected' },
+            { name: 'Pan Card', details: 'FGHIJ5678K', status: 'Collected' },
+            { name: 'Personal Details', details: '', status: 'Collected' },
+            { name: 'Form A', details: '', status: 'Collected' },
+            { name: 'Induction', details: '', status: 'Collected' },
+            { name: 'Signed Contract', details: '', status: 'Pending' },
+            { name: 'Medical Report', details: '', status: 'Pending' },
         ]
     }
 ];

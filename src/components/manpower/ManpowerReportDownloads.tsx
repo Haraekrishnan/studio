@@ -1,56 +1,70 @@
 'use client';
-import type { ManpowerLog } from '@/lib/types';
-import { useAppContext } from '@/context/app-context';
+import type { ManpowerProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import type { DateRange } from 'react-day-picker';
+import { format } from 'date-fns';
 
 interface ManpowerReportDownloadsProps {
-  dateRange: DateRange | undefined;
+  profiles: ManpowerProfile[];
 }
 
-export default function ManpowerReportDownloads({ dateRange }: ManpowerReportDownloadsProps) {
-  const { projects, users, manpowerLogs } = useAppContext();
-
+export default function ManpowerReportDownloads({ profiles }: ManpowerReportDownloadsProps) {
+  
   const handleDownloadExcel = () => {
-    if (!dateRange || !dateRange.from) {
-        alert("Please select a date range first.");
-        return;
-    }
-    
-    const filteredLogs = manpowerLogs.filter(log => {
-        const logDate = new Date(log.date);
-        const fromDate = dateRange.from!;
-        const toDate = dateRange.to || fromDate;
-        return logDate >= fromDate && logDate <= toDate;
-    });
-
-    if (filteredLogs.length === 0) {
-        alert("No data available for the selected date range.");
+    if (profiles.length === 0) {
+        alert("No data available for the selected filters.");
         return;
     }
 
-    const dataToExport = filteredLogs.map(log => ({
-      'Date': log.date,
-      'Project': projects.find(p => p.id === log.projectId)?.name || 'N/A',
-      'Manpower In': log.countIn,
-      'Person In Name(s)': log.personInName || '',
-      'Manpower Out': log.countOut,
-      'Person Out Name(s)': log.personOutName || '',
-      'Reason': log.reason,
-      'Updated By': users.find(u => u.id === log.updatedBy)?.name || 'N/A'
+    const dataToExport = profiles.map(p => ({
+      'Name': p.name,
+      'Trade': p.trade,
+      'Status': p.status,
+      'EP Number': p.epNumber || 'N/A',
+      'Plant Name': p.plantName || 'N/A',
+      'EIC Name': p.eicName || 'N/A',
+      'Pass Issue Date': p.passIssueDate ? format(new Date(p.passIssueDate), 'dd-MM-yyyy') : 'N/A',
+      'Joining Date': p.joiningDate ? format(new Date(p.joiningDate), 'dd-MM-yyyy') : 'N/A',
+      'WO Validity': p.woValidity ? format(new Date(p.woValidity), 'dd-MM-yyyy') : 'N/A',
+      'WC Policy Validity': p.wcPolicyValidity ? format(new Date(p.wcPolicyValidity), 'dd-MM-yyyy') : 'N/A',
+      'Labour Contract Validity': p.labourContractValidity ? format(new Date(p.labourContractValidity), 'dd-MM-yyyy') : 'N/A',
+      'Medical Expiry Date': p.medicalExpiryDate ? format(new Date(p.medicalExpiryDate), 'dd-MM-yyyy') : 'N/A',
+      'Safety Expiry Date': p.safetyExpiryDate ? format(new Date(p.safetyExpiryDate), 'dd-MM-yyyy') : 'N/A',
+      'IRATA Validity': p.irataValidity ? format(new Date(p.irataValidity), 'dd-MM-yyyy') : 'N/A',
+      'Contract Validity': p.contractValidity ? format(new Date(p.contractValidity), 'dd-MM-yyyy') : 'N/A',
+      'Remarks': p.remarks || '',
+      'Leave Type': p.leaveType || 'N/A',
+      'Leave Start Date': p.leaveStartDate ? format(new Date(p.leaveStartDate), 'dd-MM-yyyy') : 'N/A',
+      'Leave End Date': p.leaveEndDate ? format(new Date(p.leaveEndDate), 'dd-MM-yyyy') : 'N/A',
+      'Rejoined Date': p.rejoinedDate ? format(new Date(p.rejoinedDate), 'dd-MM-yyyy') : 'N/A',
+      'Termination Date': p.terminationDate ? format(new Date(p.terminationDate), 'dd-MM-yyyy') : 'N/A',
+      'Resignation Date': p.resignationDate ? format(new Date(p.resignationDate), 'dd-MM-yyyy') : 'N/A',
+      'Feedback': p.feedback || '',
+      'Document Folder URL': p.documentFolderUrl || '',
+      ...p.documents.reduce((acc, doc) => {
+        acc[`Doc: ${doc.name} (Status)`] = doc.status;
+        acc[`Doc: ${doc.name} (Details)`] = doc.details || '';
+        return acc;
+      }, {} as {[key: string]: any}),
+      ...p.skills?.reduce((acc, skill, index) => {
+        acc[`Skill ${index+1} Name`] = skill.name;
+        acc[`Skill ${index+1} Details`] = skill.details;
+        acc[`Skill ${index+1} Link`] = skill.link || '';
+        return acc;
+      }, {} as {[key: string]: any}),
     }));
+
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Manpower Report');
-    XLSX.writeFile(workbook, `Manpower_Report_${dateRange.from.toISOString().split('T')[0]}_to_${dateRange.to?.toISOString().split('T')[0] || dateRange.from.toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(workbook, `Manpower_Report.xlsx`);
   };
 
   return (
-    <Button variant="outline" onClick={handleDownloadExcel} disabled={!dateRange || !dateRange.from}>
+    <Button variant="outline" onClick={handleDownloadExcel} disabled={profiles.length === 0}>
         <FileDown className="mr-2 h-4 w-4" />
-        Generate Excel
+        Export Excel
     </Button>
   );
 }

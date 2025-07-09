@@ -7,17 +7,47 @@ import { PlusCircle, AlertTriangle } from 'lucide-react';
 import ManpowerListTable from '@/components/manpower/ManpowerListTable';
 import ManpowerProfileDialog from '@/components/manpower/ManpowerProfileDialog';
 import type { ManpowerProfile } from '@/lib/types';
+import ManpowerSummary from '@/components/manpower/ManpowerSummary';
+import ManpowerFilters, { type ManpowerFilterValues } from '@/components/manpower/ManpowerFilters';
+import { isWithinInterval } from 'date-fns';
+import ManpowerReportDownloads from '@/components/manpower/ManpowerReportDownloads';
 
 export default function ManpowerListPage() {
     const { user, roles, manpowerProfiles } = useAppContext();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState<ManpowerProfile | null>(null);
+    const [filters, setFilters] = useState<ManpowerFilterValues>({
+        status: 'all',
+        trade: 'all',
+        returnDateRange: undefined,
+    });
 
     const canManage = useMemo(() => {
         if (!user) return false;
         const userRole = roles.find(r => r.name === user.role);
         return userRole?.permissions.includes('manage_manpower_list');
     }, [user, roles]);
+    
+    const filteredProfiles = useMemo(() => {
+        return manpowerProfiles.filter(profile => {
+            const { status, trade, returnDateRange } = filters;
+            if (status !== 'all' && profile.status !== status) return false;
+            if (trade !== 'all' && profile.trade !== trade) return false;
+
+            if (returnDateRange?.from) {
+                const returnDate = profile.rejoinedDate ? new Date(profile.rejoinedDate) : (profile.leaveEndDate ? new Date(profile.leaveEndDate) : null);
+                if (!returnDate) return false;
+
+                const from = returnDateRange.from;
+                const to = returnDateRange.to || from;
+                if (!isWithinInterval(returnDate, { start: from, end: to })) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }, [manpowerProfiles, filters]);
+
 
     const handleEdit = (profile: ManpowerProfile) => {
         setSelectedProfile(profile);
@@ -55,11 +85,26 @@ export default function ManpowerListPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Manpower List</h1>
                     <p className="text-muted-foreground">Manage manpower profiles and documentation.</p>
                 </div>
-                <Button onClick={handleAdd}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Manpower
-                </Button>
+                <div className="flex items-center gap-2">
+                    <ManpowerReportDownloads profiles={filteredProfiles} />
+                    <Button onClick={handleAdd}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Manpower
+                    </Button>
+                </div>
             </div>
+
+            <ManpowerSummary />
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Filters</CardTitle>
+                    <CardDescription>Filter the list of manpower profiles below.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ManpowerFilters onApplyFilters={setFilters} />
+                </CardContent>
+            </Card>
 
             <Card>
                 <CardHeader>
@@ -67,7 +112,7 @@ export default function ManpowerListPage() {
                     <CardDescription>A list of all manpower profiles in the system.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ManpowerListTable profiles={manpowerProfiles} onEdit={handleEdit} />
+                    <ManpowerListTable profiles={filteredProfiles} onEdit={handleEdit} />
                 </CardContent>
             </Card>
 

@@ -1,33 +1,65 @@
 'use client';
 import { useMemo } from 'react';
-import type { ManpowerProfile } from '@/lib/types';
+import type { ManpowerProfile, ManpowerDocument } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Edit } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
+import { MANDATORY_DOCS, RA_TRADES } from '@/lib/mock-data';
 
 interface ManpowerListTableProps {
     profiles: ManpowerProfile[];
     onEdit: (profile: ManpowerProfile) => void;
 }
 
+const statusVariant: { [key in ManpowerProfile['status']]: "secondary" | "destructive" | "default" | "outline" } = {
+    'Working': 'secondary',
+    'On Leave': 'default',
+    'Resigned': 'destructive',
+    'Terminated': 'destructive',
+}
+
 export default function ManpowerListTable({ profiles, onEdit }: ManpowerListTableProps) {
+
     const getDocumentProgress = (profile: ManpowerProfile) => {
-        const totalDocs = profile.documents.length;
-        if (totalDocs === 0) return 0;
-        const collectedDocs = profile.documents.filter(d => d.status === 'Collected').length;
-        return (collectedDocs / totalDocs) * 100;
+        const requiredDocs = [...MANDATORY_DOCS];
+        if (RA_TRADES.includes(profile.trade)) {
+            requiredDocs.push('IRATA Certificate');
+        }
+
+        const collectedCount = requiredDocs.filter(docName => {
+            const doc = profile.documents.find(d => d.name === docName);
+            return doc && doc.status !== 'Pending';
+        }).length;
+        
+        return (collectedCount / requiredDocs.length) * 100;
     };
     
      const getProgressTooltip = (profile: ManpowerProfile) => {
-        const collected = profile.documents.filter(d => d.status === 'Collected').map(d => d.name).join(', ');
-        const pending = profile.documents.filter(d => d.status === 'Pending').map(d => d.name).join(', ');
+        const requiredDocs = [...MANDATORY_DOCS];
+        if (RA_TRADES.includes(profile.trade)) {
+            requiredDocs.push('IRATA Certificate');
+        }
+
+        const collected: string[] = [];
+        const pending: string[] = [];
+
+        requiredDocs.forEach(docName => {
+            const doc = profile.documents.find(d => d.name === docName);
+            if(doc && doc.status !== 'Pending') {
+                collected.push(docName);
+            } else {
+                pending.push(docName);
+            }
+        });
 
         return (
             <div>
-                {collected && <p><strong>Collected:</strong> {collected}</p>}
-                {pending && <p><strong>Pending:</strong> {pending}</p>}
+                {collected.length > 0 && <p><strong>Collected:</strong> {collected.join(', ')}</p>}
+                {pending.length > 0 && <p className="mt-2"><strong>Pending:</strong> {pending.join(', ')}</p>}
             </div>
         );
     };
@@ -43,6 +75,7 @@ export default function ManpowerListTable({ profiles, onEdit }: ManpowerListTabl
                     <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Trade</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Documentation Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -52,6 +85,7 @@ export default function ManpowerListTable({ profiles, onEdit }: ManpowerListTabl
                         <TableRow key={profile.id}>
                             <TableCell className="font-medium">{profile.name}</TableCell>
                             <TableCell>{profile.trade}</TableCell>
+                            <TableCell><Badge variant={statusVariant[profile.status]}>{profile.status}</Badge></TableCell>
                             <TableCell>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -60,7 +94,7 @@ export default function ManpowerListTable({ profiles, onEdit }: ManpowerListTabl
                                             <span className="text-xs text-muted-foreground">{getDocumentProgress(profile).toFixed(0)}%</span>
                                         </div>
                                     </TooltipTrigger>
-                                    <TooltipContent>
+                                    <TooltipContent className="max-w-xs">
                                         {getProgressTooltip(profile)}
                                     </TooltipContent>
                                 </Tooltip>

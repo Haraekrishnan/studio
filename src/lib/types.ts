@@ -248,17 +248,51 @@ export interface Vehicle {
   status: VehicleStatus;
 }
 
-export type ManpowerDocumentStatus = 'Collected' | 'Pending';
+export type ManpowerDocumentStatus = 'Collected' | 'Pending' | 'Received';
 
 export interface ManpowerDocument {
     name: string;
+    details?: string;
     status: ManpowerDocumentStatus;
+}
+
+export type Trade = 'RA Level 1' | 'RA Level 2' | 'RA Level 3' | 'HSE' | 'Supervisor' | 'Document Controller' | 'Cook';
+
+export interface ManpowerSkill {
+    name: string;
+    details: string;
+    link?: string;
 }
 
 export interface ManpowerProfile {
     id: string;
     name: string;
-    trade: string;
+    trade: Trade;
     documentFolderUrl?: string;
     documents: ManpowerDocument[];
+    
+    epNumber?: string;
+    plantName?: string;
+    eicName?: string;
+    passIssueDate?: string;
+    joiningDate?: string;
+    woValidity?: string;
+    wcPolicyValidity?: string;
+    labourContractValidity?: string;
+    medicalExpiryDate?: string;
+    safetyExpiryDate?: string;
+    irataValidity?: string;
+    contractValidity?: string;
+    remarks?: string;
+    
+    skills?: ManpowerSkill[];
+    
+    status: 'Working' | 'On Leave' | 'Resigned' | 'Terminated';
+    leaveType?: 'Emergency' | 'Annual';
+    leaveStartDate?: string;
+    leaveEndDate?: string;
+    rejoinedDate?: string;
+    terminationDate?: string;
+    resignationDate?: string;
+    feedback?: string;
 }
