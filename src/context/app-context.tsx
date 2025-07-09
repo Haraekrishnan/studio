@@ -68,7 +68,7 @@ interface AppContextType {
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
-  addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester'>) => void;
+  addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isEscalated'>) => void;
   updateInternalRequest: (updatedRequest: InternalRequest) => void;
   deleteInternalRequest: (requestId: string) => void;
   addInternalRequestComment: (requestId: string, commentText: string) => void;
@@ -647,7 +647,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Updated app branding.`);
   }, [recordAction]);
 
-  const addInternalRequest = useCallback((request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester'>) => {
+  const addInternalRequest = useCallback((request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isEscalated'>) => {
     if (!user) return;
     const newRequest: InternalRequest = {
       ...request,
@@ -657,6 +657,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       status: 'Pending',
       comments: [{ userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
       isViewedByRequester: true,
+      isEscalated: false,
     };
     setInternalRequests(prev => [newRequest, ...prev]);
     recordAction(`Created internal request for ${request.category}`);
@@ -753,6 +754,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
             status: 'Pending',
             comments: [escalationComment, ...(r.comments || [])],
             isViewedByRequester: false,
+            isEscalated: true,
           };
         }
         return r;

@@ -25,6 +25,8 @@ interface PerformanceData {
   score: number;
   completed: number;
   overdue: number;
+  planningScore: number;
+  awardPoints: number;
 }
 
 interface AchievementsTableProps {
@@ -58,7 +60,9 @@ export default function AchievementsTable({ data, type }: AchievementsTableProps
             <TableHead>Employee</TableHead>
             <TableHead className="text-center">Completed Tasks</TableHead>
             <TableHead className="text-center">Overdue Tasks</TableHead>
-            <TableHead className="text-right">Performance Score</TableHead>
+            <TableHead className="text-center">Planning Score</TableHead>
+            <TableHead className="text-center">Award Points</TableHead>
+            <TableHead className="text-right">Total Score</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -83,6 +87,8 @@ export default function AchievementsTable({ data, type }: AchievementsTableProps
               </TableCell>
               <TableCell className="text-center">{item.completed}</TableCell>
               <TableCell className="text-center">{item.overdue}</TableCell>
+              <TableCell className="text-center">{item.planningScore}</TableCell>
+              <TableCell className="text-center">{item.awardPoints}</TableCell>
               <TableCell className="text-right font-semibold">{item.score}</TableCell>
             </TableRow>
           ))}

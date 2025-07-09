@@ -80,6 +80,7 @@ export default function InternalRequestTable({ requests }: InternalRequestTableP
                         <TableCell>
                            <div className='flex items-center gap-2'>
                              <Badge variant={statusVariant[request.status]}>{request.status}</Badge>
+                             {request.isEscalated && <Badge variant="destructive">Escalated</Badge>}
                              {isUnreadUpdate && <CircleAlert className="h-4 w-4 text-primary" title="Status has been updated"/>}
                            </div>
                         </TableCell>

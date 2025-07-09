@@ -104,6 +104,7 @@ export interface InternalRequest {
   comments?: Comment[];
   isViewedByRequester: boolean;
   forwardedTo?: Role;
+  isEscalated?: boolean;
 }
 
 export interface ManagementRequest {

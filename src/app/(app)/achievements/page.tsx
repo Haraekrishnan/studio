@@ -78,15 +78,17 @@ export default function AchievementsPage() {
         const performanceScore = (completedCount * 10) - (overdueCount * 5);
         
         const manualAchievements = achievementsInPeriod.filter(a => a.userId === u.id && a.type === 'manual' && a.status === 'approved');
-        const manualPoints = manualAchievements.reduce((sum, a) => sum + a.points, 0);
+        const awardPoints = manualAchievements.reduce((sum, a) => sum + a.points, 0);
 
-        const planningPoints = plannerEventsInPeriod.filter(e => e.creatorId === u.id).length * 2; // 2 points per event planned
+        const planningScore = plannerEventsInPeriod.filter(e => e.creatorId === u.id).length * 2; // 2 points per event planned
 
         return {
           user: u,
-          score: performanceScore + manualPoints + planningPoints,
+          score: performanceScore + awardPoints + planningScore,
           completed: completedCount,
           overdue: overdueCount,
+          planningScore,
+          awardPoints,
         };
       })
       .sort((a, b) => b.score - a.score);
