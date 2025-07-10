@@ -282,19 +282,32 @@ export interface OtherEquipment {
 
 export type VehicleStatus = 'Operational' | 'In Workshop' | 'Unavailable';
 
+export interface Driver {
+    id: string;
+    name: string;
+    licenseNumber: string;
+    epNumber?: string;
+    sdpNumber?: string;
+    epExpiry?: string;
+    medicalExpiry?: string;
+    safetyExpiry?: string;
+    sdpExpiry?: string;
+    woExpiry?: string;
+    labourContractExpiry?: string;
+    wcPolicyExpiry?: string;
+}
+
+
 export interface Vehicle {
   id: string;
   vehicleNumber: string;
   vehicleDetails: string;
   seatingCapacity: number;
   currentManpower?: number;
-  driverName: string;
+  driverId?: string;
   supervisorId: string;
   projectId: string;
   vapNumber: string;
-  driverLicenseNumber: string;
-  driverEpNumber: string;
-  driverSdpNumber: string;
   vapValidity: string;
   sdpValidity: string;
   epValidity: string;

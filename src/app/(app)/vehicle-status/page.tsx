@@ -70,7 +70,7 @@ export default function VehicleStatusPage() {
                 </div>
             </div>
 
-            {expiringVehicles.length > 0 && canManage && (
+            {canManage && expiringVehicles.length > 0 && (
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Expiring Documents</CardTitle>

@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS } from '@/lib/mock-data';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS } from '@/lib/mock-data';
 import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format, differenceInDays } from 'date-fns';
 
 interface AppContextType {
@@ -26,6 +26,7 @@ interface AppContextType {
   mobileSims: MobileSim[];
   otherEquipments: OtherEquipment[];
   vehicles: Vehicle[];
+  drivers: Driver[];
   appName: string;
   appLogo: string | null;
   internalRequests: InternalRequest[];
@@ -108,11 +109,15 @@ interface AppContextType {
   addVehicle: (vehicle: Omit<Vehicle, 'id'>) => void;
   updateVehicle: (vehicle: Vehicle) => void;
   deleteVehicle: (vehicleId: string) => void;
+  addDriver: (driver: Omit<Driver, 'id'>) => void;
+  updateDriver: (driver: Driver) => void;
+  deleteDriver: (driverId: string) => void;
   addManagementRequest: (request: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isViewedByRecipient'>) => void;
   updateManagementRequest: (updatedRequest: ManagementRequest) => void;
   addManagementRequestComment: (requestId: string, commentText: string) => void;
   markManagementRequestAsViewed: (requestId: string) => void;
   expiringVehicleDocsCount: number;
+  expiringDriverDocsCount: number;
   expiringUtMachineCalibrationsCount: number;
   expiringManpowerCount: number;
   pendingTaskApprovalCount: number;
@@ -141,6 +146,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [mobileSims, setMobileSims] = useState<MobileSim[]>(MOBILE_SIMS);
   const [otherEquipments, setOtherEquipments] = useState<OtherEquipment[]>(OTHER_EQUIPMENTS);
   const [vehicles, setVehicles] = useState<Vehicle[]>(VEHICLES);
+  const [drivers, setDrivers] = useState<Driver[]>(DRIVERS);
   const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
   const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>(MANAGEMENT_REQUESTS);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
@@ -1079,6 +1085,28 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       recordAction(`Deleted vehicle: ${vehicleNumber}`);
   }, [user, vehicles, recordAction]);
 
+  const addDriver = useCallback((driverData: Omit<Driver, 'id'>) => {
+    if (!user) return;
+    const newDriver: Driver = { ...driverData, id: `drv-${Date.now()}` };
+    setDrivers(prev => [newDriver, ...prev]);
+    recordAction(`Added new driver: ${newDriver.name}`);
+  }, [user, recordAction]);
+
+  const updateDriver = useCallback((updatedDriver: Driver) => {
+    if (!user) return;
+    setDrivers(prev => prev.map(d => d.id === updatedDriver.id ? updatedDriver : d));
+    recordAction(`Updated driver: ${updatedDriver.name}`);
+  }, [user, recordAction]);
+
+  const deleteDriver = useCallback((driverId: string) => {
+    if (!user) return;
+    const driverName = drivers.find(d => d.id === driverId)?.name;
+    setDrivers(prev => prev.filter(d => d.id !== driverId));
+    // Also unassign from any vehicle
+    setVehicles(prev => prev.map(v => v.driverId === driverId ? { ...v, driverId: undefined } : v));
+    recordAction(`Deleted driver: ${driverName}`);
+  }, [user, drivers, recordAction]);
+
   const addManagementRequest = useCallback((request: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isViewedByRecipient'>) => {
     if (!user) return;
     const newRequest: ManagementRequest = {
@@ -1213,6 +1241,29 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         return isExpiring;
     }).length;
   }, [vehicles, canManageVehicles]);
+  
+   const expiringDriverDocsCount = useMemo(() => {
+    if (!canManageVehicles) return 0;
+    const thirtyDaysFromNow = addDays(new Date(), 30);
+    const expiringDrivers = new Set<string>();
+
+    drivers.forEach(d => {
+        const datesToCheck = [
+            d.epExpiry, d.medicalExpiry, d.safetyExpiry, d.sdpExpiry,
+            d.woExpiry, d.labourContractExpiry, d.wcPolicyExpiry,
+        ];
+        
+        datesToCheck.forEach(dateStr => {
+            if (dateStr) {
+                const date = new Date(dateStr);
+                if (isBefore(date, thirtyDaysFromNow)) {
+                    expiringDrivers.add(d.id);
+                }
+            }
+        });
+    });
+    return expiringDrivers.size;
+  }, [drivers, canManageVehicles]);
 
   const expiringUtMachineCalibrationsCount = useMemo(() => {
     if (!canManageUtMachines) return 0;
@@ -1290,6 +1341,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     mobileSims,
     otherEquipments,
     vehicles,
+    drivers,
     appName,
     appLogo,
     internalRequests,
@@ -1372,11 +1424,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addVehicle,
     updateVehicle,
     deleteVehicle,
+    addDriver,
+    updateDriver,
+    deleteDriver,
     addManagementRequest,
     updateManagementRequest,
     addManagementRequestComment,
     markManagementRequestAsViewed,
     expiringVehicleDocsCount,
+    expiringDriverDocsCount,
     expiringUtMachineCalibrationsCount,
     expiringManpowerCount,
     pendingTaskApprovalCount,

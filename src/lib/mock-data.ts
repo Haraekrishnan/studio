@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver } from './types';
 import { sub, add, format } from 'date-fns';
 import { ALL_PERMISSIONS } from './types';
 
@@ -321,9 +321,14 @@ export const MOBILE_SIMS: MobileSim[] = [];
 export const OTHER_EQUIPMENTS: OtherEquipment[] = [];
 
 
+export const DRIVERS: Driver[] = [
+    { id: 'd-1', name: 'Ali Khan', licenseNumber: 'DL-001', epNumber: 'EP-001', sdpNumber: 'SDP-001', epExpiry: add(new Date(), { months: 4 }).toISOString(), medicalExpiry: add(new Date(), { years: 1 }).toISOString() },
+    { id: 'd-2', name: 'Babu Raj', licenseNumber: 'DL-002', epNumber: 'EP-002', sdpNumber: 'SDP-002', epExpiry: add(new Date(), { days: 20 }).toISOString(), medicalExpiry: add(new Date(), { months: 6 }).toISOString() },
+];
+
 export const VEHICLES: Vehicle[] = [
-    { id: 'vh-1', vehicleNumber: 'DXB 12345', vehicleDetails: 'Toyota HiAce 2022', seatingCapacity: 14, currentManpower: 10, driverName: 'Ali Khan', supervisorId: '3', projectId: 'proj-1', vapNumber: 'VAP-001', driverLicenseNumber: 'DL-001', driverEpNumber: 'EP-001', driverSdpNumber: 'SDP-001', vapValidity: add(new Date(), { months: 6 }).toISOString(), sdpValidity: add(new Date(), { years: 1 }).toISOString(), epValidity: add(new Date(), { years: 2 }).toISOString(), status: 'Operational' },
-    { id: 'vh-2', vehicleNumber: 'SHJ 54321', vehicleDetails: 'Nissan Urvan 2021', seatingCapacity: 12, currentManpower: 13, driverName: 'Babu Raj', supervisorId: '4', projectId: 'proj-2', vapNumber: 'VAP-002', driverLicenseNumber: 'DL-002', driverEpNumber: 'EP-002', driverSdpNumber: 'SDP-002', vapValidity: add(new Date(), { days: 25 }).toISOString(), sdpValidity: add(new Date(), { months: 8 }).toISOString(), epValidity: add(new Date(), { years: 1 }).toISOString(), status: 'In Workshop' },
+    { id: 'vh-1', vehicleNumber: 'DXB 12345', vehicleDetails: 'Toyota HiAce 2022', seatingCapacity: 14, currentManpower: 10, driverId: 'd-1', supervisorId: '3', projectId: 'proj-1', vapNumber: 'VAP-001', vapValidity: add(new Date(), { months: 6 }).toISOString(), sdpValidity: add(new Date(), { years: 1 }).toISOString(), epValidity: add(new Date(), { years: 2 }).toISOString(), status: 'Operational' },
+    { id: 'vh-2', vehicleNumber: 'SHJ 54321', vehicleDetails: 'Nissan Urvan 2021', seatingCapacity: 12, currentManpower: 13, driverId: 'd-2', supervisorId: '4', projectId: 'proj-2', vapNumber: 'VAP-002', vapValidity: add(new Date(), { days: 25 }).toISOString(), sdpValidity: add(new Date(), { months: 8 }).toISOString(), epValidity: add(new Date(), { years: 1 }).toISOString(), status: 'In Workshop' },
 ];
 
 export const TRADES: Trade[] = ['RA Level 1', 'RA Level 2', 'RA Level 3', 'HSE', 'Supervisor', 'Document Controller', 'Cook'];
