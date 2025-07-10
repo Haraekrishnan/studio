@@ -23,6 +23,7 @@ export const ALL_PERMISSIONS = [
   'manage_other_equipment',
   'manage_vehicles',
   'view_all_incidents',
+  'approve_announcements',
 ] as const;
 export type Permission = (typeof ALL_PERMISSIONS)[number];
 
@@ -399,4 +400,5 @@ export interface IncidentReport {
     status: IncidentStatus;
     loopedInUserIds?: string[];
     comments?: Comment[];
+    isPublished?: boolean;
 }

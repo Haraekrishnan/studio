@@ -146,10 +146,10 @@ export default function Header() {
             <NewAnnouncementDialog />
              <Tooltip>
                 <TooltipTrigger asChild>
-                     <Button variant="ghost" size="icon" asChild>
+                     <Button variant="ghost" size="icon" asChild className="relative">
                         <Link href="/incident-reporting">
                             <ShieldAlert />
-                             {incidentNotificationCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center" variant="destructive">{incidentNotificationCount}</Badge>}
+                             {incidentNotificationCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs" variant="destructive">{incidentNotificationCount}</Badge>}
                         </Link>
                     </Button>
                 </TooltipTrigger>
