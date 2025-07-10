@@ -22,6 +22,7 @@ export const ALL_PERMISSIONS = [
   'manage_mobile_sims',
   'manage_other_equipment',
   'manage_vehicles',
+  'view_all_incidents',
 ] as const;
 export type Permission = (typeof ALL_PERMISSIONS)[number];
 
@@ -160,6 +161,18 @@ export interface ActivityLog {
   actions: string[];
 }
 
+export interface Announcement {
+  id: string;
+  creatorId: string;
+  approverId: string;
+  title: string;
+  content: string;
+  date: string; // ISO date string
+  status: 'pending' | 'approved' | 'rejected';
+  isViewed: string[]; // Array of user IDs who have viewed it
+}
+
+
 export type InventoryItemStatus = 'In Use' | 'In Store' | 'Damaged' | 'Expired';
 
 export interface InventoryItem {
@@ -220,14 +233,14 @@ export interface ManpowerLog {
 
 export type EquipmentUsageStatus = 'Active' | 'IDLE' | 'Others';
 
-export interface UsageLog {
+export interface UTMachineUsageLog {
   id: string;
   date: string; // ISO Date
-  cableNumber?: string;
-  probeNumber?: string;
-  areaOfWorking?: string;
-  usedBy?: string; // user name or id
-  jobDetails?: string;
+  cableNumber: string;
+  probeNumber: string;
+  areaOfWorking: string;
+  usedBy: string; // user name or id
+  jobDetails: string;
   remarks: string;
   loggedBy: string; // userId
   status: EquipmentUsageStatus;
@@ -244,7 +257,7 @@ export interface UTMachine {
   probeDetails: string;
   cableDetails: string;
   status: string;
-  usageLog: UsageLog[];
+  usageLog: UTMachineUsageLog[];
 }
 
 export interface DftMachine {
@@ -371,4 +384,19 @@ export interface ManpowerProfile {
     terminationDate?: string;
     resignationDate?: string;
     feedback?: string;
+}
+
+export type IncidentStatus = 'New' | 'Under Investigation' | 'Action Pending' | 'Resolved' | 'Closed';
+
+export interface IncidentReport {
+    id: string;
+    reporterId: string;
+    projectLocation: string;
+    unitArea: string;
+    incidentTime: string; // ISO date string
+    reportTime: string; // ISO date string
+    incidentDetails: string;
+    status: IncidentStatus;
+    loopedInUserIds?: string[];
+    comments?: Comment[];
 }

@@ -1,4 +1,4 @@
-import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver } from './types';
+import type { User, Task, PlannerEvent, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, ManpowerLog, UTMachine, Vehicle, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, Announcement } from './types';
 import { sub, add, format } from 'date-fns';
 import { ALL_PERMISSIONS } from './types';
 
@@ -458,3 +458,5 @@ export const ACTIVITY_LOGS: ActivityLog[] = [
     actions: ['Conducted performance review prep', 'Planned team offsite event details'],
   },
 ];
+
+export const ANNOUNCEMENTS: Announcement[] = [];

@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, LeaveRecord } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS } from '@/lib/mock-data';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, LeaveRecord, Announcement } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS, ANNOUNCEMENTS } from '@/lib/mock-data';
 import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format, differenceInDays, subDays } from 'date-fns';
 
 interface AppContextType {
@@ -38,6 +38,13 @@ interface AppContextType {
   myFulfilledUTRequests: CertificateRequest[];
   workingManpowerCount: number;
   onLeaveManpowerCount: number;
+  announcements: Announcement[];
+  approvedAnnouncements: Announcement[];
+  pendingAnnouncementCount: number;
+  unreadAnnouncementCount: number;
+  newIncidentCount: number;
+  myUnreadManagementRequestCount: number;
+  unreadManagementRequestCountForMe: number;
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateTask: (updatedTask: Task) => void;
@@ -118,6 +125,7 @@ interface AppContextType {
   updateManagementRequest: (updatedRequest: ManagementRequest) => void;
   addManagementRequestComment: (requestId: string, commentText: string) => void;
   markManagementRequestAsViewed: (requestId: string) => void;
+  addAnnouncement: (announcement: Pick<Announcement, 'title' | 'content'>) => void;
   expiringVehicleDocsCount: number;
   expiringDriverDocsCount: number;
   expiringUtMachineCalibrationsCount: number;
@@ -151,6 +159,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [drivers, setDrivers] = useState<Driver[]>(DRIVERS);
   const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
   const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>(MANAGEMENT_REQUESTS);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(ANNOUNCEMENTS);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const [appName, setAppName] = useState('Aries Marine - Task Management System');
   const [appLogo, setAppLogo] = useState<string | null>(null);
@@ -1229,6 +1238,26 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }));
   }, [user]);
 
+  const addAnnouncement = useCallback((announcement: Pick<Announcement, 'title' | 'content'>) => {
+    if (!user) return;
+    const supervisor = users.find(u => u.id === user.supervisorId);
+    const newAnnouncement: Announcement = {
+      ...announcement,
+      id: `ann-${Date.now()}`,
+      creatorId: user.id,
+      date: new Date().toISOString(),
+      status: 'pending',
+      approverId: supervisor?.id || '1', // Default to admin if no supervisor
+      isViewed: [],
+    };
+    setAnnouncements(prev => [newAnnouncement, ...prev]);
+    recordAction(`Submitted announcement: "${announcement.title}"`);
+  }, [user, users, recordAction]);
+  
+  const approvedAnnouncements = useMemo(() => {
+    return announcements.filter(a => a.status === 'approved');
+  }, [announcements]);
+
   const pendingStoreRequestCount = useMemo(() => {
     if (!user) return 0;
     const isStorePersonnel = ['Store in Charge', 'Assistant Store Incharge'].includes(user.role);
@@ -1373,6 +1402,28 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const workingManpowerCount = useMemo(() => manpowerProfiles.filter(p => p.status === 'Working').length, [manpowerProfiles]);
   const onLeaveManpowerCount = useMemo(() => manpowerProfiles.filter(p => p.status === 'On Leave').length, [manpowerProfiles]);
 
+  const myUnreadManagementRequestCount = useMemo(() => {
+    if (!user) return 0;
+    return managementRequests.filter(r => r.requesterId === user.id && !r.isViewedByRequester).length;
+  }, [managementRequests, user]);
+  
+  const unreadManagementRequestCountForMe = useMemo(() => {
+    if (!user) return 0;
+    return managementRequests.filter(r => r.recipientId === user.id && !r.isViewedByRecipient).length;
+  }, [managementRequests, user]);
+  
+  const pendingAnnouncementCount = useMemo(() => {
+      if (!user) return 0;
+      return announcements.filter(a => a.approverId === user.id && a.status === 'pending').length;
+  }, [announcements, user]);
+
+  const unreadAnnouncementCount = useMemo(() => {
+      if (!user) return 0;
+      return approvedAnnouncements.filter(a => !a.isViewed.includes(user.id)).length;
+  }, [approvedAnnouncements, user]);
+  
+  const newIncidentCount = useMemo(() => 0, []);
+
   const value = {
     user,
     users,
@@ -1398,6 +1449,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     appLogo,
     internalRequests,
     managementRequests,
+    announcements,
+    approvedAnnouncements,
+    pendingAnnouncementCount,
+    unreadAnnouncementCount,
+    newIncidentCount,
+    myUnreadManagementRequestCount,
+    unreadManagementRequestCountForMe,
     pendingStoreRequestCount,
     myRequestUpdateCount,
     pendingCertificateRequestCount,
@@ -1485,6 +1543,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     updateManagementRequest,
     addManagementRequestComment,
     markManagementRequestAsViewed,
+    addAnnouncement,
     expiringVehicleDocsCount,
     expiringDriverDocsCount,
     expiringUtMachineCalibrationsCount,
