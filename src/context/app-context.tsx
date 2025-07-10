@@ -301,14 +301,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       date: new Date().toISOString(),
     };
     setTasks(prevTasks => {
-        const updatedTasks = prevTasks.map(t => {
+        return prevTasks.map(t => {
             if (t.id === taskId) {
                 const updatedComments = t.comments ? [newComment, ...t.comments] : [newComment];
                 return { ...t, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
             }
             return t;
         });
-        return updatedTasks;
     });
 
     const task = tasks.find(t => t.id === taskId);
@@ -323,11 +322,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       return false; // Prevents completion without attachment
     }
     
-    const formattedComment = `Status change requested to "${newStatus}": ${commentText}`;
-    const newComment: Comment = { userId: user.id, text: formattedComment, date: new Date().toISOString() };
-
     setTasks(prevTasks => prevTasks.map(t => {
       if (t.id === taskId) {
+        const formattedComment = `Status change requested to "${newStatus}": ${commentText}`;
+        const newComment: Comment = { userId: user.id, text: formattedComment, date: new Date().toISOString() };
         return {
           ...t,
           comments: [newComment, ...(t.comments || [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
@@ -352,12 +350,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     
     const newAssignee = users.find(u => u.id === newAssigneeId);
     if (!newAssignee) return;
-
-    const formattedComment = `Reassignment requested to ${newAssignee.name}. Reason: ${commentText}`;
-    const newComment: Comment = { userId: user.id, text: formattedComment, date: new Date().toISOString() };
     
     setTasks(prevTasks => prevTasks.map(t => {
       if (t.id === taskId) {
+        const formattedComment = `Reassignment requested to ${newAssignee.name}. Reason: ${commentText}`;
+        const newComment: Comment = { userId: user.id, text: formattedComment, date: new Date().toISOString() };
         return {
           ...t,
           comments: [newComment, ...(t.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
@@ -378,7 +375,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
     setTasks(prevTasks => prevTasks.map(t => {
       if (t.id === taskId) {
-        const newComment: Comment = { userId: user.id, text: `Request Approved: ${commentText}`, date: new Date().toISOString() };
+        const approvalComment = `Request Approved: ${commentText}`;
+        const newComment: Comment = { userId: user.id, text: approvalComment, date: new Date().toISOString() };
         const updatedComments = [newComment, ...(t.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         if (t.pendingAssigneeId) { // It's a reassignment request
@@ -391,6 +389,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
             status: t.previousStatus || 'To Do',
             pendingAssigneeId: undefined,
             previousStatus: undefined,
+            pendingStatus: undefined, // Clear pending status
             approvalState: 'approved',
             isViewedByAssignee: false,
           };
@@ -414,13 +413,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   
   const returnTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     if (!user) return;
-
+    
     setTasks(prevTasks => prevTasks.map(t => {
       if (t.id === taskId) {
-        const newComment: Comment = { userId: user.id, text: `Request Returned: ${commentText}`, date: new Date().toISOString() };
+        const returnComment = `Request Returned: ${commentText}`;
+        const newComment: Comment = { userId: user.id, text: returnComment, date: new Date().toISOString() };
         const updatedComments = [newComment, ...(t.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        let updatedTask: Partial<Task>;
 
         if (t.pendingAssigneeId) { // It's a reassignment request being returned
             recordAction(`Returned (rejected) reassignment of task "${t.title}"`);
