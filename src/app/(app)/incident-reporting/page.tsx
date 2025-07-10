@@ -11,24 +11,28 @@ export default function IncidentReportingPage() {
     const { user, roles, incidents } = useAppContext();
     const [isNewReportOpen, setIsNewReportOpen] = useState(false);
     
-    const canViewAllIncidents = useMemo(() => {
+    const canViewAllPublished = useMemo(() => {
         if (!user) return false;
         const userRole = roles.find(r => r.name === user.role);
-        return userRole?.permissions.includes('view_all_incidents');
+        // Let's assume for now all users can see published incidents.
+        // This could be tied to a permission later if needed.
+        return true; 
     }, [user, roles]);
     
     const visibleIncidents = useMemo(() => {
         if (!user) return [];
-        if (canViewAllIncidents) {
-            return incidents;
-        }
+        
         return incidents.filter(i => {
+            // If it's published, everyone can see it.
+            if (i.isPublished) return true;
+            
+            // If not published, only reporter and looped in users can see it.
             const isReporter = i.reporterId === user.id;
             const isLoopedIn = (i.loopedInUserIds || []).includes(user.id);
-            // Before publishing, only involved parties can see it. After publishing, all can see.
-            return i.isPublished || isReporter || isLoopedIn;
+            
+            return isReporter || isLoopedIn;
         });
-    }, [user, incidents, canViewAllIncidents]);
+    }, [user, incidents]);
 
     
     return (

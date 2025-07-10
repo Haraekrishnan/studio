@@ -14,8 +14,10 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const reportSchema = z.object({
+  projectId: z.string().min(1, 'Project/Location is required'),
   unitArea: z.string().min(1, 'Unit/Area is required'),
   incidentDetails: z.string().min(1, 'Incident details are required'),
   incidentTime: z.date({ required_error: "Time of incident is required" }),
@@ -32,11 +34,12 @@ export default function NewIncidentReportDialog({ isOpen, setIsOpen }: NewIncide
   const { user, projects, addIncidentReport } = useAppContext();
   const { toast } = useToast();
 
-  const userProject = projects.find(p => p.id === user?.projectId)?.name || 'N/A';
-
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
-    defaultValues: { incidentTime: new Date() },
+    defaultValues: { 
+      incidentTime: new Date(),
+      projectId: user?.projectId || '',
+    },
   });
 
   const onSubmit = (data: ReportFormValues) => {
@@ -53,7 +56,7 @@ export default function NewIncidentReportDialog({ isOpen, setIsOpen }: NewIncide
   };
   
   const handleOpenChange = (open: boolean) => {
-    if (!open) form.reset({ incidentTime: new Date() });
+    if (!open) form.reset({ incidentTime: new Date(), projectId: user?.projectId || '' });
     setIsOpen(open);
   }
 
@@ -66,14 +69,26 @@ export default function NewIncidentReportDialog({ isOpen, setIsOpen }: NewIncide
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-                <div><Label>Reporter</Label><Input value={user?.name} disabled /></div>
-                <div><Label>Project / Location</Label><Input value={userProject} disabled /></div>
-            </div>
-
-            <div>
-                <Label htmlFor="unitArea">Unit / Area of Incident</Label>
-                <Input id="unitArea" {...form.register('unitArea')} placeholder="e.g., Workshop B, Site 5" />
-                {form.formState.errors.unitArea && <p className="text-xs text-destructive">{form.formState.errors.unitArea.message}</p>}
+                <div>
+                  <Label>Project / Location</Label>
+                   <Controller
+                    control={form.control} name="projectId"
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger><SelectValue placeholder="Select location..."/></SelectTrigger>
+                          <SelectContent>
+                              {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                          </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {form.formState.errors.projectId && <p className="text-xs text-destructive">{form.formState.errors.projectId.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="unitArea">Unit / Area of Incident</Label>
+                  <Input id="unitArea" {...form.register('unitArea')} placeholder="e.g., Workshop B" />
+                  {form.formState.errors.unitArea && <p className="text-xs text-destructive">{form.formState.errors.unitArea.message}</p>}
+                </div>
             </div>
 
              <div>

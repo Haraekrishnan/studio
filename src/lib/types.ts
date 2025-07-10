@@ -271,7 +271,7 @@ export interface DftMachine {
   probeDetails: string;
   cableDetails: string;
   status: string;
-  usageLog: UsageLog[];
+  usageLog: UTMachineUsageLog[];
 }
 
 export interface MobileSim {
@@ -392,7 +392,7 @@ export type IncidentStatus = 'New' | 'Under Investigation' | 'Action Pending' | 
 export interface IncidentReport {
     id: string;
     reporterId: string;
-    projectLocation: string;
+    projectId: string;
     unitArea: string;
     incidentTime: string; // ISO date string
     reportTime: string; // ISO date string

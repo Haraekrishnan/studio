@@ -20,6 +20,7 @@ export default function AnnouncementsPage() {
 
     const pendingAnnouncements = useMemo(() => {
         if (!canApprove || !user) return [];
+        // Show announcements where the current user is the designated approver.
         return announcements.filter(a => a.status === 'pending' && a.approverId === user.id);
     }, [announcements, canApprove, user]);
     
@@ -52,7 +53,7 @@ export default function AnnouncementsPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Announcement Approvals</h1>
-                    <p className="text-muted-foreground">Review and approve announcements submitted by your team.</p>
+                    <p className="text-muted-foreground">Review and approve announcements submitted for your review.</p>
                 </div>
             </div>
 

@@ -36,13 +36,14 @@ interface EditIncidentReportDialogProps {
 }
 
 export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }: EditIncidentReportDialogProps) {
-  const { user, users, updateIncident, addIncidentComment, loopInUserToIncident, publishIncident } = useAppContext();
+  const { user, users, projects, updateIncident, addIncidentComment, loopInUserToIncident, publishIncident } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
   
   const reporter = useMemo(() => users.find(u => u.id === incident.reporterId), [users, incident.reporterId]);
   const canManage = useMemo(() => user?.role === 'Admin' || user?.role === 'HSE' || user?.role === 'Manager', [user]);
-  
+  const project = useMemo(() => projects.find(p => p.id === incident.projectId), [projects, incident.projectId]);
+
   const participants = useMemo(() => {
     const pIds = new Set([incident.reporterId, ...(incident.loopedInUserIds || [])]);
     return users.filter(u => pIds.has(u.id));
@@ -82,7 +83,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
         { A: 'Incident ID', B: incident.id },
         { A: 'Status', B: incident.status },
         { A: 'Reported By', B: reporter?.name },
-        { A: 'Project', B: incident.projectLocation },
+        { A: 'Project', B: project?.name },
         { A: 'Area', B: incident.unitArea },
         { A: 'Incident Time', B: format(new Date(incident.incidentTime), 'yyyy-MM-dd HH:mm') },
         { A: 'Reported At', B: format(new Date(incident.reportTime), 'yyyy-MM-dd HH:mm') },
@@ -130,7 +131,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
           <div className="space-y-4 pr-4 border-r">
             <h3 className="font-semibold">Incident Details</h3>
             <div className="text-sm space-y-2">
-                <p><strong>Location:</strong> {incident.projectLocation} - {incident.unitArea}</p>
+                <p><strong>Location:</strong> {project?.name} - {incident.unitArea}</p>
                 <p><strong>Time of Incident:</strong> {format(new Date(incident.incidentTime), 'PPP p')}</p>
             </div>
             <p className="text-sm p-4 bg-muted rounded-md min-h-[100px] whitespace-pre-wrap">{incident.incidentDetails}</p>
