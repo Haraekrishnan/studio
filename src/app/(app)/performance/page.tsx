@@ -47,7 +47,7 @@ export default function PerformancePage() {
             const inProgress = userTasks.filter(t => t.status === 'In Progress' || t.status === 'Pending Approval').length;
             const todo = userTasks.filter(t => t.status === 'To Do').length;
             const overdue = userTasks.filter(t => t.status === 'Overdue').length;
-            const planningScore = userPlannerEvents.length * 2; // 2 points per event planned
+            const planningScore = user.planningScore || 0;
 
             return { 
                 name: user.name, 
