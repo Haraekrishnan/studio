@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Send, ThumbsUp, ThumbsDown, UserPlus, FileDown } from 'lucide-react';
+import { Send, ThumbsUp, ThumbsDown, UserPlus, FileDown, Layers } from 'lucide-react';
 import type { IncidentReport, IncidentStatus, Comment } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -38,12 +38,12 @@ interface EditIncidentReportDialogProps {
 }
 
 export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }: EditIncidentReportDialogProps) {
-  const { user, users, updateIncident, addIncidentComment, loopInUserToIncident } = useAppContext();
+  const { user, users, updateIncident, addIncidentComment, loopInUserToIncident, publishIncident } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
   
   const reporter = useMemo(() => users.find(u => u.id === incident.reporterId), [users, incident.reporterId]);
-  const canManage = useMemo(() => user?.role === 'Admin' || user?.role === 'HSE', [user]);
+  const canManage = useMemo(() => user?.role === 'Admin' || user?.role === 'HSE' || user?.role === 'Manager', [user]);
   
   const participants = useMemo(() => {
     const pIds = new Set([incident.reporterId, ...incident.loopedInUserIds || []]);
@@ -101,6 +101,11 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Incident Report");
     XLSX.writeFile(workbook, `Incident_Report_${incident.id}.xlsx`);
+  };
+  
+  const handlePublish = () => {
+    publishIncident(incident.id);
+    toast({ title: "Incident Published", description: "This incident is now visible to all users."});
   };
 
   return (
@@ -195,7 +200,12 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
         </div>
         <DialogFooter className="justify-between">
           <Button variant="outline" onClick={() => setIsOpen(false)}>Close</Button>
-          {canManage && <Button variant="secondary" onClick={handleGenerateReport}><FileDown className="mr-2 h-4 w-4" />Generate Report</Button>}
+          <div className="flex gap-2">
+            {canManage && !incident.isPublished && (
+              <Button variant="secondary" onClick={handlePublish}><Layers className="mr-2 h-4 w-4"/> Publish Incident</Button>
+            )}
+            {canManage && <Button variant="secondary" onClick={handleGenerateReport}><FileDown className="mr-2 h-4 w-4" />Generate Report</Button>}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

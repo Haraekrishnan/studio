@@ -400,5 +400,5 @@ export interface IncidentReport {
     status: IncidentStatus;
     loopedInUserIds?: string[];
     comments?: Comment[];
-    isPublished?: boolean;
+    isPublished: boolean;
 }

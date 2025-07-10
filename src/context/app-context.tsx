@@ -130,10 +130,11 @@ interface AppContextType {
   approveAnnouncement: (announcementId: string) => void;
   rejectAnnouncement: (announcementId: string) => void;
   dismissAnnouncement: (announcementId: string) => void;
-  addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds'>) => void;
+  addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds' | 'isPublished'>) => void;
   updateIncident: (incident: IncidentReport) => void;
   addIncidentComment: (incidentId: string, commentText: string) => void;
   loopInUserToIncident: (incidentId: string, userId: string) => void;
+  publishIncident: (incidentId: string) => void;
   expiringVehicleDocsCount: number;
   expiringDriverDocsCount: number;
   expiringUtMachineCalibrationsCount: number;
@@ -1279,10 +1280,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     ));
   }, [user]);
   
-  const addIncidentReport = useCallback((report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds'>) => {
+  const addIncidentReport = useCallback((report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds' | 'isPublished'>) => {
     if (!user) return;
     const userProject = projects.find(p => p.id === user.projectId)?.name || 'Unknown Project';
     const supervisor = users.find(u => u.id === user.supervisorId);
+    const hseUsers = users.filter(u => u.role === 'HSE').map(u => u.id);
+    
+    const initialLoopedIn = new Set<string>();
+    if(supervisor) initialLoopedIn.add(supervisor.id);
+    hseUsers.forEach(id => initialLoopedIn.add(id));
     
     const newIncident: IncidentReport = {
         ...report,
@@ -1296,7 +1302,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
             text: `Incident reported by ${user.name}`,
             date: new Date().toISOString(),
         }],
-        loopedInUserIds: supervisor ? [supervisor.id] : [],
+        loopedInUserIds: Array.from(initialLoopedIn),
+        isPublished: false,
     };
     setIncidents(prev => [newIncident, ...prev]);
     recordAction(`Reported new incident`);
@@ -1338,6 +1345,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         return i;
     }));
   }, [user, users]);
+  
+  const publishIncident = useCallback((incidentId: string) => {
+    setIncidents(prev => prev.map(i => i.id === incidentId ? { ...i, isPublished: true } : i));
+    recordAction(`Published incident ID: ${incidentId}`);
+  }, [recordAction]);
   
   const approvedAnnouncements = useMemo(() => {
     return announcements.filter(a => a.status === 'approved');
@@ -1508,15 +1520,16 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [approvedAnnouncements, user]);
   
   const newIncidentCount = useMemo(() => {
-    if (!user || !user.role) return 0;
+    if (!user) return 0;
     const canViewAll = user.role === 'Admin' || user.role === 'Manager' || user.role === 'HSE';
+    
     if (canViewAll) {
       return incidents.filter(i => i.status === 'New').length;
     }
-    // Supervisors see incidents reported by their team
-    const myTeamIds = users.filter(u => u.supervisorId === user.id).map(u => u.id);
-    return incidents.filter(i => i.status === 'New' && (myTeamIds.includes(i.reporterId) || (i.loopedInUserIds || []).includes(user.id))).length;
-  }, [incidents, user, users]);
+    
+    // For others, only count incidents they are part of
+    return incidents.filter(i => i.status === 'New' && (i.reporterId === user.id || (i.loopedInUserIds || []).includes(user.id))).length;
+  }, [incidents, user]);
 
   const value = {
     user,
@@ -1646,6 +1659,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     updateIncident,
     addIncidentComment,
     loopInUserToIncident,
+    publishIncident,
     expiringVehicleDocsCount,
     expiringDriverDocsCount,
     expiringUtMachineCalibrationsCount,
