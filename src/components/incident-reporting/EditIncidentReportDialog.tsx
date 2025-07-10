@@ -41,7 +41,9 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
   const [newComment, setNewComment] = useState('');
   
   const reporter = useMemo(() => users.find(u => u.id === incident.reporterId), [users, incident.reporterId]);
-  const canManage = useMemo(() => user?.role === 'Admin' || user?.role === 'HSE' || user?.role === 'Manager', [user]);
+  const canManage = useMemo(() => ['Admin', 'HSE', 'Manager', 'Supervisor'].includes(user?.role || ''), [user]);
+  const canChangeStatusAndPublish = useMemo(() => ['Admin', 'HSE', 'Manager'].includes(user?.role || ''), [user]);
+
   const project = useMemo(() => projects.find(p => p.id === incident.projectId), [projects, incident.projectId]);
 
   const participants = useMemo(() => {
@@ -64,7 +66,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
   };
 
   const handleStatusChange = (newStatus: IncidentStatus) => {
-    if (!canManage) return;
+    if (!canChangeStatusAndPublish) return;
     const comment = `Status changed to: ${newStatus}`;
     updateIncident({ ...incident, status: newStatus });
     addIncidentComment(incident.id, comment);
@@ -135,7 +137,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
                 <p><strong>Time of Incident:</strong> {format(new Date(incident.incidentTime), 'PPP p')}</p>
             </div>
             <p className="text-sm p-4 bg-muted rounded-md min-h-[100px] whitespace-pre-wrap">{incident.incidentDetails}</p>
-            {canManage && (
+            {canChangeStatusAndPublish && (
                 <div className="space-y-2">
                     <Label>Change Status</Label>
                     <div className="flex flex-wrap gap-2">
@@ -203,10 +205,10 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
         <DialogFooter className="justify-between">
           <Button variant="outline" onClick={() => setIsOpen(false)}>Close</Button>
           <div className="flex gap-2">
-            {canManage && !incident.isPublished && (
+            {canChangeStatusAndPublish && !incident.isPublished && (
               <Button variant="secondary" onClick={handlePublish}><Layers className="mr-2 h-4 w-4"/> Publish Incident</Button>
             )}
-            {canManage && <Button variant="secondary" onClick={handleGenerateReport}><FileDown className="mr-2 h-4 w-4" />Generate Report</Button>}
+            {canChangeStatusAndPublish && <Button variant="secondary" onClick={handleGenerateReport}><FileDown className="mr-2 h-4 w-4" />Generate Report</Button>}
           </div>
         </DialogFooter>
       </DialogContent>
