@@ -181,11 +181,10 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         if (!newAssignee) return;
         
         const canAutoApproveReassignment = user.role === 'Admin' || user.role === 'Manager';
-        const reassignmentComment = `Reassignment requested to ${newAssignee.name}. Reason: ${newComment}`;
-        
-        addComment(task.id, reassignmentComment);
+        const reassignmentCommentText = `Reassignment requested to ${newAssignee.name}. Reason: ${newComment}`;
         
         if (canAutoApproveReassignment) {
+            addComment(task.id, reassignmentCommentText);
             updateTask({ ...taskToDisplay, ...data, dueDate: data.dueDate.toISOString() });
             toast({ title: 'Task Reassigned', description: `Task has been assigned to ${newAssignee.name}` });
         } else {
@@ -195,6 +194,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                 previousStatus: taskToDisplay.status,
                 approvalState: 'pending',
             };
+            addComment(task.id, reassignmentCommentText);
             updateTask({ ...taskToDisplay, ...reassignmentRequest });
             toast({ title: 'Reassignment Requested', description: 'Your request has been sent for approval.' });
         }

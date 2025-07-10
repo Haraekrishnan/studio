@@ -322,9 +322,16 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       return false; // Prevents completion without attachment
     }
 
-    addComment(taskId, `Status change requested to "${newStatus}": ${commentText}`);
+    const newComment: Comment = {
+      userId: user.id,
+      text: `Status change requested to "${newStatus}": ${commentText}`,
+      date: new Date().toISOString()
+    };
+    const updatedComments = task.comments ? [newComment, ...task.comments] : [newComment];
+
     const updatedTask = {
       ...task,
+      comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
       previousStatus: task.status,
       pendingStatus: newStatus,
       approvalState: 'pending' as ApprovalState,
@@ -334,24 +341,18 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     updateTask(updatedTask);
     recordAction(`Requested status change to "${newStatus}" for task: "${task.title}"`);
     return true;
-  }, [tasks, user, addComment, updateTask, recordAction]);
+  }, [tasks, user, updateTask, recordAction]);
   
   const approveTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task || !user) return;
 
-    let finalTask = task;
-    // Add comment first so it's part of the state update
-    if(commentText) {
-        if (!user) return;
-        const newComment: Comment = {
-          userId: user.id,
-          text: `Request Approved: ${commentText}`,
-          date: new Date().toISOString(),
-        };
-        const updatedComments = finalTask.comments ? [...finalTask.comments, newComment] : [newComment];
-        finalTask = {...finalTask, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())};
-    }
+    const newComment: Comment = {
+      userId: user.id,
+      text: `Request Approved: ${commentText}`,
+      date: new Date().toISOString(),
+    };
+    const updatedComments = task.comments ? [newComment, ...task.comments] : [newComment];
     
     let updatedTask: Partial<Task>;
 
@@ -380,15 +381,20 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         return; // Nothing to approve
     }
     
-    updateTask({ ...finalTask, ...updatedTask });
+    updateTask({ ...task, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), ...updatedTask });
   }, [tasks, users, user, updateTask, recordAction]);
   
   const returnTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task || !user) return;
 
-    addComment(taskId, `Request Returned: ${commentText}`);
-    
+    const newComment: Comment = {
+      userId: user.id,
+      text: `Request Returned: ${commentText}`,
+      date: new Date().toISOString(),
+    };
+    const updatedComments = task.comments ? [newComment, ...task.comments] : [newComment];
+
     let updatedTask: Partial<Task>;
 
     if (task.pendingAssigneeId) { // It's a reassignment request being returned
@@ -411,8 +417,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         return;
     }
 
-    updateTask({ ...task, ...updatedTask });
-  }, [tasks, addComment, updateTask, recordAction]);
+    updateTask({ ...task, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), ...updatedTask });
+  }, [tasks, user, updateTask, recordAction]);
 
   const deleteTask = useCallback((taskId: string) => {
     const taskTitle = tasks.find(t => t.id === taskId)?.title;
