@@ -130,7 +130,7 @@ interface AppContextType {
   approveAnnouncement: (announcementId: string) => void;
   rejectAnnouncement: (announcementId: string) => void;
   dismissAnnouncement: (announcementId: string) => void;
-  addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds' | 'isPublished'>) => void;
+  addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds' | 'isPublished' | 'projectLocation'>) => void;
   updateIncident: (incident: IncidentReport) => void;
   addIncidentComment: (incidentId: string, commentText: string) => void;
   loopInUserToIncident: (incidentId: string, userId: string) => void;
@@ -1280,9 +1280,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     ));
   }, [user]);
   
-  const addIncidentReport = useCallback((report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds' | 'isPublished'>) => {
+  const addIncidentReport = useCallback((report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds' | 'isPublished' | 'projectLocation'>) => {
     if (!user) return;
-    const userProject = projects.find(p => p.id === user.projectId)?.name || 'Unknown Project';
+    const project = projects.find(p => p.id === report.projectId);
     const supervisor = users.find(u => u.id === user.supervisorId);
     const hseUsers = users.filter(u => u.role === 'HSE').map(u => u.id);
     
@@ -1295,7 +1295,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         id: `inc-${Date.now()}`,
         reporterId: user.id,
         reportTime: new Date().toISOString(),
-        projectLocation: userProject,
+        projectLocation: project?.name || 'Unknown Project',
         status: 'New',
         comments: [{
             userId: user.id,

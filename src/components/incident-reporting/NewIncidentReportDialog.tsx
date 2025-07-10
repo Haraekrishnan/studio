@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '../ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, set } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -20,7 +20,8 @@ const reportSchema = z.object({
   projectId: z.string().min(1, 'Project/Location is required'),
   unitArea: z.string().min(1, 'Unit/Area is required'),
   incidentDetails: z.string().min(1, 'Incident details are required'),
-  incidentTime: z.date({ required_error: "Date and time of incident is required" }),
+  incidentDate: z.date({ required_error: "Date of incident is required" }),
+  incidentTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Please enter a valid time in HH:mm format (e.g., 14:30)"),
 });
 
 type ReportFormValues = z.infer<typeof reportSchema>;
@@ -38,14 +39,21 @@ export default function NewIncidentReportDialog({ isOpen, setIsOpen }: NewIncide
     resolver: zodResolver(reportSchema),
     defaultValues: { 
       projectId: user?.projectId || '',
+      incidentTime: format(new Date(), 'HH:mm'),
     },
   });
 
   const onSubmit = (data: ReportFormValues) => {
+    const [hours, minutes] = data.incidentTime.split(':').map(Number);
+    const incidentDateTime = set(data.incidentDate, { hours, minutes });
+
     addIncidentReport({
-        ...data,
-        incidentTime: data.incidentTime.toISOString(),
+      projectId: data.projectId,
+      unitArea: data.unitArea,
+      incidentDetails: data.incidentDetails,
+      incidentTime: incidentDateTime.toISOString(),
     });
+
     toast({
       title: 'Incident Reported',
       description: 'Your report has been submitted to your supervisor and HSE.',
@@ -55,7 +63,7 @@ export default function NewIncidentReportDialog({ isOpen, setIsOpen }: NewIncide
   };
   
   const handleOpenChange = (open: boolean) => {
-    if (!open) form.reset({ projectId: user?.projectId || '' });
+    if (!open) form.reset({ projectId: user?.projectId || '', incidentTime: format(new Date(), 'HH:mm') });
     setIsOpen(open);
   }
 
@@ -90,24 +98,31 @@ export default function NewIncidentReportDialog({ isOpen, setIsOpen }: NewIncide
                 </div>
             </div>
 
-             <div>
-                <Label>Date & Time of Incident</Label>
+            <div className="grid grid-cols-2 gap-4 items-start">
+               <div>
+                <Label>Date of Incident</Label>
                 <Controller
-                    control={form.control} name="incidentTime"
+                    control={form.control} name="incidentDate"
                     render={({ field }) => (
                     <Popover>
                         <PopoverTrigger asChild>
                         <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(field.value, 'PPP p') : <span>Pick a date and time</span>}
+                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                         </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
                     </Popover>
                     )}
                 />
-                 {form.formState.errors.incidentTime && <p className="text-xs text-destructive">{form.formState.errors.incidentTime.message}</p>}
+                 {form.formState.errors.incidentDate && <p className="text-xs text-destructive">{form.formState.errors.incidentDate.message}</p>}
               </div>
+               <div>
+                  <Label htmlFor="incidentTime">Time of Incident (24h)</Label>
+                  <Input id="incidentTime" {...form.register('incidentTime')} placeholder="HH:mm" />
+                  {form.formState.errors.incidentTime && <p className="text-xs text-destructive">{form.formState.errors.incidentTime.message}</p>}
+                </div>
+            </div>
 
             <div>
                 <Label htmlFor="incidentDetails">Incident Details</Label>
