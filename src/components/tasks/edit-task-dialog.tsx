@@ -13,7 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, startOfDay } from 'date-fns';
 import { CalendarIcon, Send, ThumbsUp, ThumbsDown, Paperclip, Upload, X, BellRing, CheckCircle, Clock, UserRoundCog } from 'lucide-react';
 import type { Task, Priority, TaskStatus, Role, Comment, ApprovalState } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
@@ -71,7 +71,8 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
   const isCompleted = taskToDisplay.status === 'Completed';
   const isAdmin = user?.role === 'Admin';
   const isCreator = user?.id === taskToDisplay.creatorId;
-  const canEditFields = !isCompleted || isAdmin;
+  
+  const canEditCoreFields = isCreator || isAdmin;
   const canEditDueDate = isCreator || isAdmin;
 
   useEffect(() => {
@@ -263,12 +264,12 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div>
                   <Label>Title</Label>
-                  <Input {...form.register('title')} placeholder="Task title" disabled={!canEditFields} />
+                  <Input {...form.register('title')} placeholder="Task title" disabled={!canEditCoreFields} />
                 </div>
                 
                 <div>
                   <Label>Description</Label>
-                  <Textarea {...form.register('description')} placeholder="Task description" rows={3} disabled={!canEditFields}/>
+                  <Textarea {...form.register('description')} placeholder="Task description" rows={3} disabled={!canEditCoreFields}/>
                 </div>
 
                 <div>
@@ -309,7 +310,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                     <Label>Priority</Label>
                     <Controller control={form.control} name="priority"
                         render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!canEditFields}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!canEditCoreFields}>
                             <SelectTrigger><SelectValue placeholder="Set priority" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Low">Low</SelectItem>
@@ -332,7 +333,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                     </div>
                 )}
                 
-                {canEditFields && <Button type="submit" className="w-full">Save Changes</Button>}
+                {canEditCoreFields && <Button type="submit" className="w-full">Save Changes</Button>}
               </form>
             </div>
 
