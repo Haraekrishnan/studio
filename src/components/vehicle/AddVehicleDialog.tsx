@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 import { ScrollArea } from '../ui/scroll-area';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const vehicleSchema = z.object({
@@ -51,15 +51,20 @@ export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialog
     defaultValues: { status: 'Operational', currentManpower: 0 },
   });
 
-  const onSubmit = (data: VehicleFormValues) => {
-    if (data.currentManpower && data.currentManpower > data.seatingCapacity) {
-        toast({
-            variant: 'destructive',
-            title: 'Warning: Capacity Exceeded',
-            description: `Manpower usage (${data.currentManpower}) exceeds seating capacity (${data.seatingCapacity}).`,
-        });
-    }
+  const selectedDriverId = form.watch('driverId');
 
+  useEffect(() => {
+    if (selectedDriverId) {
+        const driver = drivers.find(d => d.id === selectedDriverId);
+        if (driver) {
+            form.setValue('epValidity', driver.epExpiry ? new Date(driver.epExpiry) : undefined);
+            form.setValue('sdpValidity', driver.sdpExpiry ? new Date(driver.sdpExpiry) : undefined);
+        }
+    }
+  }, [selectedDriverId, drivers, form]);
+
+
+  const onSubmit = (data: VehicleFormValues) => {
     addVehicle({
       ...data,
       vapValidity: data.vapValidity?.toISOString(),

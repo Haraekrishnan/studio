@@ -52,6 +52,8 @@ export default function EditVehicleDialog({ isOpen, setIsOpen, vehicle }: EditVe
     resolver: zodResolver(vehicleSchema),
   });
 
+  const selectedDriverId = form.watch('driverId');
+
   useEffect(() => {
     if (vehicle && isOpen) {
         form.reset({
@@ -64,15 +66,18 @@ export default function EditVehicleDialog({ isOpen, setIsOpen, vehicle }: EditVe
     }
   }, [vehicle, isOpen, form]);
 
-  const onSubmit = (data: VehicleFormValues) => {
-    if (data.currentManpower && data.currentManpower > data.seatingCapacity) {
-        toast({
-            variant: 'destructive',
-            title: 'Warning: Capacity Exceeded',
-            description: `Manpower usage (${data.currentManpower}) exceeds seating capacity (${data.seatingCapacity}).`,
-        });
+  useEffect(() => {
+    if (selectedDriverId) {
+        const driver = drivers.find(d => d.id === selectedDriverId);
+        if (driver) {
+            form.setValue('epValidity', driver.epExpiry ? new Date(driver.epExpiry) : undefined, { shouldValidate: true });
+            form.setValue('sdpValidity', driver.sdpExpiry ? new Date(driver.sdpExpiry) : undefined, { shouldValidate: true });
+        }
     }
+  }, [selectedDriverId, drivers, form]);
 
+
+  const onSubmit = (data: VehicleFormValues) => {
     updateVehicle({
       ...vehicle,
       ...data,
