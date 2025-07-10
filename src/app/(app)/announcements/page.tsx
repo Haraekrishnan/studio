@@ -19,8 +19,8 @@ export default function AnnouncementsPage() {
     }, [user, roles]);
 
     const pendingAnnouncements = useMemo(() => {
-        if (!canApprove) return [];
-        return announcements.filter(a => a.status === 'pending' && a.approverId === user?.id);
+        if (!canApprove || !user) return [];
+        return announcements.filter(a => a.status === 'pending' && a.approverId === user.id);
     }, [announcements, canApprove, user]);
     
     const handleApprove = (id: string) => {

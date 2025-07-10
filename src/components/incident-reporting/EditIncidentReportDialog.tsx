@@ -49,8 +49,11 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
   }, [users, incident]);
 
   const nonParticipants = useMemo(() => {
-    const pIds = new Set(participants.map(p => p.id));
-    return users.filter(u => !pIds.has(u.id) && (u.role === 'Admin' || u.role === 'Manager' || u.role === 'Supervisor' || u.role === 'HSE'));
+    const participantIds = new Set(participants.map(p => p.id));
+    return users.filter(u => 
+        !participantIds.has(u.id) && 
+        ['Admin', 'Manager', 'Supervisor', 'HSE'].includes(u.role)
+    );
   }, [users, participants]);
 
   const handleAddComment = () => {

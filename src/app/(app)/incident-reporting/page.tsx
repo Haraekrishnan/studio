@@ -25,8 +25,8 @@ export default function IncidentReportingPage() {
         return incidents.filter(i => {
             const isReporter = i.reporterId === user.id;
             const isLoopedIn = (i.loopedInUserIds || []).includes(user.id);
-            const isPublished = i.isPublished;
-            return isReporter || isLoopedIn || isPublished;
+            // Before publishing, only involved parties can see it. After publishing, all can see.
+            return i.isPublished || isReporter || isLoopedIn;
         });
     }, [user, incidents, canViewAllIncidents]);
 
