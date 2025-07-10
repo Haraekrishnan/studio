@@ -234,13 +234,13 @@ export default function AccountPage() {
       <Card>
           <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                  <CardTitle>Employee Management</CardTitle>
-                  <CardDescription>View, add, edit, or remove employees.</CardDescription>
+                  <CardTitle>User Account Management</CardTitle>
+                  <CardDescription>View, add, edit, or remove user accounts.</CardDescription>
               </div>
               {canManageUsers && (
                 <Button onClick={() => setIsAddEmployeeDialogOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Employee
+                    Add User
                 </Button>
               )}
           </CardHeader>
@@ -248,7 +248,7 @@ export default function AccountPage() {
               <Table>
                   <TableHeader>
                       <TableRow>
-                          <TableHead>Employee</TableHead>
+                          <TableHead>User</TableHead>
                           <TableHead>Role</TableHead>
                           <TableHead>Supervisor</TableHead>
                           {canManageUsers && <TableHead className="text-right">Actions</TableHead>}

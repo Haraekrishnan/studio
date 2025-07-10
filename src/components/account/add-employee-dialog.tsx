@@ -51,7 +51,7 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
       supervisorId: (data.supervisorId === 'unassigned' || !data.supervisorId) ? undefined : data.supervisorId,
     });
     toast({
-      title: 'Employee Added',
+      title: 'User Added',
       description: `${data.name} has been added to the system.`,
     });
     setIsOpen(false);
@@ -69,7 +69,7 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Employee</DialogTitle>
+          <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>Fill in the details to add a new member to the team.</DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
@@ -144,7 +144,7 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-            <Button type="submit">Add Employee</Button>
+            <Button type="submit">Add User</Button>
           </DialogFooter>
         </form>
       </DialogContent>

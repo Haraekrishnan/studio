@@ -70,7 +70,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
 
     updateUser(finalUserData);
     toast({
-      title: 'Employee Updated',
+      title: 'User Updated',
       description: `${data.name}'s details have been updated.`,
     });
     setIsOpen(false);
@@ -80,7 +80,7 @@ export default function EditEmployeeDialog({ isOpen, setIsOpen, user: userToEdit
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Employee</DialogTitle>
+          <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>Update the details for {userToEdit.name}.</DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">

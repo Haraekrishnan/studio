@@ -39,11 +39,11 @@ export function AppSidebar() {
     { href: '/performance', icon: TrendingUp, label: 'Performance' },
     { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
-    { href: '/account', icon: Users, label: 'Employees' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
+    { href: '/account', icon: Users, label: 'Profile / Account' },
   ];
 
   return (
