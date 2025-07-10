@@ -22,6 +22,8 @@ import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, subDays } from 'date-fns';
 import { TRADES, MANDATORY_DOCS, RA_TRADES } from '@/lib/mock-data';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 const documentSchema = z.object({
     name: z.string().min(1, 'Document name is required'),
@@ -103,7 +105,7 @@ const DatePickerController = ({ name, control, disabled = false }: { name: any, 
 );
 
 export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: ManpowerProfileDialogProps) {
-  const { addManpowerProfile, updateManpowerProfile } = useAppContext();
+  const { user, addManpowerProfile, updateManpowerProfile } = useAppContext();
   const { toast } = useToast();
 
   const form = useForm<ProfileFormValues>({
@@ -113,13 +115,15 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
   
   const { fields: docFields, append: appendDoc, remove: removeDoc } = useFieldArray({ control: form.control, name: "documents" });
   const { fields: skillFields, append: appendSkill, remove: removeSkill } = useFieldArray({ control: form.control, name: "skills" });
-  const { fields: leaveFields, update: updateLeave } = useFieldArray({ control: form.control, name: "leaveHistory" });
+  const { fields: leaveFields, update: updateLeave, remove: removeLeave } = useFieldArray({ control: form.control, name: "leaveHistory" });
 
   const watchedTrade = form.watch('trade');
   const watchedDocuments = form.watch('documents');
   const hasSkills = form.watch('hasSkills');
   const watchedStatus = form.watch('status');
   const watchedLeaveHistory = form.watch('leaveHistory');
+
+  const isAdmin = useMemo(() => user?.role === 'Admin', [user]);
 
   const activeLeaveIndex = useMemo(() => 
     watchedLeaveHistory?.findIndex(l => !l.rejoinedDate) ?? -1, 
@@ -283,10 +287,29 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
                             <div className="space-y-2">
                                 <h4 className='font-semibold flex items-center gap-2'><History className="h-4 w-4"/>Leave History</h4>
                                 <div className="p-2 border rounded-md space-y-2 bg-muted/50 max-h-40 overflow-y-auto">
-                                    {watchedLeaveHistory.filter(l => l.rejoinedDate && l.leaveEndDate).map((leave) => (
-                                        <div key={leave.id} className="text-xs p-2 bg-background rounded">
-                                            <p><strong>{leave.leaveType || 'Leave'}</strong> from {format(new Date(leave.leaveStartDate), 'dd-MM-yy')} to {format(new Date(leave.leaveEndDate as Date), 'dd-MM-yy')}</p>
-                                            <p>Planned End: {leave.plannedEndDate ? format(new Date(leave.plannedEndDate), 'dd-MM-yy') : 'N/A'}, Rejoined: {format(new Date(leave.rejoinedDate as Date), 'dd-MM-yy')}</p>
+                                    {watchedLeaveHistory.filter(l => l.leaveEndDate).map((leave, index) => (
+                                        <div key={leave.id} className="text-xs p-2 bg-background rounded flex justify-between items-center">
+                                            <div>
+                                                <p><strong>{leave.leaveType || 'Leave'}</strong> from {format(new Date(leave.leaveStartDate), 'dd-MM-yy')} to {format(new Date(leave.leaveEndDate as Date), 'dd-MM-yy')}</p>
+                                                <p>Planned End: {leave.plannedEndDate ? format(new Date(leave.plannedEndDate), 'dd-MM-yy') : 'N/A'}, Rejoined: {leave.rejoinedDate ? format(new Date(leave.rejoinedDate), 'dd-MM-yy') : 'N/A'}</p>
+                                            </div>
+                                            {isAdmin && (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>This action cannot be undone. This will permanently delete this leave record.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => removeLeave(index)}>Delete</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, AlertTriangle } from 'lucide-react';
+import { PlusCircle, AlertTriangle, Search } from 'lucide-react';
 import ManpowerListTable from '@/components/manpower/ManpowerListTable';
 import ManpowerProfileDialog from '@/components/manpower/ManpowerProfileDialog';
 import type { ManpowerProfile } from '@/lib/types';
@@ -11,11 +11,13 @@ import ManpowerSummary from '@/components/manpower/ManpowerSummary';
 import ManpowerFilters, { type ManpowerFilterValues } from '@/components/manpower/ManpowerFilters';
 import { isWithinInterval, addDays, isBefore, format } from 'date-fns';
 import ManpowerReportDownloads from '@/components/manpower/ManpowerReportDownloads';
+import { Input } from '@/components/ui/input';
 
 export default function ManpowerListPage() {
     const { user, roles, manpowerProfiles, projects } = useAppContext();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedProfile, setSelectedProfile] = useState<ManpowerProfile | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const [filters, setFilters] = useState<ManpowerFilterValues>({
         status: 'all',
         trade: 'all',
@@ -57,6 +59,10 @@ export default function ManpowerListPage() {
 
     const filteredProfiles = useMemo(() => {
         return manpowerProfiles.filter(profile => {
+            if (searchTerm && !profile.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                return false;
+            }
+
             const { status, trade, returnDateRange, projectId, expiryDateRange } = filters;
             if (status !== 'all' && profile.status !== status) return false;
             if (trade !== 'all' && profile.trade !== trade) return false;
@@ -93,7 +99,7 @@ export default function ManpowerListPage() {
 
             return true;
         });
-    }, [manpowerProfiles, filters, projects]);
+    }, [manpowerProfiles, filters, projects, searchTerm]);
 
 
     const handleEdit = (profile: ManpowerProfile) => {
@@ -173,8 +179,21 @@ export default function ManpowerListPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>All Manpower</CardTitle>
-                    <CardDescription>A list of all manpower profiles in the system.</CardDescription>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>All Manpower</CardTitle>
+                            <CardDescription>A list of all manpower profiles in the system.</CardDescription>
+                        </div>
+                        <div className="relative w-full max-w-sm">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                                placeholder="Search by name..." 
+                                className="pl-9"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <ManpowerListTable profiles={filteredProfiles} onEdit={handleEdit} />
