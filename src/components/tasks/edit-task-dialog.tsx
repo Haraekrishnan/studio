@@ -74,6 +74,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
   
   const canEditCoreFields = isCreator || isAdmin;
   const canEditDueDate = isCreator || isAdmin;
+  const canReassign = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE' || user?.role === 'Store in Charge') && (!isCompleted || isAdmin);
 
   useEffect(() => {
     if (taskToDisplay && isOpen) {
@@ -205,7 +206,6 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     setIsOpen(false);
   };
   
-  const canReassign = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor' || user?.role === 'HSE' || user?.role === 'Store in Charge') && (!isCompleted || isAdmin);
   const isApprover = (user?.id === taskToDisplay.creatorId || user?.id === assignee?.supervisorId) && user.id !== taskToDisplay.assigneeId;
   const isAssignee = user?.id === taskToDisplay.assigneeId;
 
@@ -333,7 +333,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                     </div>
                 )}
                 
-                {canEditCoreFields && <Button type="submit" className="w-full">Save Changes</Button>}
+                { (canEditCoreFields || canReassign) && <Button type="submit" className="w-full">Save Changes</Button> }
               </form>
             </div>
 
