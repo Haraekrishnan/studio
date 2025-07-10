@@ -10,10 +10,10 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
-import type { ManpowerProfile, Trade } from '@/lib/types';
+import type { ManpowerProfile, Trade, LeaveRecord } from '@/lib/types';
 import { Progress } from '../ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Trash2, CalendarIcon, PlusCircle, ExternalLink } from 'lucide-react';
+import { Trash2, CalendarIcon, PlusCircle, ExternalLink, History } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
 import { Textarea } from '../ui/textarea';
@@ -33,6 +33,14 @@ const skillSchema = z.object({
     name: z.string().min(1, 'Skill name is required'),
     details: z.string().min(1, 'Details are required'),
     link: z.string().url().optional().or(z.literal('')),
+});
+
+const leaveSchema = z.object({
+  id: z.string(),
+  leaveType: z.enum(['Emergency', 'Annual']).optional(),
+  leaveStartDate: z.date(),
+  leaveEndDate: z.date().optional(),
+  rejoinedDate: z.date().optional(),
 });
 
 const profileSchema = z.object({
@@ -60,10 +68,8 @@ const profileSchema = z.object({
   remarks: z.string().optional(),
   
   status: z.enum(['Working', 'On Leave', 'Resigned', 'Terminated']),
-  leaveType: z.enum(['Emergency', 'Annual']).optional(),
-  leaveStartDate: z.date().optional(),
-  leaveEndDate: z.date().optional(),
-  rejoinedDate: z.date().optional(),
+  leaveHistory: z.array(leaveSchema).optional(),
+  
   terminationDate: z.date().optional(),
   resignationDate: z.date().optional(),
   feedback: z.string().optional(),
@@ -77,14 +83,14 @@ interface ManpowerProfileDialogProps {
   profile: ManpowerProfile | null;
 }
 
-const DatePickerController = ({ name, control }: { name: keyof ProfileFormValues, control: any }) => (
+const DatePickerController = ({ name, control, disabled = false }: { name: any, control: any, disabled?: boolean }) => (
     <Controller
         name={name}
         control={control}
         render={({ field }) => (
             <Popover>
                 <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
+                    <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')} disabled={disabled}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {field.value ? format(new Date(field.value), 'dd-MM-yyyy') : <span>Pick a date</span>}
                     </Button>
@@ -101,16 +107,23 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { documents: [], skills: [], hasSkills: false, status: 'Working' }
+    defaultValues: { documents: [], skills: [], hasSkills: false, status: 'Working', leaveHistory: [] }
   });
   
   const { fields: docFields, append: appendDoc, remove: removeDoc } = useFieldArray({ control: form.control, name: "documents" });
   const { fields: skillFields, append: appendSkill, remove: removeSkill } = useFieldArray({ control: form.control, name: "skills" });
+  const { fields: leaveFields, update: updateLeave } = useFieldArray({ control: form.control, name: "leaveHistory" });
 
   const watchedTrade = form.watch('trade');
   const watchedDocuments = form.watch('documents');
   const hasSkills = form.watch('hasSkills');
-  const employeeStatus = form.watch('status');
+  const watchedStatus = form.watch('status');
+  const watchedLeaveHistory = form.watch('leaveHistory');
+
+  const activeLeaveIndex = useMemo(() => 
+    watchedLeaveHistory?.findIndex(l => !l.rejoinedDate) ?? -1, 
+    [watchedLeaveHistory]
+  );
   
   const progress = useMemo(() => {
     const requiredDocs = [...MANDATORY_DOCS];
@@ -133,7 +146,12 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
       form.reset({
         ...profile,
         hasSkills: !!profile.skills && profile.skills.length > 0,
-        // Convert date strings back to Date objects for the pickers
+        leaveHistory: profile.leaveHistory?.map(l => ({
+            ...l,
+            leaveStartDate: new Date(l.leaveStartDate),
+            leaveEndDate: l.leaveEndDate ? new Date(l.leaveEndDate) : undefined,
+            rejoinedDate: l.rejoinedDate ? new Date(l.rejoinedDate) : undefined,
+        })) || [],
         passIssueDate: profile.passIssueDate ? new Date(profile.passIssueDate) : undefined,
         joiningDate: profile.joiningDate ? new Date(profile.joiningDate) : undefined,
         woValidity: profile.woValidity ? new Date(profile.woValidity) : undefined,
@@ -143,9 +161,6 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
         safetyExpiryDate: profile.safetyExpiryDate ? new Date(profile.safetyExpiryDate) : undefined,
         irataValidity: profile.irataValidity ? new Date(profile.irataValidity) : undefined,
         contractValidity: profile.contractValidity ? new Date(profile.contractValidity) : undefined,
-        leaveStartDate: profile.leaveStartDate ? new Date(profile.leaveStartDate) : undefined,
-        leaveEndDate: profile.leaveEndDate ? new Date(profile.leaveEndDate) : undefined,
-        rejoinedDate: profile.rejoinedDate ? new Date(profile.rejoinedDate) : undefined,
         terminationDate: profile.terminationDate ? new Date(profile.terminationDate) : undefined,
         resignationDate: profile.resignationDate ? new Date(profile.resignationDate) : undefined,
       });
@@ -154,7 +169,7 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
         form.reset({
             name: '', trade: '', documentFolderUrl: '',
             documents: defaultDocs,
-            skills: [], hasSkills: false, status: 'Working',
+            skills: [], hasSkills: false, status: 'Working', leaveHistory: [],
         });
     }
   }, [profile, form.reset]);
@@ -170,11 +185,40 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
         if (index > -1) removeDoc(index);
     }
   }, [watchedTrade, watchedDocuments, appendDoc, removeDoc]);
+  
+  useEffect(() => {
+    const currentStatus = form.getValues('status');
+    const hasActiveLeave = form.getValues('leaveHistory')?.some(l => !l.rejoinedDate);
+
+    if(currentStatus === 'On Leave' && !hasActiveLeave) {
+        const newLeave: LeaveRecord = { id: `leave-${Date.now()}`, leaveStartDate: new Date().toISOString() };
+        form.setValue('leaveHistory', [...(form.getValues('leaveHistory') || []), newLeave as any]);
+    } else if (currentStatus === 'Working' && hasActiveLeave) {
+        // This case is handled by rejoining date logic
+    }
+  }, [watchedStatus, form]);
+
+  useEffect(() => {
+    if (activeLeaveIndex > -1) {
+        const rejoinedDate = form.getValues(`leaveHistory.${activeLeaveIndex}.rejoinedDate`);
+        if (rejoinedDate) {
+            const currentLeave = form.getValues(`leaveHistory.${activeLeaveIndex}`);
+            updateLeave(activeLeaveIndex, { ...currentLeave, leaveEndDate: rejoinedDate });
+            form.setValue('status', 'Working');
+        }
+    }
+  }, [form.watch(`leaveHistory.${activeLeaveIndex}.rejoinedDate`), activeLeaveIndex, form, updateLeave]);
+
 
   const onSubmit = (data: ProfileFormValues) => {
-    // Convert Date objects back to ISO strings
     const dataToSubmit = {
         ...data,
+        leaveHistory: data.leaveHistory?.map(l => ({
+            ...l,
+            leaveStartDate: (l.leaveStartDate as Date).toISOString(),
+            leaveEndDate: (l.leaveEndDate as Date)?.toISOString(),
+            rejoinedDate: (l.rejoinedDate as Date)?.toISOString(),
+        })),
         passIssueDate: data.passIssueDate?.toISOString(),
         joiningDate: data.joiningDate?.toISOString(),
         woValidity: data.woValidity?.toISOString(),
@@ -184,15 +228,12 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
         safetyExpiryDate: data.safetyExpiryDate?.toISOString(),
         irataValidity: data.irataValidity?.toISOString(),
         contractValidity: data.contractValidity?.toISOString(),
-        leaveStartDate: data.leaveStartDate?.toISOString(),
-        leaveEndDate: data.leaveEndDate?.toISOString(),
-        rejoinedDate: data.rejoinedDate?.toISOString(),
         terminationDate: data.terminationDate?.toISOString(),
         resignationDate: data.resignationDate?.toISOString(),
     };
 
     if (profile) {
-      updateManpowerProfile({ ...profile, ...dataToSubmit });
+      updateManpowerProfile({ ...profile, ...dataToSubmit as any });
       toast({ title: 'Profile Updated' });
     } else {
       addManpowerProfile(dataToSubmit as Omit<ManpowerProfile, 'id'>);
@@ -224,18 +265,31 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
                         <Separator className="my-4" />
                         <h3 className="text-lg font-semibold border-b pb-2">Employee Status</h3>
                         <div><Label>Status</Label><Controller control={form.control} name="status" render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="Working">Working</SelectItem><SelectItem value="On Leave">On Leave</SelectItem><SelectItem value="Resigned">Resigned</SelectItem><SelectItem value="Terminated">Terminated</SelectItem></SelectContent></Select>)}/></div>
-                        {employeeStatus === 'On Leave' && (
+                        {activeLeaveIndex > -1 && (
                             <div className="p-4 border rounded-md space-y-4 bg-muted/50">
-                                <div><Label>Leave Type</Label><Controller control={form.control} name="leaveType" render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue placeholder="Select..."/></SelectTrigger><SelectContent><SelectItem value="Emergency">Emergency</SelectItem><SelectItem value="Annual">Annual</SelectItem></SelectContent></Select>)}/></div>
+                                <h4 className='font-semibold'>Active Leave</h4>
+                                <div><Label>Leave Type</Label><Controller control={form.control} name={`leaveHistory.${activeLeaveIndex}.leaveType`} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue placeholder="Select..."/></SelectTrigger><SelectContent><SelectItem value="Emergency">Emergency</SelectItem><SelectItem value="Annual">Annual</SelectItem></SelectContent></Select>)}/></div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div><Label>Leave Start</Label><DatePickerController name="leaveStartDate" control={form.control} /></div>
-                                    <div><Label>Leave End</Label><DatePickerController name="leaveEndDate" control={form.control} /></div>
+                                    <div><Label>Leave Start</Label><DatePickerController name={`leaveHistory.${activeLeaveIndex}.leaveStartDate`} control={form.control} /></div>
+                                    <div><Label>Rejoined Date</Label><DatePickerController name={`leaveHistory.${activeLeaveIndex}.rejoinedDate`} control={form.control} /></div>
                                 </div>
-                                <div><Label>Rejoined Date</Label><DatePickerController name="rejoinedDate" control={form.control} /></div>
+                                <div className="text-sm text-muted-foreground">Setting a rejoining date will automatically set the leave end date and change status to 'Working'.</div>
                             </div>
                         )}
-                        {employeeStatus === 'Resigned' && <div><Label>Resignation Date</Label><DatePickerController name="resignationDate" control={form.control} /></div>}
-                        {employeeStatus === 'Terminated' && <div><Label>Termination Date</Label><DatePickerController name="terminationDate" control={form.control} /></div>}
+                        {watchedLeaveHistory && watchedLeaveHistory.filter(l => l.rejoinedDate).length > 0 && (
+                            <div className="space-y-2">
+                                <h4 className='font-semibold flex items-center gap-2'><History className="h-4 w-4"/>Leave History</h4>
+                                <div className="p-2 border rounded-md space-y-2 bg-muted/50 max-h-40 overflow-y-auto">
+                                    {watchedLeaveHistory.filter(l => l.rejoinedDate).map((leave, index) => (
+                                        <div key={leave.id} className="text-xs p-2 bg-background rounded">
+                                            <p><strong>{leave.leaveType || 'Leave'}</strong> from {format(new Date(leave.leaveStartDate), 'dd-MM-yy')} to {format(new Date(leave.leaveEndDate as Date), 'dd-MM-yy')}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {watchedStatus === 'Resigned' && <div><Label>Resignation Date</Label><DatePickerController name="resignationDate" control={form.control} /></div>}
+                        {watchedStatus === 'Terminated' && <div><Label>Termination Date</Label><DatePickerController name="terminationDate" control={form.control} /></div>}
                         <div><Label>Feedback (Optional)</Label><Textarea {...form.register('feedback')} /></div>
                     </div>
                     
