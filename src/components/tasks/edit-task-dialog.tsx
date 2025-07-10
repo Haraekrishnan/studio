@@ -171,26 +171,22 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
     
     const hasAssigneeChanged = data.assigneeId !== taskToDisplay.assigneeId;
 
-    const updatedData: Partial<Task> = {
-        ...data,
-        dueDate: data.dueDate.toISOString(),
-    };
-
     if (hasAssigneeChanged) {
-        const canAutoApproveReassignment = user.role === 'Admin' || user.role === 'Manager';
-        const newAssignee = users.find(u => u.id === data.assigneeId);
-        if (!newAssignee) return;
-        
         if (!newComment.trim()) {
             toast({ variant: 'destructive', title: 'Comment Required', description: 'A comment is required when reassigning a task.' });
             return;
         }
 
+        const newAssignee = users.find(u => u.id === data.assigneeId);
+        if (!newAssignee) return;
+        
+        const canAutoApproveReassignment = user.role === 'Admin' || user.role === 'Manager';
         const reassignmentComment = `Reassignment requested to ${newAssignee.name}. Reason: ${newComment}`;
-
+        
+        addComment(task.id, reassignmentComment);
+        
         if (canAutoApproveReassignment) {
-            addComment(taskToDisplay.id, reassignmentComment);
-            updateTask({ ...taskToDisplay, ...updatedData });
+            updateTask({ ...taskToDisplay, ...data, dueDate: data.dueDate.toISOString() });
             toast({ title: 'Task Reassigned', description: `Task has been assigned to ${newAssignee.name}` });
         } else {
             const reassignmentRequest: Partial<Task> = {
@@ -199,11 +195,16 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                 previousStatus: taskToDisplay.status,
                 approvalState: 'pending',
             };
-            addComment(taskToDisplay.id, reassignmentComment);
             updateTask({ ...taskToDisplay, ...reassignmentRequest });
             toast({ title: 'Reassignment Requested', description: 'Your request has been sent for approval.' });
         }
-    } else {
+
+    } else { // No assignee change, just a regular update
+        const updatedData: Partial<Task> = {
+            ...data,
+            dueDate: data.dueDate.toISOString(),
+        };
+
         if (isAdmin && isCompleted) {
             updatedData.status = 'To Do';
             updatedData.completionDate = undefined;
@@ -212,6 +213,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         updateTask({ ...taskToDisplay, ...updatedData });
         toast({ title: 'Task Updated', description: `"${data.title}" has been successfully updated.` });
     }
+    
     setNewComment('');
     setIsOpen(false);
   };
