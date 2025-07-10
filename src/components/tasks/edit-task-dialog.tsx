@@ -186,9 +186,10 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
             return;
         }
 
-        addComment(taskToDisplay.id, `Reassignment requested to ${newAssignee.name}. ${newComment}`);
+        const reassignmentComment = `Reassignment requested to ${newAssignee.name}. Reason: ${newComment}`;
 
         if (canAutoApproveReassignment) {
+            addComment(taskToDisplay.id, reassignmentComment);
             updateTask({ ...taskToDisplay, ...updatedData });
             toast({ title: 'Task Reassigned', description: `Task has been assigned to ${newAssignee.name}` });
         } else {
@@ -198,6 +199,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                 previousStatus: taskToDisplay.status,
                 approvalState: 'pending',
             };
+            addComment(taskToDisplay.id, reassignmentComment);
             updateTask({ ...taskToDisplay, ...reassignmentRequest });
             toast({ title: 'Reassignment Requested', description: 'Your request has been sent for approval.' });
         }
@@ -350,7 +352,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                 <h3 className="text-lg font-semibold">Comments & Activity</h3>
                 <ScrollArea className="flex-1 h-64 pr-4 border-b">
                     <div className="space-y-4">
-                        {taskToDisplay.comments && [...taskToDisplay.comments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((comment, index) => {
+                        {taskToDisplay.comments && [...taskToDisplay.comments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((comment, index) => {
                             const commentUser = users.find(u => u.id === comment.userId);
                             return (
                                 <div key={index} className={cn("flex items-start gap-3")}>
