@@ -120,8 +120,8 @@ export default function AccountPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Your Profile</h1>
-        <p className="text-muted-foreground">View and manage your personal profile.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Account Settings</h1>
+        <p className="text-muted-foreground">Manage your profile, team members, and application settings.</p>
       </div>
       <div className="grid gap-8 md:grid-cols-3">
         <div className="md:col-span-1 space-y-8">

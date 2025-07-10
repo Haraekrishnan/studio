@@ -43,7 +43,7 @@ export function AppSidebar() {
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
-    { href: '/account', icon: Users, label: 'Profile / Account' },
+    { href: '/account', icon: Users, label: 'Account' },
   ];
 
   return (

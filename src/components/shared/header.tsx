@@ -39,7 +39,7 @@ export default function Header() {
     if (pathname.startsWith('/performance')) return 'Performance';
     if (pathname.startsWith('/achievements')) return 'Achievements';
     if (pathname.startsWith('/reports')) return 'Reports';
-    if (pathname.startsWith('/account')) return 'Profile / Account';
+    if (pathname.startsWith('/account')) return 'Account';
     if (pathname.startsWith('/activity-tracker')) return 'Activity Tracker';
     if (pathname.startsWith('/store-inventory')) return 'Store Inventory';
     if (pathname.startsWith('/manpower')) return 'Manpower';
@@ -61,7 +61,7 @@ export default function Header() {
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
-    { href: '/account', icon: Users, label: 'Profile / Account' },
+    { href: '/account', icon: Users, label: 'Account' },
   ];
 
   return (
