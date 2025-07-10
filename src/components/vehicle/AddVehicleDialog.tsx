@@ -55,10 +55,9 @@ export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialog
     if (data.currentManpower && data.currentManpower > data.seatingCapacity) {
         toast({
             variant: 'destructive',
-            title: 'Capacity Exceeded',
+            title: 'Warning: Capacity Exceeded',
             description: `Manpower usage (${data.currentManpower}) exceeds seating capacity (${data.seatingCapacity}).`,
         });
-        return;
     }
 
     addVehicle({
