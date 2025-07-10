@@ -7,11 +7,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Car, HardHat } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Car, HardHat, ShieldAlert } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount, newIncidentCount } = useAppContext();
   const pathname = usePathname();
 
   const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
@@ -30,6 +30,8 @@ export function AppSidebar() {
 
   let vehicleNotificationCount = 0;
   if (canManageVehicles) vehicleNotificationCount += (expiringVehicleDocsCount + expiringDriverDocsCount);
+  
+  const incidentNotificationCount = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'HSE') ? newIncidentCount : 0;
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -40,6 +42,7 @@ export function AppSidebar() {
     { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
+    { href: '/incident-reporting', icon: ShieldAlert, label: 'Incidents', notification: incidentNotificationCount },
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },

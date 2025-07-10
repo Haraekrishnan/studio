@@ -5,13 +5,16 @@ import StatCard from '@/components/dashboard/stat-card';
 import TasksCompletedChart from '@/components/dashboard/tasks-completed-chart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Users, CheckCircle } from 'lucide-react';
+import { FileText, Users, CheckCircle, Megaphone, X } from 'lucide-react';
 import CreateTaskDialog from '@/components/tasks/create-task-dialog';
 import { useMemo } from 'react';
 import EmployeePerformancePieChart from '@/components/dashboard/employee-performance-pie-chart';
+import { formatDistanceToNow, format } from 'date-fns';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 export default function DashboardPage() {
-  const { tasks, user, getVisibleUsers } = useAppContext();
+  const { tasks, user, users, getVisibleUsers, approvedAnnouncements, dismissAnnouncement } = useAppContext();
 
   const visibleUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
 
@@ -20,6 +23,11 @@ export default function DashboardPage() {
     const visibleUserIds = visibleUsers.map(u => u.id);
     return tasks.filter(task => visibleUserIds.includes(task.assigneeId));
   }, [tasks, user, visibleUsers]);
+  
+  const unreadAnnouncements = useMemo(() => {
+    if (!user) return [];
+    return approvedAnnouncements.filter(a => !a.isViewed.includes(user.id));
+  }, [approvedAnnouncements, user]);
 
   const completedTasks = useMemo(() => relevantTasks.filter(task => task.status === 'Completed').length, [relevantTasks]);
   const openTasks = useMemo(() => relevantTasks.length - completedTasks, [relevantTasks, completedTasks]);
@@ -44,6 +52,33 @@ export default function DashboardPage() {
             {canManageTasks && <CreateTaskDialog />}
         </div>
       </div>
+
+       {unreadAnnouncements.map(announcement => {
+        const creator = users.find(u => u.id === announcement.creatorId);
+        return (
+            <Card key={announcement.id} className="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800">
+                <CardHeader>
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <CardTitle className="text-xl flex items-center gap-3 text-blue-900 dark:text-blue-200">
+                                <Megaphone className="h-6 w-6"/>
+                                {announcement.title}
+                            </CardTitle>
+                             <p className="text-xs text-muted-foreground mt-1">
+                                Posted {formatDistanceToNow(new Date(announcement.date), { addSuffix: true })} by {creator?.name}
+                            </p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => dismissAnnouncement(announcement.id)}>
+                            <X className="h-5 w-5"/>
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <p className="whitespace-pre-wrap">{announcement.content}</p>
+                </CardContent>
+            </Card>
+        )
+       })}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 

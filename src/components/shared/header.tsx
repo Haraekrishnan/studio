@@ -18,6 +18,7 @@ export default function Header() {
 
   const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
   const canManageUtMachines = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_ut_machines');
+  const canApproveAnnouncements = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('approve_announcements');
 
   const myRequestsNotificationCount = myRequestUpdateCount + myUnreadManagementRequestCount;
   
@@ -33,9 +34,11 @@ export default function Header() {
   if (canManageVehicles) vehicleNotificationCount += (expiringVehicleDocsCount + expiringDriverDocsCount);
 
   let announcementsNotificationCount = unreadAnnouncementCount;
-  if(user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor') {
+  if (canApproveAnnouncements) {
       announcementsNotificationCount += pendingAnnouncementCount;
   }
+  
+  const incidentNotificationCount = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'HSE') ? newIncidentCount : 0;
 
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -66,6 +69,7 @@ export default function Header() {
     { href: '/achievements', icon: Award, label: 'Achievements' },
     { href: '/reports', icon: FileText, label: 'Reports' },
     { href: '/store-inventory', icon: Archive, label: 'Store Inventory', notification: inventoryNotificationCount },
+    { href: '/incident-reporting', icon: ShieldAlert, label: 'Incidents', notification: incidentNotificationCount },
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
@@ -145,7 +149,7 @@ export default function Header() {
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => router.push('/announcements')} className="relative">
+                    <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="relative">
                         <Megaphone />
                         {announcementsNotificationCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center" variant="destructive">{announcementsNotificationCount}</Badge>}
                     </Button>
@@ -160,7 +164,7 @@ export default function Header() {
                      <Button variant="ghost" size="icon" asChild>
                         <Link href="/incident-reporting">
                             <ShieldAlert />
-                             {newIncidentCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center" variant="destructive">{newIncidentCount}</Badge>}
+                             {incidentNotificationCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center" variant="destructive">{incidentNotificationCount}</Badge>}
                         </Link>
                     </Button>
                 </TooltipTrigger>
