@@ -81,6 +81,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         dueDate: new Date(taskToDisplay.dueDate),
         priority: taskToDisplay.priority,
       });
+      setNewComment('');
       setAttachment(null);
       if (user?.id === taskToDisplay.assigneeId && !taskToDisplay.isViewedByAssignee) {
         markTaskAsViewed(taskToDisplay.id);
@@ -179,6 +180,11 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         const canAutoApproveReassignment = user.role === 'Admin' || user.role === 'Manager';
         const newAssignee = users.find(u => u.id === data.assigneeId);
         if (!newAssignee) return;
+        
+        if (!newComment.trim()) {
+            toast({ variant: 'destructive', title: 'Comment Required', description: 'A comment is required when reassigning a task.' });
+            return;
+        }
 
         addComment(taskToDisplay.id, `Reassignment requested to ${newAssignee.name}. ${newComment}`);
 
@@ -187,7 +193,6 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
             toast({ title: 'Task Reassigned', description: `Task has been assigned to ${newAssignee.name}` });
         } else {
             const reassignmentRequest: Partial<Task> = {
-                ...updatedData,
                 pendingAssigneeId: data.assigneeId,
                 status: 'Pending Approval',
                 previousStatus: taskToDisplay.status,
@@ -205,7 +210,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         updateTask({ ...taskToDisplay, ...updatedData });
         toast({ title: 'Task Updated', description: `"${data.title}" has been successfully updated.` });
     }
-    
+    setNewComment('');
     setIsOpen(false);
   };
   
