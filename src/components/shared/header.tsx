@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -6,22 +5,24 @@ import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Users2, Car, HardHat } from 'lucide-react';
+import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Users2, Car, HardHat, Megaphone, ShieldAlert, BadgeInfo } from 'lucide-react';
 import { Badge } from '../ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import NewAnnouncementDialog from '../announcements/NewAnnouncementDialog';
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount } = useAppContext();
+  const { user, logout, appName, appLogo, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount, unreadAnnouncementCount, pendingAnnouncementCount, newIncidentCount, myUnreadManagementRequestCount, unreadManagementRequestCountForMe } = useAppContext();
   const pathname = usePathname();
+  const router = useRouter();
 
   const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
   const canManageUtMachines = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_ut_machines');
 
-  const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
-  const myRequestsNotificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
+  const myRequestsNotificationCount = myRequestUpdateCount + myUnreadManagementRequestCount;
   
   let inventoryNotificationCount = 0;
-  if(isApprover) inventoryNotificationCount += pendingCertificateRequestCount;
+  if(user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge') inventoryNotificationCount += pendingCertificateRequestCount;
 
   const taskNotificationCount = pendingTaskApprovalCount + myNewTaskCount;
 
@@ -30,6 +31,11 @@ export default function Header() {
 
   let vehicleNotificationCount = 0;
   if (canManageVehicles) vehicleNotificationCount += (expiringVehicleDocsCount + expiringDriverDocsCount);
+
+  let announcementsNotificationCount = unreadAnnouncementCount;
+  if(user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Supervisor') {
+      announcementsNotificationCount += pendingAnnouncementCount;
+  }
 
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -46,6 +52,8 @@ export default function Header() {
     if (pathname.startsWith('/ut-machine-status')) return 'Equipment Status';
     if (pathname.startsWith('/vehicle-status')) return 'Vehicle Status';
     if (pathname.startsWith('/driver-list')) return 'Driver List';
+    if (pathname.startsWith('/announcements')) return 'Announcements';
+    if (pathname.startsWith('/incident-reporting')) return 'Incident Reporting';
     return 'Task Management System';
   };
   
@@ -135,6 +143,31 @@ export default function Header() {
       </div>
       <div className="flex items-center gap-2">
         <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => router.push('/announcements')} className="relative">
+                        <Megaphone />
+                        {announcementsNotificationCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center" variant="destructive">{announcementsNotificationCount}</Badge>}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Announcements</p>
+                </TooltipContent>
+            </Tooltip>
+            <NewAnnouncementDialog />
+             <Tooltip>
+                <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" asChild>
+                        <Link href="/incident-reporting">
+                            <ShieldAlert />
+                             {newIncidentCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center" variant="destructive">{newIncidentCount}</Badge>}
+                        </Link>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Incident Reporting</p>
+                </TooltipContent>
+            </Tooltip>
             <Tooltip>
                 <TooltipTrigger asChild>
                      <Button variant="ghost" size="icon" asChild>
