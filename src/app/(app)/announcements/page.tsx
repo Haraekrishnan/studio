@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AnnouncementsPage() {
