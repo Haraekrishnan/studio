@@ -393,6 +393,7 @@ export interface IncidentReport {
     id: string;
     reporterId: string;
     projectId: string;
+    projectLocation?: string; // Added from context logic
     unitArea: string;
     incidentTime: string; // ISO date string
     reportTime: string; // ISO date string
