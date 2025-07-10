@@ -127,6 +127,9 @@ interface AppContextType {
   addManagementRequestComment: (requestId: string, commentText: string) => void;
   markManagementRequestAsViewed: (requestId: string) => void;
   addAnnouncement: (announcement: Pick<Announcement, 'title' | 'content'>) => void;
+  approveAnnouncement: (announcementId: string) => void;
+  rejectAnnouncement: (announcementId: string) => void;
+  dismissAnnouncement: (announcementId: string) => void;
   addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds'>) => void;
   updateIncident: (incident: IncidentReport) => void;
   addIncidentComment: (incidentId: string, commentText: string) => void;
@@ -1247,23 +1250,40 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const addAnnouncement = useCallback((announcement: Pick<Announcement, 'title' | 'content'>) => {
     if (!user) return;
     const supervisor = users.find(u => u.id === user.supervisorId);
+    const admin = users.find(u => u.role === 'Admin');
     const newAnnouncement: Announcement = {
       ...announcement,
       id: `ann-${Date.now()}`,
       creatorId: user.id,
       date: new Date().toISOString(),
       status: 'pending',
-      approverId: supervisor?.id || '1', // Default to admin if no supervisor
+      approverId: supervisor?.id || admin?.id || '1',
       isViewed: [],
     };
     setAnnouncements(prev => [newAnnouncement, ...prev]);
     recordAction(`Submitted announcement: "${announcement.title}"`);
   }, [user, users, recordAction]);
   
+  const approveAnnouncement = useCallback((announcementId: string) => {
+    setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'approved' } : a));
+  }, []);
+  
+  const rejectAnnouncement = useCallback((announcementId: string) => {
+    setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'rejected' } : a));
+  }, []);
+
+  const dismissAnnouncement = useCallback((announcementId: string) => {
+    if (!user) return;
+    setAnnouncements(prev => prev.map(a => 
+      a.id === announcementId ? { ...a, isViewed: [...a.isViewed, user.id] } : a
+    ));
+  }, [user]);
+  
   const addIncidentReport = useCallback((report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds'>) => {
     if (!user) return;
     const userProject = projects.find(p => p.id === user.projectId)?.name || 'Unknown Project';
-
+    const supervisor = users.find(u => u.id === user.supervisorId);
+    
     const newIncident: IncidentReport = {
         ...report,
         id: `inc-${Date.now()}`,
@@ -1276,11 +1296,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
             text: `Incident reported by ${user.name}`,
             date: new Date().toISOString(),
         }],
-        loopedInUserIds: [],
+        loopedInUserIds: supervisor ? [supervisor.id] : [],
     };
     setIncidents(prev => [newIncident, ...prev]);
     recordAction(`Reported new incident`);
-  }, [user, projects, recordAction]);
+  }, [user, projects, users, recordAction]);
 
   const updateIncident = useCallback((incident: IncidentReport) => {
     setIncidents(prev => prev.map(i => i.id === incident.id ? incident : i));
@@ -1487,7 +1507,16 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       return approvedAnnouncements.filter(a => !a.isViewed.includes(user.id)).length;
   }, [approvedAnnouncements, user]);
   
-  const newIncidentCount = useMemo(() => 0, []);
+  const newIncidentCount = useMemo(() => {
+    if (!user || !user.role) return 0;
+    const canViewAll = user.role === 'Admin' || user.role === 'Manager' || user.role === 'HSE';
+    if (canViewAll) {
+      return incidents.filter(i => i.status === 'New').length;
+    }
+    // Supervisors see incidents reported by their team
+    const myTeamIds = users.filter(u => u.supervisorId === user.id).map(u => u.id);
+    return incidents.filter(i => i.status === 'New' && (myTeamIds.includes(i.reporterId) || (i.loopedInUserIds || []).includes(user.id))).length;
+  }, [incidents, user, users]);
 
   const value = {
     user,
@@ -1610,6 +1639,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addManagementRequestComment,
     markManagementRequestAsViewed,
     addAnnouncement,
+    approveAnnouncement,
+    rejectAnnouncement,
+    dismissAnnouncement,
     addIncidentReport,
     updateIncident,
     addIncidentComment,
@@ -1632,3 +1664,5 @@ export function useAppContext() {
   }
   return context;
 }
+
+    
