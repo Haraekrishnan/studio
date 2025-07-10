@@ -59,6 +59,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
 
   const nonParticipants = useMemo(() => {
     const participantIds = new Set(participants.map(p => p.id));
+    // Users who are not participants and have roles that can be looped in
     return users.filter(u => 
         !participantIds.has(u.id) && 
         ['Admin', 'Manager', 'Supervisor', 'HSE'].includes(u.role)
@@ -157,7 +158,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
             )}
             <div className="space-y-2">
                 <Label>Participants</Label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
                     {participants.map(p => (
                         <div key={p.id} className="flex items-center gap-1 text-sm bg-muted p-1 rounded-md">
                            <Avatar className="h-5 w-5"><AvatarImage src={p.avatar} /><AvatarFallback>{p.name.charAt(0)}</AvatarFallback></Avatar>
@@ -165,7 +166,11 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
                         </div>
                     ))}
                     <Popover>
-                        <PopoverTrigger asChild><Button size="sm" variant="outline" disabled={!canLoopIn}><UserPlus className="mr-2 h-4 w-4"/>Loop In</Button></PopoverTrigger>
+                        <PopoverTrigger asChild>
+                            <Button size="sm" variant="outline" disabled={!canLoopIn || nonParticipants.length === 0}>
+                                <UserPlus className="mr-2 h-4 w-4"/>Loop In
+                            </Button>
+                        </PopoverTrigger>
                         <PopoverContent className="p-0">
                             <Command>
                                 <CommandInput placeholder="Search user..." />
