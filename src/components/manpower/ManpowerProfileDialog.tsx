@@ -38,6 +38,7 @@ const skillSchema = z.object({
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   trade: z.string().min(1, 'Trade is required'),
+  hardCopyFileNo: z.string().optional(),
   documentFolderUrl: z.string().url().optional().or(z.literal('')),
   documents: z.array(documentSchema),
   
@@ -213,6 +214,7 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
                         <h3 className="text-lg font-semibold border-b pb-2">Personal Details</h3>
                         <div><Label>Full Name</Label><Input {...form.register('name')} />{form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}</div>
                         <div><Label>Trade</Label><Controller control={form.control} name="trade" render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue placeholder="Select trade..." /></SelectTrigger><SelectContent>{TRADES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>)}/></div>
+                        <div><Label>Hard Copy File No.</Label><Input {...form.register('hardCopyFileNo')} />{form.formState.errors.hardCopyFileNo && <p className="text-xs text-destructive">{form.formState.errors.hardCopyFileNo.message}</p>}</div>
                         <div><Label>EP Number</Label><Input {...form.register('epNumber')} /></div>
                         <div><Label>Plant Name</Label><Input {...form.register('plantName')} /></div>
                         <div><Label>EIC Name</Label><Input {...form.register('eicName')} /></div>

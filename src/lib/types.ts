@@ -321,6 +321,7 @@ export interface ManpowerProfile {
     id: string;
     name: string;
     trade: Trade;
+    hardCopyFileNo?: string;
     documentFolderUrl?: string;
     documents: ManpowerDocument[];
     
