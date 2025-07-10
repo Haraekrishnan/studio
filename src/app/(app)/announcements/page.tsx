@@ -2,7 +2,6 @@
 import { useMemo } from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,8 +20,8 @@ export default function AnnouncementsPage() {
 
     const pendingAnnouncements = useMemo(() => {
         if (!canApprove) return [];
-        return announcements.filter(a => a.status === 'pending');
-    }, [announcements, canApprove]);
+        return announcements.filter(a => a.status === 'pending' && a.approverId === user?.id);
+    }, [announcements, canApprove, user]);
     
     const handleApprove = (id: string) => {
         approveAnnouncement(id);

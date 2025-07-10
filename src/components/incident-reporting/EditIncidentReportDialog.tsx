@@ -17,8 +17,6 @@ import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '../ui/command';
-import { Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
 
 const statusVariant: { [key in IncidentStatus]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -46,14 +44,14 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
   const canManage = useMemo(() => user?.role === 'Admin' || user?.role === 'HSE' || user?.role === 'Manager', [user]);
   
   const participants = useMemo(() => {
-    const pIds = new Set([incident.reporterId, ...incident.loopedInUserIds || []]);
+    const pIds = new Set([incident.reporterId, ...(incident.loopedInUserIds || [])]);
     return users.filter(u => pIds.has(u.id));
   }, [users, incident]);
 
   const nonParticipants = useMemo(() => {
-    const pIds = new Set([incident.reporterId, ...incident.loopedInUserIds || []]);
+    const pIds = new Set(participants.map(p => p.id));
     return users.filter(u => !pIds.has(u.id) && (u.role === 'Admin' || u.role === 'Manager' || u.role === 'Supervisor' || u.role === 'HSE'));
-  }, [users, incident]);
+  }, [users, participants]);
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user) return;
