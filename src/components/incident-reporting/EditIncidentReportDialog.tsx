@@ -59,16 +59,27 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
   }, [user]);
 
   const availableUsersToAdd = useMemo(() => {
+    if (!canAddUsers) return [];
     const participantIds = new Set(participants.map(p => p.id));
     const allowedRoles: Role[] = ['Admin', 'Manager', 'HSE', 'Supervisor'];
     return users
       .filter(u => !participantIds.has(u.id) && allowedRoles.includes(u.role))
       .map(u => ({ value: u.id, label: `${u.name} (${u.role})` }));
-  }, [users, participants]);
+  }, [users, participants, canAddUsers]);
+  
+  const canComment = useMemo(() => {
+    if (!user) return false;
+    // After publishing, anyone can view but only participants can comment.
+    if (incident.isPublished) {
+        return participants.some(p => p.id === user.id);
+    }
+    // Before publishing, only participants can view/comment anyway.
+    return true;
+  }, [user, incident, participants]);
 
 
   const handleAddComment = () => {
-    if (!newComment.trim() || !user) return;
+    if (!newComment.trim() || !user || !canComment) return;
     addIncidentComment(incident.id, newComment);
     setNewComment('');
   };
@@ -215,8 +226,8 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
               </div>
             </ScrollArea>
             <div className="relative">
-              <Textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Add a comment..." className="pr-12"/>
-              <Button type="button" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleAddComment} disabled={!newComment.trim()}><Send className="h-4 w-4" /></Button>
+              <Textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder={canComment ? "Add a comment..." : "You cannot comment on this incident."} className="pr-12" disabled={!canComment}/>
+              <Button type="button" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleAddComment} disabled={!newComment.trim() || !canComment}><Send className="h-4 w-4" /></Button>
             </div>
           </div>
         </div>

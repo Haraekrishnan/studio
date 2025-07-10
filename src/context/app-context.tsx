@@ -1377,23 +1377,27 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [user, users]);
   
   const publishIncident = useCallback((incidentId: string) => {
-    setIncidents(prev => prev.map(i => i.id === incidentId ? { ...i, isPublished: true } : i));
+    if (!user) return;
     const incident = incidents.find(i => i.id === incidentId);
-    if(incident) {
-      const newAnnouncement: Announcement = {
-        id: `ann-inc-${incident.id}`,
-        creatorId: incident.reporterId,
-        approverId: 'system',
-        title: `Incident Report Published: ${incident.projectLocation}`,
-        content: `An incident reported on ${format(new Date(incident.reportTime), 'PPP')} has been published for general awareness. Details:\n\n${incident.incidentDetails}`,
-        date: new Date().toISOString(),
-        status: 'approved',
-        isViewed: [],
-      };
-      setAnnouncements(prev => [newAnnouncement, ...prev]);
-    }
+    if(!incident) return;
+
+    setIncidents(prev => prev.map(i => i.id === incidentId ? { ...i, isPublished: true } : i));
+    
+    // Create an announcement for the published incident
+    const newAnnouncement: Announcement = {
+      id: `ann-inc-${incident.id}`,
+      creatorId: user.id,
+      approverId: user.id, // Auto-approved by the publisher
+      title: `Incident Report Published: ${incident.projectLocation}`,
+      content: `An incident reported on ${format(new Date(incident.reportTime), 'PPP')} has been published for general awareness. Details:\n\n${incident.incidentDetails}`,
+      date: new Date().toISOString(),
+      status: 'approved',
+      isViewed: [],
+    };
+    setAnnouncements(prev => [newAnnouncement, ...prev]);
+
     recordAction(`Published incident ID: ${incidentId}`);
-  }, [recordAction, incidents]);
+  }, [user, recordAction, incidents]);
   
   const approvedAnnouncements = useMemo(() => {
     return announcements.filter(a => a.status === 'approved');
