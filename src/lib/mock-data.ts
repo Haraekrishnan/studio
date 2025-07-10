@@ -364,9 +364,9 @@ export const MANPOWER_PROFILES: ManpowerProfile[] = [
         trade: 'Supervisor',
         status: 'On Leave',
         hardCopyFileNo: 'File-A',
-        leaveType: 'Annual',
-        leaveStartDate: sub(new Date(), {days: 5}).toISOString(),
-        leaveEndDate: add(new Date(), {days: 25}).toISOString(),
+        leaveHistory: [
+            { id: 'leave-1', leaveType: 'Annual', leaveStartDate: sub(new Date(), {days: 5}).toISOString() }
+        ],
         documents: [
             { name: 'Aadhar Card', details: '2345 6789 0123', status: 'Collected' },
             { name: 'CV', details: '', status: 'Collected' },

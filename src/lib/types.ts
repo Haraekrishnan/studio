@@ -330,6 +330,14 @@ export interface ManpowerSkill {
     link?: string;
 }
 
+export interface LeaveRecord {
+    id: string;
+    leaveType?: 'Emergency' | 'Annual';
+    leaveStartDate: string;
+    leaveEndDate?: string;
+    rejoinedDate?: string;
+}
+
 export interface ManpowerProfile {
     id: string;
     name: string;
@@ -355,10 +363,9 @@ export interface ManpowerProfile {
     skills?: ManpowerSkill[];
     
     status: 'Working' | 'On Leave' | 'Resigned' | 'Terminated';
-    leaveType?: 'Emergency' | 'Annual';
-    leaveStartDate?: string;
-    leaveEndDate?: string;
-    rejoinedDate?: string;
+    
+    leaveHistory?: LeaveRecord[];
+    
     terminationDate?: string;
     resignationDate?: string;
     feedback?: string;
