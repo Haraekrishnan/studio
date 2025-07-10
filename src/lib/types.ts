@@ -24,6 +24,7 @@ export const ALL_PERMISSIONS = [
   'manage_vehicles',
   'view_all_incidents',
   'approve_announcements',
+  'loop_in_incidents',
 ] as const;
 export type Permission = (typeof ALL_PERMISSIONS)[number];
 

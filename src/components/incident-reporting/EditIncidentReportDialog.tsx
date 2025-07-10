@@ -36,12 +36,18 @@ interface EditIncidentReportDialogProps {
 }
 
 export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }: EditIncidentReportDialogProps) {
-  const { user, users, projects, updateIncident, addIncidentComment, loopInUserToIncident, publishIncident } = useAppContext();
+  const { user, users, projects, roles, updateIncident, addIncidentComment, loopInUserToIncident, publishIncident } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
   
   const reporter = useMemo(() => users.find(u => u.id === incident.reporterId), [users, incident.reporterId]);
-  const canManage = useMemo(() => ['Admin', 'HSE', 'Manager', 'Supervisor'].includes(user?.role || ''), [user]);
+  
+  const canLoopIn = useMemo(() => {
+    if (!user) return false;
+    const userRole = roles.find(r => r.name === user.role);
+    return userRole?.permissions.includes('loop_in_incidents') ?? false;
+  }, [user, roles]);
+
   const canChangeStatusAndPublish = useMemo(() => ['Admin', 'HSE', 'Manager'].includes(user?.role || ''), [user]);
 
   const project = useMemo(() => projects.find(p => p.id === incident.projectId), [projects, incident.projectId]);
@@ -74,7 +80,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
   };
   
   const handleLoopInUser = (userId: string) => {
-    if (!canManage) return;
+    if (!canLoopIn) return;
     loopInUserToIncident(incident.id, userId);
     const loopedInUser = users.find(u => u.id === userId);
     toast({ title: 'User Looped In', description: `${loopedInUser?.name} has been added to the incident.` });
@@ -158,22 +164,20 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
                            {p.name}
                         </div>
                     ))}
-                    {canManage && (
-                        <Popover>
-                            <PopoverTrigger asChild><Button size="sm" variant="outline"><UserPlus className="mr-2 h-4 w-4"/>Loop In</Button></PopoverTrigger>
-                            <PopoverContent className="p-0">
-                                <Command>
-                                    <CommandInput placeholder="Search user..." />
-                                    <CommandEmpty>No user found.</CommandEmpty>
-                                    <CommandGroup>
-                                        {nonParticipants.map(u => (
-                                            <CommandItem key={u.id} onSelect={() => handleLoopInUser(u.id)}>{u.name}</CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
-                    )}
+                    <Popover>
+                        <PopoverTrigger asChild><Button size="sm" variant="outline" disabled={!canLoopIn}><UserPlus className="mr-2 h-4 w-4"/>Loop In</Button></PopoverTrigger>
+                        <PopoverContent className="p-0">
+                            <Command>
+                                <CommandInput placeholder="Search user..." />
+                                <CommandEmpty>No user found.</CommandEmpty>
+                                <CommandGroup>
+                                    {nonParticipants.map(u => (
+                                        <CommandItem key={u.id} onSelect={() => handleLoopInUser(u.id)}>{u.name}</CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
           </div>
