@@ -59,6 +59,7 @@ export interface User {
   avatar: string;
   supervisorId?: string;
   projectId?: string;
+  planningScore?: number;
 }
 
 export interface Comment {

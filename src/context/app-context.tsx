@@ -48,6 +48,7 @@ interface AppContextType {
   getVisibleUsers: () => User[];
   addUser: (newUser: Omit<User, 'id' | 'avatar'>) => void;
   updateUser: (updatedUser: User) => void;
+  updateUserPlanningScore: (userId: string, score: number) => void;
   deleteUser: (userId: string) => void;
   addRole: (role: Omit<RoleDefinition, 'id' | 'isEditable'>) => void;
   updateRole: (updatedRole: RoleDefinition) => void;
@@ -566,7 +567,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const userToAdd: User = {
       ...newUser,
       id: `user-${Date.now()}`,
-      avatar: `https://i.pravatar.cc/150?u=${Date.now()}`
+      avatar: `https://i.pravatar.cc/150?u=${Date.now()}`,
+      planningScore: 0,
     };
     setUsers(prev => [...prev, userToAdd]);
     recordAction(`Added new user: ${newUser.name}`);
@@ -579,6 +581,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
     recordAction(`Updated user profile: ${updatedUser.name}`);
   }, [user, recordAction]);
+
+  const updateUserPlanningScore = useCallback((userId: string, score: number) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, planningScore: score } : u));
+    const scoredUser = users.find(u => u.id === userId);
+    recordAction(`Updated planning score for ${scoredUser?.name} to ${score}.`);
+  }, [users, recordAction]);
   
   const deleteUser = useCallback((userId: string) => {
     const userName = users.find(u => u.id === userId)?.name;
@@ -1407,6 +1415,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     getVisibleUsers,
     addUser,
     updateUser,
+    updateUserPlanningScore,
     deleteUser,
     addRole,
     updateRole,
