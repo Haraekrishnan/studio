@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo, useState } from 'react';
 import { useAppContext } from '@/context/app-context';
@@ -17,7 +18,7 @@ interface VehicleTableProps {
 }
 
 export default function VehicleTable({ onEdit }: VehicleTableProps) {
-    const { user, roles, vehicles, deleteVehicle, users, projects } = useAppContext();
+    const { user, roles, vehicles, deleteVehicle, users, projects, drivers } = useAppContext();
     const { toast } = useToast();
 
     const canManage = useMemo(() => {
@@ -26,7 +27,7 @@ export default function VehicleTable({ onEdit }: VehicleTableProps) {
         return userRole?.permissions.includes('manage_vehicles');
     }, [user, roles]);
     
-    const isDatePast = (date: string) => isPast(new Date(date));
+    const isDatePast = (date: string | undefined) => date && isPast(new Date(date));
 
     const handleDelete = (vehicleId: string) => {
         deleteVehicle(vehicleId);
@@ -55,18 +56,19 @@ export default function VehicleTable({ onEdit }: VehicleTableProps) {
                 {vehicles.map(vehicle => {
                     const supervisor = users.find(u => u.id === vehicle.supervisorId);
                     const project = projects.find(p => p.id === vehicle.projectId);
+                    const driver = drivers.find(d => d.id === vehicle.driverId);
                     const isOverCapacity = vehicle.currentManpower && vehicle.currentManpower > vehicle.seatingCapacity;
                     return (
                         <TableRow key={vehicle.id}>
                             <TableCell className="font-medium">{vehicle.vehicleNumber}</TableCell>
-                            <TableCell>{vehicle.driverName}</TableCell>
+                            <TableCell>{driver?.name || 'Unassigned'}</TableCell>
                             <TableCell className={cn(isOverCapacity && 'text-destructive font-bold')}>
                                 {vehicle.currentManpower || 0}/{vehicle.seatingCapacity}
                             </TableCell>
                             <TableCell>{supervisor?.name || 'N/A'}</TableCell>
                             <TableCell>{project?.name || 'N/A'}</TableCell>
                             <TableCell className={cn(isDatePast(vehicle.vapValidity) && 'text-destructive font-bold')}>
-                                {format(new Date(vehicle.vapValidity), 'dd-MM-yyyy')}
+                                {vehicle.vapValidity ? format(new Date(vehicle.vapValidity), 'dd-MM-yyyy') : 'N/A'}
                             </TableCell>
                             <TableCell><Badge variant={vehicle.status.toLowerCase() !== 'operational' ? 'destructive' : 'secondary'}>{vehicle.status}</Badge></TableCell>
                             {canManage && (

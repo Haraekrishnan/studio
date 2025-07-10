@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,7 +11,7 @@ import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export default function Header() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount } = useAppContext();
   const pathname = usePathname();
 
   const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
@@ -28,7 +29,7 @@ export default function Header() {
   if (canManageUtMachines) equipmentNotificationCount += expiringUtMachineCalibrationsCount;
 
   let vehicleNotificationCount = 0;
-  if (canManageVehicles) vehicleNotificationCount += expiringVehicleDocsCount;
+  if (canManageVehicles) vehicleNotificationCount += (expiringVehicleDocsCount + expiringDriverDocsCount);
 
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -44,6 +45,7 @@ export default function Header() {
     if (pathname.startsWith('/manpower')) return 'Manpower';
     if (pathname.startsWith('/ut-machine-status')) return 'Equipment Status';
     if (pathname.startsWith('/vehicle-status')) return 'Vehicle Status';
+    if (pathname.startsWith('/driver-list')) return 'Driver List';
     return 'Task Management System';
   };
   

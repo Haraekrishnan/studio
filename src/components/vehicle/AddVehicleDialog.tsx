@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,16 +23,13 @@ const vehicleSchema = z.object({
   vehicleDetails: z.string().min(1),
   seatingCapacity: z.coerce.number().min(1),
   currentManpower: z.coerce.number().min(0).optional(),
-  driverName: z.string().min(1),
+  driverId: z.string().optional(),
   supervisorId: z.string().min(1, 'Supervisor is required'),
   projectId: z.string().min(1, 'Project is required'),
   vapNumber: z.string().min(1),
-  driverLicenseNumber: z.string().min(1),
-  driverEpNumber: z.string().min(1),
-  driverSdpNumber: z.string().min(1),
-  vapValidity: z.date(),
-  sdpValidity: z.date(),
-  epValidity: z.date(),
+  vapValidity: z.date().optional(),
+  sdpValidity: z.date().optional(),
+  epValidity: z.date().optional(),
   status: z.enum(['Operational', 'In Workshop', 'Unavailable']),
 });
 
@@ -43,7 +41,7 @@ interface AddVehicleDialogProps {
 }
 
 export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialogProps) {
-  const { addVehicle, users, projects } = useAppContext();
+  const { addVehicle, users, projects, drivers } = useAppContext();
   const { toast } = useToast();
 
   const supervisors = useMemo(() => users.filter(u => u.role === 'Supervisor' || u.role === 'Manager' || u.role === 'Admin'), [users]);
@@ -60,13 +58,14 @@ export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialog
             title: 'Capacity Exceeded',
             description: `Manpower usage (${data.currentManpower}) exceeds seating capacity (${data.seatingCapacity}).`,
         });
+        return;
     }
 
     addVehicle({
       ...data,
-      vapValidity: data.vapValidity.toISOString(),
-      sdpValidity: data.sdpValidity.toISOString(),
-      epValidity: data.epValidity.toISOString(),
+      vapValidity: data.vapValidity?.toISOString(),
+      sdpValidity: data.sdpValidity?.toISOString(),
+      epValidity: data.epValidity?.toISOString(),
     });
     toast({ title: 'Vehicle Added' });
     setIsOpen(false);
@@ -107,19 +106,18 @@ export default function AddVehicleDialog({ isOpen, setIsOpen }: AddVehicleDialog
                     </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                    <div><Label>Driver Name</Label><Input {...form.register('driverName')} />{form.formState.errors.driverName && <p className="text-xs text-destructive">{form.formState.errors.driverName.message}</p>}</div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <Label>Driver</Label>
+                        <Controller control={form.control} name="driverId" render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue placeholder="Select Driver..."/></SelectTrigger><SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent></Select>)}/>
+                    </div>
                     <div><Label>VAP Number</Label><Input {...form.register('vapNumber')} />{form.formState.errors.vapNumber && <p className="text-xs text-destructive">{form.formState.errors.vapNumber.message}</p>}</div>
                 </div>
+                
                  <div className="grid grid-cols-3 gap-4">
-                    <div><Label>Driver License No.</Label><Input {...form.register('driverLicenseNumber')} />{form.formState.errors.driverLicenseNumber && <p className="text-xs text-destructive">{form.formState.errors.driverLicenseNumber.message}</p>}</div>
-                    <div><Label>Driver EP No.</Label><Input {...form.register('driverEpNumber')} />{form.formState.errors.driverEpNumber && <p className="text-xs text-destructive">{form.formState.errors.driverEpNumber.message}</p>}</div>
-                    <div><Label>Driver SDP No.</Label><Input {...form.register('driverSdpNumber')} />{form.formState.errors.driverSdpNumber && <p className="text-xs text-destructive">{form.formState.errors.driverSdpNumber.message}</p>}</div>
-                </div>
-                 <div className="grid grid-cols-3 gap-4">
-                    <div><Label>VAP Validity</Label><Controller control={form.control} name="vapValidity" render={({ field }) => (<Popover><PopoverTrigger asChild><Button variant="outline" className={cn('w-full justify-start', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>)}/>{form.formState.errors.vapValidity && <p className="text-xs text-destructive">{form.formState.errors.vapValidity.message}</p>}</div>
-                    <div><Label>SDP Validity</Label><Controller control={form.control} name="sdpValidity" render={({ field }) => (<Popover><PopoverTrigger asChild><Button variant="outline" className={cn('w-full justify-start', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>)}/>{form.formState.errors.sdpValidity && <p className="text-xs text-destructive">{form.formState.errors.sdpValidity.message}</p>}</div>
-                    <div><Label>EP Validity</Label><Controller control={form.control} name="epValidity" render={({ field }) => (<Popover><PopoverTrigger asChild><Button variant="outline" className={cn('w-full justify-start', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>)}/>{form.formState.errors.epValidity && <p className="text-xs text-destructive">{form.formState.errors.epValidity.message}</p>}</div>
+                    <div><Label>VAP Expiry</Label><Controller control={form.control} name="vapValidity" render={({ field }) => (<Popover><PopoverTrigger asChild><Button variant="outline" className={cn('w-full justify-start', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>)}/></div>
+                    <div><Label>SDP Expiry</Label><Controller control={form.control} name="sdpValidity" render={({ field }) => (<Popover><PopoverTrigger asChild><Button variant="outline" className={cn('w-full justify-start', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>)}/></div>
+                    <div><Label>EP Expiry</Label><Controller control={form.control} name="epValidity" render={({ field }) => (<Popover><PopoverTrigger asChild><Button variant="outline" className={cn('w-full justify-start', !field.value && 'text-muted-foreground')}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover>)}/></div>
                 </div>
                 <div>
                     <Label>Status</Label>

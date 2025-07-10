@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,7 +11,7 @@ import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount } = useAppContext();
+  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount } = useAppContext();
   const pathname = usePathname();
 
   const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
@@ -28,7 +29,7 @@ export function AppSidebar() {
   if (canManageUtMachines) equipmentNotificationCount += expiringUtMachineCalibrationsCount;
 
   let vehicleNotificationCount = 0;
-  if (canManageVehicles) vehicleNotificationCount += expiringVehicleDocsCount;
+  if (canManageVehicles) vehicleNotificationCount += (expiringVehicleDocsCount + expiringDriverDocsCount);
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
