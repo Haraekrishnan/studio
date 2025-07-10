@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import { useRouter } from 'next/navigation';
 import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, LeaveRecord } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS } from '@/lib/mock-data';
-import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format, differenceInDays } from 'date-fns';
+import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format, differenceInDays, subDays } from 'date-fns';
 
 interface AppContextType {
   user: User | null;
@@ -340,7 +340,18 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    addComment(taskId, `Request Approved: ${commentText}`);
+    let finalTask = task;
+    // Add comment first so it's part of the state update
+    if(commentText) {
+        if (!user) return;
+        const newComment: Comment = {
+          userId: user.id,
+          text: `Request Approved: ${commentText}`,
+          date: new Date().toISOString(),
+        };
+        const updatedComments = finalTask.comments ? [...finalTask.comments, newComment] : [newComment];
+        finalTask = {...finalTask, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())};
+    }
     
     let updatedTask: Partial<Task>;
 
@@ -369,8 +380,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         return; // Nothing to approve
     }
     
-    updateTask({ ...task, ...updatedTask });
-  }, [tasks, users, addComment, updateTask, recordAction]);
+    updateTask({ ...finalTask, ...updatedTask });
+  }, [tasks, users, user, updateTask, recordAction]);
   
   const returnTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     const task = tasks.find(t => t.id === taskId);
