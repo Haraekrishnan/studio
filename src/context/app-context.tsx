@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, LeaveRecord, Announcement } from '@/lib/types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS, ANNOUNCEMENTS } from '@/lib/mock-data';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, LeaveRecord, Announcement, IncidentReport } from '@/lib/types';
+import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS, ANNOUNCEMENTS, INCIDENTS } from '@/lib/mock-data';
 import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format, differenceInDays, subDays } from 'date-fns';
 
 interface AppContextType {
@@ -31,6 +31,8 @@ interface AppContextType {
   appLogo: string | null;
   internalRequests: InternalRequest[];
   managementRequests: ManagementRequest[];
+  announcements: Announcement[];
+  incidents: IncidentReport[];
   pendingStoreRequestCount: number;
   myRequestUpdateCount: number;
   pendingCertificateRequestCount: number;
@@ -38,7 +40,6 @@ interface AppContextType {
   myFulfilledUTRequests: CertificateRequest[];
   workingManpowerCount: number;
   onLeaveManpowerCount: number;
-  announcements: Announcement[];
   approvedAnnouncements: Announcement[];
   pendingAnnouncementCount: number;
   unreadAnnouncementCount: number;
@@ -126,6 +127,10 @@ interface AppContextType {
   addManagementRequestComment: (requestId: string, commentText: string) => void;
   markManagementRequestAsViewed: (requestId: string) => void;
   addAnnouncement: (announcement: Pick<Announcement, 'title' | 'content'>) => void;
+  addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds'>) => void;
+  updateIncident: (incident: IncidentReport) => void;
+  addIncidentComment: (incidentId: string, commentText: string) => void;
+  loopInUserToIncident: (incidentId: string, userId: string) => void;
   expiringVehicleDocsCount: number;
   expiringDriverDocsCount: number;
   expiringUtMachineCalibrationsCount: number;
@@ -160,6 +165,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
   const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>(MANAGEMENT_REQUESTS);
   const [announcements, setAnnouncements] = useState<Announcement[]>(ANNOUNCEMENTS);
+  const [incidents, setIncidents] = useState<IncidentReport[]>(INCIDENTS);
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const [appName, setAppName] = useState('Aries Marine - Task Management System');
   const [appLogo, setAppLogo] = useState<string | null>(null);
@@ -1254,6 +1260,65 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Submitted announcement: "${announcement.title}"`);
   }, [user, users, recordAction]);
   
+  const addIncidentReport = useCallback((report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds'>) => {
+    if (!user) return;
+    const userProject = projects.find(p => p.id === user.projectId)?.name || 'Unknown Project';
+
+    const newIncident: IncidentReport = {
+        ...report,
+        id: `inc-${Date.now()}`,
+        reporterId: user.id,
+        reportTime: new Date().toISOString(),
+        projectLocation: userProject,
+        status: 'New',
+        comments: [{
+            userId: user.id,
+            text: `Incident reported by ${user.name}`,
+            date: new Date().toISOString(),
+        }],
+        loopedInUserIds: [],
+    };
+    setIncidents(prev => [newIncident, ...prev]);
+    recordAction(`Reported new incident`);
+  }, [user, projects, recordAction]);
+
+  const updateIncident = useCallback((incident: IncidentReport) => {
+    setIncidents(prev => prev.map(i => i.id === incident.id ? incident : i));
+    recordAction(`Updated incident ID: ${incident.id}`);
+  }, [recordAction]);
+
+  const addIncidentComment = useCallback((incidentId: string, commentText: string) => {
+    if (!user) return;
+    const newComment: Comment = { userId: user.id, text: commentText, date: new Date().toISOString() };
+    setIncidents(prev => prev.map(i => 
+        i.id === incidentId 
+        ? { ...i, comments: [...(i.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) } 
+        : i
+    ));
+    recordAction(`Commented on incident ID: ${incidentId}`);
+  }, [user, recordAction]);
+
+  const loopInUserToIncident = useCallback((incidentId: string, userId: string) => {
+    if (!user) return;
+    setIncidents(prev => prev.map(i => {
+        if (i.id === incidentId) {
+            const loopedInUser = users.find(u => u.id === userId);
+            const newComment: Comment = {
+                userId: user.id,
+                text: `${user.name} looped in ${loopedInUser?.name}`,
+                date: new Date().toISOString(),
+            };
+            const updatedLoopedIn = [...(i.loopedInUserIds || []), userId];
+            return {
+                ...i,
+                loopedInUserIds: updatedLoopedIn,
+                comments: [...(i.comments || []), newComment],
+            };
+        }
+        return i;
+    }));
+  }, [user, users]);
+  
   const approvedAnnouncements = useMemo(() => {
     return announcements.filter(a => a.status === 'approved');
   }, [announcements]);
@@ -1450,6 +1515,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     internalRequests,
     managementRequests,
     announcements,
+    incidents,
     approvedAnnouncements,
     pendingAnnouncementCount,
     unreadAnnouncementCount,
@@ -1544,6 +1610,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addManagementRequestComment,
     markManagementRequestAsViewed,
     addAnnouncement,
+    addIncidentReport,
+    updateIncident,
+    addIncidentComment,
+    loopInUserToIncident,
     expiringVehicleDocsCount,
     expiringDriverDocsCount,
     expiringUtMachineCalibrationsCount,
