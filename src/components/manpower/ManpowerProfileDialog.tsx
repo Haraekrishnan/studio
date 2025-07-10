@@ -20,7 +20,7 @@ import { Textarea } from '../ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { TRADES, MANDATORY_DOCS, RA_TRADES } from '@/lib/mock-data';
 
 const documentSchema = z.object({
@@ -39,6 +39,7 @@ const leaveSchema = z.object({
   id: z.string(),
   leaveType: z.enum(['Emergency', 'Annual']).optional(),
   leaveStartDate: z.date(),
+  plannedEndDate: z.date().optional(),
   leaveEndDate: z.date().optional(),
   rejoinedDate: z.date().optional(),
 });
@@ -149,6 +150,7 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
         leaveHistory: profile.leaveHistory?.map(l => ({
             ...l,
             leaveStartDate: new Date(l.leaveStartDate),
+            plannedEndDate: l.plannedEndDate ? new Date(l.plannedEndDate) : undefined,
             leaveEndDate: l.leaveEndDate ? new Date(l.leaveEndDate) : undefined,
             rejoinedDate: l.rejoinedDate ? new Date(l.rejoinedDate) : undefined,
         })) || [],
@@ -193,8 +195,6 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
     if(currentStatus === 'On Leave' && !hasActiveLeave) {
         const newLeave: LeaveRecord = { id: `leave-${Date.now()}`, leaveStartDate: new Date().toISOString() };
         form.setValue('leaveHistory', [...(form.getValues('leaveHistory') || []), newLeave as any]);
-    } else if (currentStatus === 'Working' && hasActiveLeave) {
-        // This case is handled by rejoining date logic
     }
   }, [watchedStatus, form]);
 
@@ -203,7 +203,8 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
         const rejoinedDate = form.watch(`leaveHistory.${activeLeaveIndex}.rejoinedDate`);
         if (rejoinedDate) {
             const currentLeave = form.getValues(`leaveHistory.${activeLeaveIndex}`);
-            updateLeave(activeLeaveIndex, { ...currentLeave, leaveEndDate: rejoinedDate });
+            const actualEndDate = subDays(rejoinedDate, 1);
+            updateLeave(activeLeaveIndex, { ...currentLeave, leaveEndDate: actualEndDate });
             form.setValue('status', 'Working');
         }
     }
@@ -216,6 +217,7 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
         leaveHistory: data.leaveHistory?.map(l => ({
             ...l,
             leaveStartDate: (l.leaveStartDate as Date).toISOString(),
+            plannedEndDate: (l.plannedEndDate as Date)?.toISOString(),
             leaveEndDate: (l.leaveEndDate as Date)?.toISOString(),
             rejoinedDate: (l.rejoinedDate as Date)?.toISOString(),
         })),
@@ -271,8 +273,9 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
                                 <div><Label>Leave Type</Label><Controller control={form.control} name={`leaveHistory.${activeLeaveIndex}.leaveType`} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><SelectTrigger><SelectValue placeholder="Select..."/></SelectTrigger><SelectContent><SelectItem value="Emergency">Emergency</SelectItem><SelectItem value="Annual">Annual</SelectItem></SelectContent></Select>)}/></div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div><Label>Leave Start</Label><DatePickerController name={`leaveHistory.${activeLeaveIndex}.leaveStartDate`} control={form.control} /></div>
-                                    <div><Label>Rejoined Date</Label><DatePickerController name={`leaveHistory.${activeLeaveIndex}.rejoinedDate`} control={form.control} /></div>
+                                    <div><Label>Planned End Date</Label><DatePickerController name={`leaveHistory.${activeLeaveIndex}.plannedEndDate`} control={form.control} /></div>
                                 </div>
+                                <div><Label>Rejoined Date</Label><DatePickerController name={`leaveHistory.${activeLeaveIndex}.rejoinedDate`} control={form.control} /></div>
                                 <div className="text-sm text-muted-foreground">Setting a rejoining date will automatically set the leave end date and change status to 'Working'.</div>
                             </div>
                         )}
@@ -280,9 +283,10 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
                             <div className="space-y-2">
                                 <h4 className='font-semibold flex items-center gap-2'><History className="h-4 w-4"/>Leave History</h4>
                                 <div className="p-2 border rounded-md space-y-2 bg-muted/50 max-h-40 overflow-y-auto">
-                                    {watchedLeaveHistory.filter(l => l.rejoinedDate && l.leaveEndDate).map((leave, index) => (
+                                    {watchedLeaveHistory.filter(l => l.rejoinedDate && l.leaveEndDate).map((leave) => (
                                         <div key={leave.id} className="text-xs p-2 bg-background rounded">
                                             <p><strong>{leave.leaveType || 'Leave'}</strong> from {format(new Date(leave.leaveStartDate), 'dd-MM-yy')} to {format(new Date(leave.leaveEndDate as Date), 'dd-MM-yy')}</p>
+                                            <p>Planned End: {leave.plannedEndDate ? format(new Date(leave.plannedEndDate), 'dd-MM-yy') : 'N/A'}, Rejoined: {format(new Date(leave.rejoinedDate as Date), 'dd-MM-yy')}</p>
                                         </div>
                                     ))}
                                 </div>

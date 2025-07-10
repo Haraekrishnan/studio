@@ -334,7 +334,8 @@ export interface LeaveRecord {
     id: string;
     leaveType?: 'Emergency' | 'Annual';
     leaveStartDate: string;
-    leaveEndDate?: string;
+    plannedEndDate?: string;
+    leaveEndDate?: string; // Actual end date
     rejoinedDate?: string;
 }
 
