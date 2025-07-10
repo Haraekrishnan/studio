@@ -20,7 +20,7 @@ const reportSchema = z.object({
   projectId: z.string().min(1, 'Project/Location is required'),
   unitArea: z.string().min(1, 'Unit/Area is required'),
   incidentDetails: z.string().min(1, 'Incident details are required'),
-  incidentTime: z.date({ required_error: "Time of incident is required" }),
+  incidentTime: z.date({ required_error: "Date and time of incident is required" }),
 });
 
 type ReportFormValues = z.infer<typeof reportSchema>;
@@ -37,7 +37,6 @@ export default function NewIncidentReportDialog({ isOpen, setIsOpen }: NewIncide
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
     defaultValues: { 
-      incidentTime: new Date(),
       projectId: user?.projectId || '',
     },
   });
@@ -56,7 +55,7 @@ export default function NewIncidentReportDialog({ isOpen, setIsOpen }: NewIncide
   };
   
   const handleOpenChange = (open: boolean) => {
-    if (!open) form.reset({ incidentTime: new Date(), projectId: user?.projectId || '' });
+    if (!open) form.reset({ projectId: user?.projectId || '' });
     setIsOpen(open);
   }
 
