@@ -52,7 +52,7 @@ const roleHierarchy: Record<Role, number> = {
 };
 
 export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDialogProps) {
-  const { user, users, tasks, updateTask, getVisibleUsers, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, addComment, markTaskAsViewed } = useAppContext();
+  const { user, users, tasks, updateTask, getVisibleUsers, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, addComment, markTaskAsViewed, requestTaskReassignment } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
   const [attachment, setAttachment] = useState<File | null>(null);
@@ -70,7 +70,9 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
 
   const isCompleted = taskToDisplay.status === 'Completed';
   const isAdmin = user?.role === 'Admin';
+  const isCreator = user?.id === taskToDisplay.creatorId;
   const canEditFields = !isCompleted || isAdmin;
+  const canEditDueDate = isCreator || isAdmin;
 
   useEffect(() => {
     if (taskToDisplay && isOpen) {
@@ -180,24 +182,8 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
         const newAssignee = users.find(u => u.id === data.assigneeId);
         if (!newAssignee) return;
         
-        const canAutoApproveReassignment = user.role === 'Admin' || user.role === 'Manager';
-        const reassignmentCommentText = `Reassignment requested to ${newAssignee.name}. Reason: ${newComment}`;
-        
-        if (canAutoApproveReassignment) {
-            addComment(task.id, reassignmentCommentText);
-            updateTask({ ...taskToDisplay, ...data, dueDate: data.dueDate.toISOString() });
-            toast({ title: 'Task Reassigned', description: `Task has been assigned to ${newAssignee.name}` });
-        } else {
-            const reassignmentRequest: Partial<Task> = {
-                pendingAssigneeId: data.assigneeId,
-                status: 'Pending Approval',
-                previousStatus: taskToDisplay.status,
-                approvalState: 'pending',
-            };
-            addComment(task.id, reassignmentCommentText);
-            updateTask({ ...taskToDisplay, ...reassignmentRequest });
-            toast({ title: 'Reassignment Requested', description: 'Your request has been sent for approval.' });
-        }
+        requestTaskReassignment(task.id, newAssignee.id, newComment);
+        toast({ title: 'Reassignment Requested', description: 'Your request has been sent for approval.' });
 
     } else { // No assignee change, just a regular update
         const updatedData: Partial<Task> = {
@@ -307,7 +293,7 @@ export default function EditTaskDialog({ isOpen, setIsOpen, task }: EditTaskDial
                     <Controller control={form.control} name="dueDate"
                         render={({ field }) => (
                         <Popover>
-                            <PopoverTrigger asChild disabled={!canEditFields}>
+                            <PopoverTrigger asChild disabled={!canEditDueDate}>
                             <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {field.value ? format(field.value, 'dd-MM-yyyy') : <span>Pick a date</span>}

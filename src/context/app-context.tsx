@@ -59,6 +59,7 @@ interface AppContextType {
   requestTaskStatusChange: (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']) => boolean;
   approveTaskStatusChange: (taskId: string, commentText: string) => void;
   returnTaskStatusChange: (taskId: string, commentText: string) => void;
+  requestTaskReassignment: (taskId: string, newAssigneeId: string, commentText: string) => void;
   addComment: (taskId: string, commentText: string) => void;
   markTaskAsViewed: (taskId: string) => void;
   addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => void;
@@ -302,7 +303,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setTasks(prevTasks => {
         const updatedTasks = prevTasks.map(t => {
             if (t.id === taskId) {
-                const updatedComments = t.comments ? [...t.comments, newComment] : [newComment];
+                const updatedComments = t.comments ? [newComment, ...t.comments] : [newComment];
                 return { ...t, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
             }
             return t;
@@ -321,104 +322,132 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (newStatus === 'Completed' && task.requiresAttachmentForCompletion && !attachment && !task.attachment) {
       return false; // Prevents completion without attachment
     }
+    
+    const formattedComment = `Status change requested to "${newStatus}": ${commentText}`;
+    const newComment: Comment = { userId: user.id, text: formattedComment, date: new Date().toISOString() };
 
-    const newComment: Comment = {
-      userId: user.id,
-      text: `Status change requested to "${newStatus}": ${commentText}`,
-      date: new Date().toISOString()
-    };
-    const updatedComments = task.comments ? [newComment, ...task.comments] : [newComment];
-
-    const updatedTask = {
-      ...task,
-      comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-      previousStatus: task.status,
-      pendingStatus: newStatus,
-      approvalState: 'pending' as ApprovalState,
-      status: 'Pending Approval' as TaskStatus,
-      attachment: attachment || task.attachment,
-    };
-    updateTask(updatedTask);
+    setTasks(prevTasks => prevTasks.map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          comments: [newComment, ...(t.comments || [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+          previousStatus: t.status,
+          pendingStatus: newStatus,
+          approvalState: 'pending' as ApprovalState,
+          status: 'Pending Approval' as TaskStatus,
+          attachment: attachment || t.attachment,
+        };
+      }
+      return t;
+    }));
+    
     recordAction(`Requested status change to "${newStatus}" for task: "${task.title}"`);
     return true;
-  }, [tasks, user, updateTask, recordAction]);
+  }, [tasks, user, recordAction]);
+
+  const requestTaskReassignment = useCallback((taskId: string, newAssigneeId: string, commentText: string) => {
+    if (!user) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    const newAssignee = users.find(u => u.id === newAssigneeId);
+    if (!newAssignee) return;
+
+    const formattedComment = `Reassignment requested to ${newAssignee.name}. Reason: ${commentText}`;
+    const newComment: Comment = { userId: user.id, text: formattedComment, date: new Date().toISOString() };
+    
+    setTasks(prevTasks => prevTasks.map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          comments: [newComment, ...(t.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+          pendingAssigneeId: newAssigneeId,
+          status: 'Pending Approval',
+          previousStatus: t.status,
+          approvalState: 'pending',
+        };
+      }
+      return t;
+    }));
+
+    recordAction(`Requested reassignment of task "${task.title}" to ${newAssignee.name}`);
+  }, [user, users, tasks, recordAction]);
   
   const approveTaskStatusChange = useCallback((taskId: string, commentText: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task || !user) return;
+    if (!user) return;
 
-    const newComment: Comment = {
-      userId: user.id,
-      text: `Request Approved: ${commentText}`,
-      date: new Date().toISOString(),
-    };
-    const updatedComments = task.comments ? [newComment, ...task.comments] : [newComment];
-    
-    let updatedTask: Partial<Task>;
+    setTasks(prevTasks => prevTasks.map(t => {
+      if (t.id === taskId) {
+        const newComment: Comment = { userId: user.id, text: `Request Approved: ${commentText}`, date: new Date().toISOString() };
+        const updatedComments = [newComment, ...(t.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    if (task.pendingAssigneeId) { // It's a reassignment request
-        const newAssignee = users.find(u => u.id === task.pendingAssigneeId);
-        updatedTask = {
-            assigneeId: task.pendingAssigneeId,
-            status: task.previousStatus || 'To Do',
+        if (t.pendingAssigneeId) { // It's a reassignment request
+          const newAssignee = users.find(u => u.id === t.pendingAssigneeId);
+          recordAction(`Approved reassignment of task "${t.title}" to ${newAssignee?.name}`);
+          return {
+            ...t,
+            comments: updatedComments,
+            assigneeId: t.pendingAssigneeId,
+            status: t.previousStatus || 'To Do',
             pendingAssigneeId: undefined,
             previousStatus: undefined,
-            approvalState: 'none',
+            approvalState: 'approved',
             isViewedByAssignee: false,
-        };
-        recordAction(`Approved reassignment of task "${task.title}" to ${newAssignee?.name}`);
-    } else if (task.pendingStatus) { // It's a status change request
-        const isCompleting = task.pendingStatus === 'Completed';
-        updatedTask = {
-            status: task.pendingStatus,
-            completionDate: isCompleting ? new Date().toISOString() : task.completionDate,
+          };
+        } else if (t.pendingStatus) { // It's a status change request
+          const isCompleting = t.pendingStatus === 'Completed';
+          recordAction(`Approved status change for task: "${t.title}"`);
+          return {
+            ...t,
+            comments: updatedComments,
+            status: t.pendingStatus,
+            completionDate: isCompleting ? new Date().toISOString() : t.completionDate,
             pendingStatus: undefined,
             previousStatus: undefined,
             approvalState: 'approved',
-        };
-        recordAction(`Approved status change for task: "${task.title}"`);
-    } else {
-        return; // Nothing to approve
-    }
-    
-    updateTask({ ...task, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), ...updatedTask });
-  }, [tasks, users, user, updateTask, recordAction]);
+          };
+        }
+      }
+      return t;
+    }));
+  }, [user, users, recordAction]);
   
   const returnTaskStatusChange = useCallback((taskId: string, commentText: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task || !user) return;
+    if (!user) return;
 
-    const newComment: Comment = {
-      userId: user.id,
-      text: `Request Returned: ${commentText}`,
-      date: new Date().toISOString(),
-    };
-    const updatedComments = task.comments ? [newComment, ...task.comments] : [newComment];
+    setTasks(prevTasks => prevTasks.map(t => {
+      if (t.id === taskId) {
+        const newComment: Comment = { userId: user.id, text: `Request Returned: ${commentText}`, date: new Date().toISOString() };
+        const updatedComments = [newComment, ...(t.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        let updatedTask: Partial<Task>;
 
-    let updatedTask: Partial<Task>;
-
-    if (task.pendingAssigneeId) { // It's a reassignment request being returned
-        updatedTask = {
-            status: task.previousStatus || 'To Do',
-            pendingAssigneeId: undefined,
-            previousStatus: undefined,
-            approvalState: 'returned',
-        };
-        recordAction(`Returned (rejected) reassignment of task "${task.title}"`);
-    } else if (task.pendingStatus) { // It's a status change request being returned
-        updatedTask = {
-            status: task.previousStatus || 'In Progress',
-            pendingStatus: undefined,
-            previousStatus: undefined,
-            approvalState: 'returned',
-        };
-        recordAction(`Returned task "${task.title}" to status "${updatedTask.status}"`);
-    } else {
-        return;
-    }
-
-    updateTask({ ...task, comments: updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), ...updatedTask });
-  }, [tasks, user, updateTask, recordAction]);
+        if (t.pendingAssigneeId) { // It's a reassignment request being returned
+            recordAction(`Returned (rejected) reassignment of task "${t.title}"`);
+            return {
+                ...t,
+                comments: updatedComments,
+                status: t.previousStatus || 'To Do',
+                pendingAssigneeId: undefined,
+                previousStatus: undefined,
+                approvalState: 'returned',
+            };
+        } else if (t.pendingStatus) { // It's a status change request being returned
+            const returnToStatus = t.previousStatus || 'In Progress';
+            recordAction(`Returned task "${t.title}" to status "${returnToStatus}"`);
+            return {
+                ...t,
+                comments: updatedComments,
+                status: returnToStatus,
+                pendingStatus: undefined,
+                previousStatus: undefined,
+                approvalState: 'returned',
+            };
+        }
+      }
+      return t;
+    }));
+  }, [user, recordAction]);
 
   const deleteTask = useCallback((taskId: string) => {
     const taskTitle = tasks.find(t => t.id === taskId)?.title;
@@ -1391,6 +1420,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     requestTaskStatusChange,
     approveTaskStatusChange,
     returnTaskStatusChange,
+    requestTaskReassignment,
     addComment,
     markTaskAsViewed,
     addManualAchievement,

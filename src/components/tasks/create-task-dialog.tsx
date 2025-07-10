@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { PlusCircle, CalendarIcon } from 'lucide-react';
 import type { Priority, Role } from '@/lib/types';
 
@@ -23,7 +23,9 @@ const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
   assigneeId: z.string().min(1, 'Assignee is required'),
-  dueDate: z.date({ required_error: 'Due date is required' }),
+  dueDate: z.date({ required_error: 'Due date is required' }).refine(date => {
+    return startOfDay(date) >= startOfDay(new Date());
+  }, { message: "Due date cannot be in the past." }),
   priority: z.enum(['Low', 'Medium', 'High']),
   requiresAttachmentForCompletion: z.boolean().default(false),
 });
