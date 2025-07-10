@@ -15,11 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
+import { TransferList } from '../ui/transfer-list';
 import * as XLSX from 'xlsx';
-import { Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 const statusVariant: { [key in IncidentStatus]: "default" | "secondary" | "destructive" | "outline" } = {
     'New': 'destructive',
@@ -41,6 +38,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
   const { user, users, projects, roles, updateIncident, addIncidentComment, publishIncident, addUsersToIncidentReport } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
+  const [showAddUsers, setShowAddUsers] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   
   const reporter = useMemo(() => users.find(u => u.id === incident.reporterId), [users, incident.reporterId]);
@@ -61,10 +59,13 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
   }, [user]);
 
   const availableUsersToAdd = useMemo(() => {
-      const participantIds = new Set(participants.map(p => p.id));
-      const allowedRoles: Role[] = ['Admin', 'Manager', 'HSE', 'Supervisor'];
-      return users.filter(u => !participantIds.has(u.id) && allowedRoles.includes(u.role));
+    const participantIds = new Set(participants.map(p => p.id));
+    const allowedRoles: Role[] = ['Admin', 'Manager', 'HSE', 'Supervisor'];
+    return users
+      .filter(u => !participantIds.has(u.id) && allowedRoles.includes(u.role))
+      .map(u => ({ value: u.id, label: `${u.name} (${u.role})` }));
   }, [users, participants]);
+
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user) return;
@@ -89,6 +90,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
     const addedUserNames = users.filter(u => selectedUsers.includes(u.id)).map(u => u.name).join(', ');
     toast({ title: 'Users Added', description: `${addedUserNames} added to the incident.` });
     setSelectedUsers([]);
+    setShowAddUsers(false);
   };
   
   const handleGenerateReport = () => {
@@ -169,43 +171,29 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
                            {p.name}
                         </div>
                     ))}
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button size="sm" variant="outline" disabled={!canAddUsers || availableUsersToAdd.length === 0}>
-                                <UserPlus className="mr-2 h-4 w-4"/>Add Users
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-auto">
-                           <Command>
-                                <CommandInput placeholder="Search user..." />
-                                <CommandList>
-                                <CommandEmpty>No users found.</CommandEmpty>
-                                <CommandGroup>
-                                    {availableUsersToAdd.map((u) => (
-                                    <CommandItem
-                                        key={u.id}
-                                        onSelect={() => {
-                                            setSelectedUsers(prev => 
-                                                prev.includes(u.id) 
-                                                ? prev.filter(id => id !== u.id)
-                                                : [...prev, u.id]
-                                            );
-                                        }}
-                                    >
-                                        <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", selectedUsers.includes(u.id) ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
-                                            <Check className={cn("h-4 w-4")} />
-                                        </div>
-                                        {u.name}
-                                    </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                                </CommandList>
-                                 {selectedUsers.length > 0 && <Button size="sm" className="m-1 w-[calc(100%-8px)]" onClick={handleAddUsers}>Add {selectedUsers.length} Users</Button>}
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+                    {canAddUsers && (
+                        <Button size="sm" variant="outline" onClick={() => setShowAddUsers(true)} disabled={availableUsersToAdd.length === 0}>
+                            <UserPlus className="mr-2 h-4 w-4"/>Add Users
+                        </Button>
+                    )}
                 </div>
             </div>
+            {showAddUsers && (
+                <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
+                    <h4 className="font-semibold">Add Users to Report</h4>
+                    <TransferList
+                        options={availableUsersToAdd}
+                        selected={selectedUsers}
+                        onChange={setSelectedUsers}
+                        availableTitle="Available Personnel"
+                        selectedTitle="To Be Added"
+                    />
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="ghost" size="sm" onClick={() => {setShowAddUsers(false); setSelectedUsers([]);}}>Cancel</Button>
+                        <Button size="sm" onClick={handleAddUsers} disabled={selectedUsers.length === 0}>Add {selectedUsers.length} User(s)</Button>
+                    </div>
+                </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-4">
