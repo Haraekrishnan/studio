@@ -8,16 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Send, ThumbsUp, ThumbsDown, UserPlus, FileDown, Layers } from 'lucide-react';
-import type { IncidentReport, IncidentStatus, Comment } from '@/lib/types';
+import { Send, UserPlus, FileDown, Layers } from 'lucide-react';
+import type { IncidentReport, IncidentStatus, Comment, Role } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Textarea } from '../ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '../ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import * as XLSX from 'xlsx';
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const statusVariant: { [key in IncidentStatus]: "default" | "secondary" | "destructive" | "outline" } = {
     'New': 'destructive',
@@ -36,34 +38,32 @@ interface EditIncidentReportDialogProps {
 }
 
 export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }: EditIncidentReportDialogProps) {
-  const { user, users, projects, roles, updateIncident, addIncidentComment, loopInUserToIncident, publishIncident } = useAppContext();
+  const { user, users, projects, roles, updateIncident, addIncidentComment, publishIncident, addUsersToIncidentReport } = useAppContext();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   
   const reporter = useMemo(() => users.find(u => u.id === incident.reporterId), [users, incident.reporterId]);
   
-  const canLoopIn = useMemo(() => {
-    if (!user) return false;
-    const allowedRoles: string[] = ['Admin', 'Manager', 'HSE', 'Supervisor'];
-    return allowedRoles.includes(user.role);
-  }, [user]);
-
   const canChangeStatusAndPublish = useMemo(() => ['Admin', 'HSE', 'Manager'].includes(user?.role || ''), [user]);
 
   const project = useMemo(() => projects.find(p => p.id === incident.projectId), [projects, incident.projectId]);
 
   const participants = useMemo(() => {
-    const pIds = new Set([incident.reporterId, ...(incident.loopedInUserIds || [])]);
+    const pIds = new Set([incident.reporterId, ...(incident.reportedToUserIds || [])]);
     return users.filter(u => pIds.has(u.id));
   }, [users, incident]);
+  
+  const canAddUsers = useMemo(() => {
+    if (!user) return false;
+    const allowedRoles: Role[] = ['Admin', 'Manager', 'HSE', 'Supervisor'];
+    return allowedRoles.includes(user.role);
+  }, [user]);
 
-  const nonParticipants = useMemo(() => {
-    const participantIds = new Set(participants.map(p => p.id));
-    // Users who are not participants and have roles that can be looped in
-    return users.filter(u => 
-        !participantIds.has(u.id) && 
-        ['Admin', 'Manager', 'Supervisor', 'HSE'].includes(u.role)
-    );
+  const availableUsersToAdd = useMemo(() => {
+      const participantIds = new Set(participants.map(p => p.id));
+      const allowedRoles: Role[] = ['Admin', 'Manager', 'HSE', 'Supervisor'];
+      return users.filter(u => !participantIds.has(u.id) && allowedRoles.includes(u.role));
   }, [users, participants]);
 
   const handleAddComment = () => {
@@ -80,11 +80,15 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
     toast({ title: 'Incident Status Updated' });
   };
   
-  const handleLoopInUser = (userId: string) => {
-    if (!canLoopIn) return;
-    loopInUserToIncident(incident.id, userId);
-    const loopedInUser = users.find(u => u.id === userId);
-    toast({ title: 'User Looped In', description: `${loopedInUser?.name} has been added to the incident.` });
+  const handleAddUsers = () => {
+    if (selectedUsers.length === 0) {
+        toast({variant: 'destructive', title: 'No users selected'});
+        return;
+    }
+    addUsersToIncidentReport(incident.id, selectedUsers);
+    const addedUserNames = users.filter(u => selectedUsers.includes(u.id)).map(u => u.name).join(', ');
+    toast({ title: 'Users Added', description: `${addedUserNames} added to the incident.` });
+    setSelectedUsers([]);
   };
   
   const handleGenerateReport = () => {
@@ -157,7 +161,7 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
                 </div>
             )}
             <div className="space-y-2">
-                <Label>Participants</Label>
+                <Label>Reported To</Label>
                 <div className="flex flex-wrap gap-2 items-center">
                     {participants.map(p => (
                         <div key={p.id} className="flex items-center gap-1 text-sm bg-muted p-1 rounded-md">
@@ -167,19 +171,36 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
                     ))}
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button size="sm" variant="outline" disabled={!canLoopIn || nonParticipants.length === 0}>
-                                <UserPlus className="mr-2 h-4 w-4"/>Loop In
+                            <Button size="sm" variant="outline" disabled={!canAddUsers || availableUsersToAdd.length === 0}>
+                                <UserPlus className="mr-2 h-4 w-4"/>Add Users
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="p-0">
-                            <Command>
+                        <PopoverContent className="p-0 w-auto">
+                           <Command>
                                 <CommandInput placeholder="Search user..." />
-                                <CommandEmpty>No user found.</CommandEmpty>
+                                <CommandList>
+                                <CommandEmpty>No users found.</CommandEmpty>
                                 <CommandGroup>
-                                    {nonParticipants.map(u => (
-                                        <CommandItem key={u.id} onSelect={() => handleLoopInUser(u.id)}>{u.name}</CommandItem>
+                                    {availableUsersToAdd.map((u) => (
+                                    <CommandItem
+                                        key={u.id}
+                                        onSelect={() => {
+                                            setSelectedUsers(prev => 
+                                                prev.includes(u.id) 
+                                                ? prev.filter(id => id !== u.id)
+                                                : [...prev, u.id]
+                                            );
+                                        }}
+                                    >
+                                        <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", selectedUsers.includes(u.id) ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
+                                            <Check className={cn("h-4 w-4")} />
+                                        </div>
+                                        {u.name}
+                                    </CommandItem>
                                     ))}
                                 </CommandGroup>
+                                </CommandList>
+                                 {selectedUsers.length > 0 && <Button size="sm" className="m-1 w-[calc(100%-8px)]" onClick={handleAddUsers}>Add {selectedUsers.length} Users</Button>}
                             </Command>
                         </PopoverContent>
                     </Popover>

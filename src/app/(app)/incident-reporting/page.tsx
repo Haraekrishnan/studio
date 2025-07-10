@@ -14,8 +14,6 @@ export default function IncidentReportingPage() {
     const canViewAllPublished = useMemo(() => {
         if (!user) return false;
         const userRole = roles.find(r => r.name === user.role);
-        // Let's assume for now all users can see published incidents.
-        // This could be tied to a permission later if needed.
         return true; 
     }, [user, roles]);
     
@@ -23,14 +21,12 @@ export default function IncidentReportingPage() {
         if (!user) return [];
         
         return incidents.filter(i => {
-            // If it's published, everyone can see it.
             if (i.isPublished) return true;
             
-            // If not published, only reporter and looped in users can see it.
             const isReporter = i.reporterId === user.id;
-            const isLoopedIn = (i.loopedInUserIds || []).includes(user.id);
+            const isReportedTo = (i.reportedToUserIds || []).includes(user.id);
             
-            return isReporter || isLoopedIn;
+            return isReporter || isReportedTo;
         });
     }, [user, incidents]);
 

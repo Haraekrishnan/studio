@@ -133,10 +133,10 @@ interface AppContextType {
   updateAnnouncement: (announcement: Announcement) => void;
   deleteAnnouncement: (announcementId: string) => void;
   dismissAnnouncement: (announcementId: string) => void;
-  addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds' | 'isPublished' | 'projectLocation'>) => void;
+  addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'reportedToUserIds' | 'isPublished' | 'projectLocation'>) => void;
   updateIncident: (incident: IncidentReport) => void;
   addIncidentComment: (incidentId: string, commentText: string) => void;
-  loopInUserToIncident: (incidentId: string, userId: string) => void;
+  addUsersToIncidentReport: (incidentId: string, userIds: string[]) => void;
   publishIncident: (incidentId: string) => void;
   expiringVehicleDocsCount: number;
   expiringDriverDocsCount: number;
@@ -1091,7 +1091,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
   const deleteDftMachine = useCallback((machineId: string) => {
     if (!user) return;
-    const machineName = dftMachines.find(m => m.id === machineId)?.machineName;
+    const machineName = dftMachines.find(m => m.id === machineId)?.name;
     setDftMachines(prev => prev.filter(m => m.id !== machineId));
     recordAction(`Deleted DFT Machine: ${machineName}`);
   }, [user, dftMachines, recordAction]);
@@ -1309,15 +1309,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     ));
   }, [user]);
   
-  const addIncidentReport = useCallback((report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds' | 'isPublished' | 'projectLocation'>) => {
+  const addIncidentReport = useCallback((report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'reportedToUserIds' | 'isPublished' | 'projectLocation'>) => {
     if (!user) return;
     const project = projects.find(p => p.id === report.projectId);
     const supervisor = users.find(u => u.id === user.supervisorId);
     const hseUsers = users.filter(u => u.role === 'HSE').map(u => u.id);
     
-    const initialLoopedIn = new Set<string>();
-    if(supervisor) initialLoopedIn.add(supervisor.id);
-    hseUsers.forEach(id => initialLoopedIn.add(id));
+    const initialReportedTo = new Set<string>();
+    if(supervisor) initialReportedTo.add(supervisor.id);
+    hseUsers.forEach(id => initialReportedTo.add(id));
     
     const newIncident: IncidentReport = {
         ...report,
@@ -1331,7 +1331,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
             text: `Incident reported by ${user.name}`,
             date: new Date().toISOString(),
         }],
-        loopedInUserIds: Array.from(initialLoopedIn),
+        reportedToUserIds: Array.from(initialReportedTo),
         isPublished: false,
     };
     setIncidents(prev => [newIncident, ...prev]);
@@ -1354,20 +1354,21 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     recordAction(`Commented on incident ID: ${incidentId}`);
   }, [user, recordAction]);
 
-  const loopInUserToIncident = useCallback((incidentId: string, userId: string) => {
+  const addUsersToIncidentReport = useCallback((incidentId: string, userIds: string[]) => {
     if (!user) return;
     setIncidents(prev => prev.map(i => {
         if (i.id === incidentId) {
-            const loopedInUser = users.find(u => u.id === userId);
+            const addedUsers = users.filter(u => userIds.includes(u.id));
+            const commentText = `${user.name} added ${addedUsers.map(u => u.name).join(', ')} to the report.`;
             const newComment: Comment = {
                 userId: user.id,
-                text: `${user.name} looped in ${loopedInUser?.name}`,
+                text: commentText,
                 date: new Date().toISOString(),
             };
-            const updatedLoopedIn = [...new Set([...(i.loopedInUserIds || []), userId])];
+            const updatedReportedTo = [...new Set([...(i.reportedToUserIds || []), ...userIds])];
             return {
                 ...i,
-                loopedInUserIds: updatedLoopedIn,
+                reportedToUserIds: updatedReportedTo,
                 comments: [...(i.comments || []), newComment],
             };
         }
@@ -1564,14 +1565,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   
   const newIncidentCount = useMemo(() => {
     if (!user) return 0;
-    const canViewAll = user.role === 'Admin' || user.role === 'Manager' || user.role === 'HSE';
-    
-    if (canViewAll) {
-      return incidents.filter(i => i.status === 'New').length;
-    }
-    
-    // For others, only count incidents they are part of
-    return incidents.filter(i => i.status === 'New' && (i.reporterId === user.id || (i.loopedInUserIds || []).includes(user.id))).length;
+    return incidents.filter(i => {
+      if (i.status !== 'New') return false;
+      return (i.reportedToUserIds || []).includes(user.id);
+    }).length;
   }, [incidents, user]);
 
   const value = {
@@ -1704,7 +1701,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addIncidentReport,
     updateIncident,
     addIncidentComment,
-    loopInUserToIncident,
+    addUsersToIncidentReport,
     publishIncident,
     expiringVehicleDocsCount,
     expiringDriverDocsCount,
@@ -1726,4 +1723,3 @@ export function useAppContext() {
 }
 
     
-

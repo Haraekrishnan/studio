@@ -400,7 +400,7 @@ export interface IncidentReport {
     reportTime: string; // ISO date string
     incidentDetails: string;
     status: IncidentStatus;
-    loopedInUserIds?: string[];
+    reportedToUserIds?: string[];
     comments?: Comment[];
     isPublished: boolean;
 }
