@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,7 +10,7 @@ import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
-  const { user, logout, appName, appLogo, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount, myUnreadManagementRequestCount, unreadAnnouncementCount, pendingAnnouncementCount } = useAppContext();
+  const { user, logout, appName, appLogo, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount, myUnreadManagementRequestCount, unreadAnnouncementCount, pendingAnnouncementCount, newIncidentCount } = useAppContext();
   const pathname = usePathname();
 
   const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
