@@ -26,6 +26,7 @@ export default function DashboardPage() {
   
   const unreadAnnouncements = useMemo(() => {
     if (!user) return [];
+    // An announcement is unread if its `isViewed` array does NOT include the current user's ID.
     return approvedAnnouncements.filter(a => !a.isViewed.includes(user.id));
   }, [approvedAnnouncements, user]);
 

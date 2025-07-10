@@ -129,6 +129,9 @@ interface AppContextType {
   addAnnouncement: (announcement: Pick<Announcement, 'title' | 'content'>) => void;
   approveAnnouncement: (announcementId: string) => void;
   rejectAnnouncement: (announcementId: string) => void;
+  returnAnnouncement: (announcementId: string, comment: string) => void;
+  updateAnnouncement: (announcement: Announcement) => void;
+  deleteAnnouncement: (announcementId: string) => void;
   dismissAnnouncement: (announcementId: string) => void;
   addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'loopedInUserIds' | 'isPublished' | 'projectLocation'>) => void;
   updateIncident: (incident: IncidentReport) => void;
@@ -1269,6 +1272,32 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'approved' } : a));
   }, []);
   
+  const returnAnnouncement = useCallback((announcementId: string, comment: string) => {
+    if (!user) return;
+    setAnnouncements(prev => prev.map(a => {
+        if (a.id === announcementId) {
+            return {
+                ...a,
+                status: 'rejected', // Or a new 'returned' status if needed
+                comments: [...(a.comments || []), {
+                    userId: user.id,
+                    text: `Returned for modification: ${comment}`,
+                    date: new Date().toISOString()
+                }]
+            }
+        }
+        return a;
+    }));
+  }, [user]);
+
+  const updateAnnouncement = useCallback((announcement: Announcement) => {
+    setAnnouncements(prev => prev.map(a => a.id === announcement.id ? announcement : a));
+  }, []);
+
+  const deleteAnnouncement = useCallback((announcementId: string) => {
+      setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
+  }, []);
+  
   const rejectAnnouncement = useCallback((announcementId: string) => {
     setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'rejected' } : a));
   }, []);
@@ -1276,7 +1305,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const dismissAnnouncement = useCallback((announcementId: string) => {
     if (!user) return;
     setAnnouncements(prev => prev.map(a => 
-      a.id === announcementId ? { ...a, isViewed: [...a.isViewed, user.id] } : a
+      a.id === announcementId ? { ...a, isViewed: [...new Set([...a.isViewed, user.id])] } : a
     ));
   }, [user]);
   
@@ -1335,7 +1364,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
                 text: `${user.name} looped in ${loopedInUser?.name}`,
                 date: new Date().toISOString(),
             };
-            const updatedLoopedIn = [...(i.loopedInUserIds || []), userId];
+            const updatedLoopedIn = [...new Set([...(i.loopedInUserIds || []), userId])];
             return {
                 ...i,
                 loopedInUserIds: updatedLoopedIn,
@@ -1348,8 +1377,22 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   
   const publishIncident = useCallback((incidentId: string) => {
     setIncidents(prev => prev.map(i => i.id === incidentId ? { ...i, isPublished: true } : i));
+    const incident = incidents.find(i => i.id === incidentId);
+    if(incident) {
+      const newAnnouncement: Announcement = {
+        id: `ann-inc-${incident.id}`,
+        creatorId: incident.reporterId,
+        approverId: 'system',
+        title: `Incident Report Published: ${incident.projectLocation}`,
+        content: `An incident reported on ${format(new Date(incident.reportTime), 'PPP')} has been published for general awareness. Details:\n\n${incident.incidentDetails}`,
+        date: new Date().toISOString(),
+        status: 'approved',
+        isViewed: [],
+      };
+      setAnnouncements(prev => [newAnnouncement, ...prev]);
+    }
     recordAction(`Published incident ID: ${incidentId}`);
-  }, [recordAction]);
+  }, [recordAction, incidents]);
   
   const approvedAnnouncements = useMemo(() => {
     return announcements.filter(a => a.status === 'approved');
@@ -1410,12 +1453,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (!canManageVehicles) return 0;
     const thirtyDaysFromNow = addDays(new Date(), 30);
     return vehicles.filter(v => {
-        const vapDate = new Date(v.vapValidity);
-        const sdpDate = new Date(v.sdpValidity);
-        const epDate = new Date(v.epValidity);
-        const isExpiring = isBefore(vapDate, thirtyDaysFromNow) ||
-                           isBefore(sdpDate, thirtyDaysFromNow) ||
-                           isBefore(epDate, thirtyDaysFromNow);
+        const vapDate = v.vapValidity ? new Date(v.vapValidity) : null;
+        const sdpDate = v.sdpValidity ? new Date(v.sdpValidity) : null;
+        const epDate = v.epValidity ? new Date(v.epValidity) : null;
+        const isExpiring = (vapDate && isBefore(vapDate, thirtyDaysFromNow)) ||
+                           (sdpDate && isBefore(sdpDate, thirtyDaysFromNow)) ||
+                           (epDate && isBefore(epDate, thirtyDaysFromNow));
         return isExpiring;
     }).length;
   }, [vehicles, canManageVehicles]);
@@ -1654,6 +1697,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addAnnouncement,
     approveAnnouncement,
     rejectAnnouncement,
+    returnAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
     dismissAnnouncement,
     addIncidentReport,
     updateIncident,
@@ -1680,3 +1726,4 @@ export function useAppContext() {
 }
 
     
+
