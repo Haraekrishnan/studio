@@ -10,6 +10,7 @@ import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import NewAnnouncementDialog from '../announcements/NewAnnouncementDialog';
 import { useRouter } from 'next/navigation';
+import AnnouncementApprovalDialog from '../announcements/AnnouncementApprovalDialog';
 
 export default function Header() {
   const { user, logout, appName, appLogo, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount, unreadAnnouncementCount, pendingAnnouncementCount, newIncidentCount, myUnreadManagementRequestCount, unreadManagementRequestCountForMe } = useAppContext();
@@ -50,7 +51,6 @@ export default function Header() {
     if (pathname.startsWith('/ut-machine-status')) return 'Equipment Status';
     if (pathname.startsWith('/vehicle-status')) return 'Vehicle Status';
     if (pathname.startsWith('/driver-list')) return 'Driver List';
-    if (pathname.startsWith('/announcements')) return 'Announcements';
     if (pathname.startsWith('/incident-reporting')) return 'Incident Reporting';
     return 'Task Management System';
   };
@@ -68,7 +68,6 @@ export default function Header() {
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
-    ...(canApproveAnnouncements ? [{ href: '/announcements', icon: Megaphone, label: 'Approvals', notification: pendingAnnouncementCount }] : []),
     { href: '/account', icon: Users, label: 'Account' },
   ];
 
@@ -143,6 +142,7 @@ export default function Header() {
       </div>
       <div className="flex items-center gap-2">
         <TooltipProvider>
+            {canApproveAnnouncements && <AnnouncementApprovalDialog />}
             <NewAnnouncementDialog />
              <Tooltip>
                 <TooltipTrigger asChild>

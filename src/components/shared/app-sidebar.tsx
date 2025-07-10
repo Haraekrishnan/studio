@@ -15,7 +15,6 @@ export function AppSidebar() {
 
   const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
   const canManageUtMachines = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_ut_machines');
-  const canApproveAnnouncements = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('approve_announcements');
   
   const myRequestsNotificationCount = myRequestUpdateCount + myUnreadManagementRequestCount;
   
@@ -30,7 +29,7 @@ export function AppSidebar() {
   let vehicleNotificationCount = 0;
   if (canManageVehicles) vehicleNotificationCount += (expiringVehicleDocsCount + expiringDriverDocsCount);
   
-  const incidentNotificationCount = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'HSE') ? newIncidentCount : 0;
+  const incidentNotificationCount = newIncidentCount;
   
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', notification: unreadAnnouncementCount },
@@ -45,7 +44,6 @@ export function AppSidebar() {
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
-    ...(canApproveAnnouncements ? [{ href: '/announcements', icon: Megaphone, label: 'Approvals', notification: pendingAnnouncementCount }] : []),
     { href: '/account', icon: Users, label: 'Account' },
   ];
 
