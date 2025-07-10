@@ -32,13 +32,8 @@ export default function Header() {
 
   let vehicleNotificationCount = 0;
   if (canManageVehicles) vehicleNotificationCount += (expiringVehicleDocsCount + expiringDriverDocsCount);
-
-  let announcementsNotificationCount = unreadAnnouncementCount;
-  if (canApproveAnnouncements) {
-      announcementsNotificationCount += pendingAnnouncementCount;
-  }
   
-  const incidentNotificationCount = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'HSE') ? newIncidentCount : 0;
+  const incidentNotificationCount = newIncidentCount;
 
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -61,7 +56,7 @@ export default function Header() {
   };
   
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', notification: unreadAnnouncementCount },
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks', notification: taskNotificationCount },
     { href: '/my-requests', icon: History, label: 'My Requests', notification: myRequestsNotificationCount },
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
@@ -73,6 +68,7 @@ export default function Header() {
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
+    ...(canApproveAnnouncements ? [{ href: '/announcements', icon: Megaphone, label: 'Approvals', notification: pendingAnnouncementCount }] : []),
     { href: '/account', icon: Users, label: 'Account' },
   ];
 
@@ -147,17 +143,6 @@ export default function Header() {
       </div>
       <div className="flex items-center gap-2">
         <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="relative">
-                        <Megaphone />
-                        {announcementsNotificationCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center" variant="destructive">{announcementsNotificationCount}</Badge>}
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>Announcements</p>
-                </TooltipContent>
-            </Tooltip>
             <NewAnnouncementDialog />
              <Tooltip>
                 <TooltipTrigger asChild>

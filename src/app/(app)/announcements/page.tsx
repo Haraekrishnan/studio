@@ -2,14 +2,16 @@
 import { useMemo } from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatDistanceToNow, format } from 'date-fns';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { Megaphone, AlertTriangle } from 'lucide-react';
+import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AnnouncementsPage() {
-    const { user, roles, announcements, approveAnnouncement, rejectAnnouncement } = useAppContext();
+    const { user, users, roles, announcements, approveAnnouncement, rejectAnnouncement } = useAppContext();
+    const { toast } = useToast();
 
     const canApprove = useMemo(() => {
         if (!user) return false;
@@ -21,6 +23,16 @@ export default function AnnouncementsPage() {
         if (!canApprove) return [];
         return announcements.filter(a => a.status === 'pending');
     }, [announcements, canApprove]);
+    
+    const handleApprove = (id: string) => {
+        approveAnnouncement(id);
+        toast({ title: "Announcement Approved" });
+    };
+
+    const handleReject = (id: string) => {
+        rejectAnnouncement(id);
+        toast({ variant: 'destructive', title: "Announcement Rejected" });
+    };
 
     if (!canApprove) {
         return (
@@ -57,26 +69,37 @@ export default function AnnouncementsPage() {
                 </CardHeader>
                 <CardContent>
                      {pendingAnnouncements.length > 0 ? (
-                        <div className="space-y-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Submitted By</TableHead>
+                                    <TableHead>Title</TableHead>
+                                    <TableHead>Content</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                             {pendingAnnouncements.map(announcement => {
-                                const creator = announcements.find(u => u.id === announcement.creatorId);
+                                const creator = users.find(u => u.id === announcement.creatorId);
                                 return (
-                                    <div key={announcement.id} className="border p-4 rounded-lg">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="font-semibold">{announcement.title}</h3>
-                                                <p className="text-sm text-muted-foreground">Submitted by {creator?.name} on {format(new Date(announcement.date), 'PPP')}</p>
+                                    <TableRow key={announcement.id}>
+                                        <TableCell>
+                                             <div className="flex items-center gap-2">
+                                                <Avatar className="h-8 w-8"><AvatarImage src={creator?.avatar}/><AvatarFallback>{creator?.name.charAt(0)}</AvatarFallback></Avatar>
+                                                {creator?.name}
                                             </div>
-                                            <div className="flex gap-2">
-                                                <Button size="sm" onClick={() => approveAnnouncement(announcement.id)}>Approve</Button>
-                                                <Button size="sm" variant="destructive" onClick={() => rejectAnnouncement(announcement.id)}>Reject</Button>
-                                            </div>
-                                        </div>
-                                        <p className="mt-2 text-sm bg-muted p-2 rounded-md">{announcement.content}</p>
-                                    </div>
+                                        </TableCell>
+                                        <TableCell>{announcement.title}</TableCell>
+                                        <TableCell><p className="max-w-xs truncate">{announcement.content}</p></TableCell>
+                                        <TableCell className="text-right space-x-2">
+                                            <Button size="sm" onClick={() => handleApprove(announcement.id)}>Approve</Button>
+                                            <Button size="sm" variant="destructive" onClick={() => handleReject(announcement.id)}>Reject</Button>
+                                        </TableCell>
+                                    </TableRow>
                                 )
                             })}
-                        </div>
+                            </TableBody>
+                        </Table>
                      ) : null}
                 </CardContent>
             </Card>

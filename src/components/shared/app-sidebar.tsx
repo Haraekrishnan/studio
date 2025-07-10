@@ -7,21 +7,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Car, HardHat, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Briefcase, TrendingUp, FileText, Users, LogOut, Layers, CalendarDays, Award, History, Archive, Users2, Car, HardHat, ShieldAlert, Megaphone } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 export function AppSidebar() {
-  const { user, logout, appName, appLogo, pendingStoreRequestCount, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount, newIncidentCount } = useAppContext();
+  const { user, logout, appName, appLogo, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount, myUnreadManagementRequestCount, unreadAnnouncementCount, pendingAnnouncementCount } = useAppContext();
   const pathname = usePathname();
 
   const canManageVehicles = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_vehicles');
   const canManageUtMachines = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('manage_ut_machines');
+  const canApproveAnnouncements = user?.role && roles.find(r => r.name === user.role)?.permissions.includes('approve_announcements');
   
-  const isApprover = user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge' || user?.role === 'Assistant Store Incharge';
-  const myRequestsNotificationCount = isApprover ? pendingStoreRequestCount : myRequestUpdateCount;
+  const myRequestsNotificationCount = myRequestUpdateCount + myUnreadManagementRequestCount;
   
   let inventoryNotificationCount = 0;
-  if(isApprover) inventoryNotificationCount += pendingCertificateRequestCount;
+  if(user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'Store in Charge') inventoryNotificationCount += pendingCertificateRequestCount;
   
   const taskNotificationCount = pendingTaskApprovalCount + myNewTaskCount;
 
@@ -32,9 +32,9 @@ export function AppSidebar() {
   if (canManageVehicles) vehicleNotificationCount += (expiringVehicleDocsCount + expiringDriverDocsCount);
   
   const incidentNotificationCount = (user?.role === 'Admin' || user?.role === 'Manager' || user?.role === 'HSE') ? newIncidentCount : 0;
-
+  
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', notification: unreadAnnouncementCount },
     { href: '/tasks', icon: Briefcase, label: 'Manage Tasks', notification: taskNotificationCount },
     { href: '/my-requests', icon: History, label: 'My Requests', notification: myRequestsNotificationCount },
     { href: '/planner', icon: CalendarDays, label: 'Planner' },
@@ -46,6 +46,7 @@ export function AppSidebar() {
     { href: '/manpower', icon: Users2, label: 'Manpower', notification: expiringManpowerCount },
     { href: '/ut-machine-status', icon: HardHat, label: 'Equipment Status', notification: equipmentNotificationCount },
     { href: '/vehicle-status', icon: Car, label: 'Vehicle Status', notification: vehicleNotificationCount },
+    ...(canApproveAnnouncements ? [{ href: '/announcements', icon: Megaphone, label: 'Approvals', notification: pendingAnnouncementCount }] : []),
     { href: '/account', icon: Users, label: 'Account' },
   ];
 
