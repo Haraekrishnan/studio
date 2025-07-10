@@ -24,7 +24,6 @@ export const ALL_PERMISSIONS = [
   'manage_vehicles',
   'view_all_incidents',
   'approve_announcements',
-  'loop_in_incidents',
 ] as const;
 export type Permission = (typeof ALL_PERMISSIONS)[number];
 
@@ -172,6 +171,7 @@ export interface Announcement {
   date: string; // ISO date string
   status: 'pending' | 'approved' | 'rejected';
   isViewed: string[]; // Array of user IDs who have viewed it
+  comments?: Comment[];
 }
 
 

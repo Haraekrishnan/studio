@@ -44,9 +44,9 @@ export default function EditIncidentReportDialog({ isOpen, setIsOpen, incident }
   
   const canLoopIn = useMemo(() => {
     if (!user) return false;
-    const userRole = roles.find(r => r.name === user.role);
-    return userRole?.permissions.includes('loop_in_incidents') ?? false;
-  }, [user, roles]);
+    const allowedRoles: string[] = ['Admin', 'Manager', 'HSE', 'Supervisor'];
+    return allowedRoles.includes(user.role);
+  }, [user]);
 
   const canChangeStatusAndPublish = useMemo(() => ['Admin', 'HSE', 'Manager'].includes(user?.role || ''), [user]);
 

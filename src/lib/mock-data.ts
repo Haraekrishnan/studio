@@ -20,7 +20,7 @@ export const ROLES: RoleDefinition[] = [
       'view_all_activity', 'view_all_users', 'manage_inventory',
       'manage_manpower', 'manage_ut_machines', 'manage_ut_machine_logs', 'manage_vehicles',
       'manage_manpower_list', 'manage_dft_machines', 'manage_mobile_sims', 'manage_other_equipment',
-      'approve_announcements', 'loop_in_incidents',
+      'approve_announcements',
     ],
     isEditable: false,
   },
@@ -30,7 +30,6 @@ export const ROLES: RoleDefinition[] = [
     permissions: [
       'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
       'view_subordinates_activity', 'view_subordinates_users', 'approve_announcements',
-      'loop_in_incidents',
     ],
     isEditable: false,
   },
@@ -40,7 +39,6 @@ export const ROLES: RoleDefinition[] = [
     permissions: [
       'create_tasks', 'reassign_tasks', 'grant_manual_achievements', 
       'view_subordinates_activity', 'view_subordinates_users', 'approve_announcements',
-      'loop_in_incidents',
     ],
     isEditable: false,
   },
