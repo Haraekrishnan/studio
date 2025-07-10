@@ -200,7 +200,7 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
 
   useEffect(() => {
     if (activeLeaveIndex > -1) {
-        const rejoinedDate = form.getValues(`leaveHistory.${activeLeaveIndex}.rejoinedDate`);
+        const rejoinedDate = form.watch(`leaveHistory.${activeLeaveIndex}.rejoinedDate`);
         if (rejoinedDate) {
             const currentLeave = form.getValues(`leaveHistory.${activeLeaveIndex}`);
             updateLeave(activeLeaveIndex, { ...currentLeave, leaveEndDate: rejoinedDate });
@@ -276,11 +276,11 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
                                 <div className="text-sm text-muted-foreground">Setting a rejoining date will automatically set the leave end date and change status to 'Working'.</div>
                             </div>
                         )}
-                        {watchedLeaveHistory && watchedLeaveHistory.filter(l => l.rejoinedDate).length > 0 && (
+                        {watchedLeaveHistory && watchedLeaveHistory.filter(l => l.rejoinedDate && l.leaveEndDate).length > 0 && (
                             <div className="space-y-2">
                                 <h4 className='font-semibold flex items-center gap-2'><History className="h-4 w-4"/>Leave History</h4>
                                 <div className="p-2 border rounded-md space-y-2 bg-muted/50 max-h-40 overflow-y-auto">
-                                    {watchedLeaveHistory.filter(l => l.rejoinedDate).map((leave, index) => (
+                                    {watchedLeaveHistory.filter(l => l.rejoinedDate && l.leaveEndDate).map((leave, index) => (
                                         <div key={leave.id} className="text-xs p-2 bg-background rounded">
                                             <p><strong>{leave.leaveType || 'Leave'}</strong> from {format(new Date(leave.leaveStartDate), 'dd-MM-yy')} to {format(new Date(leave.leaveEndDate as Date), 'dd-MM-yy')}</p>
                                         </div>
