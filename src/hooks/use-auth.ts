@@ -12,11 +12,11 @@ interface AuthContextType {
   logout: () => void;
 }
 
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 interface AuthProviderProps {
   children: ReactNode;
 }
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -51,8 +51,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       const foundUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
       
-      // In a real app, you would hash and compare the password.
-      // For this mock data, we do a direct comparison.
       if (foundUser.password === password) {
           sessionStorage.setItem('user', JSON.stringify(foundUser));
           setUser(foundUser);
