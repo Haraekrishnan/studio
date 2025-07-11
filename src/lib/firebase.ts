@@ -2,34 +2,35 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyDZRzVFHIASG-LH6M_8xX0u63piyagIAeo",
+  authDomain: "taskmaster-pro-jkvw6.firebaseapp.com",
+  databaseURL: "https://taskmaster-pro-jkvw6-default-rtdb.firebaseio.com",
+  projectId: "taskmaster-pro-jkvw6",
+  storageBucket: "taskmaster-pro-jkvw6.appspot.com",
+  messagingSenderId: "566300415743",
+  appId: "1:566300415743:web:8801a6887881d9b46d9eca",
+  measurementId: "G-492SH68M8G"
 };
-
-// A check to make sure the environment variables are loaded
-if (!firebaseConfig.apiKey) {
-    throw new Error('Missing Firebase API Key. Please make sure to set NEXT_PUBLIC_FIREBASE_API_KEY in your .env.local file');
-}
 
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
+
 
 // Set authentication persistence
-setPersistence(auth, browserLocalPersistence)
-  .catch((error) => {
-    console.error("Error setting authentication persistence:", error);
-  });
+if (typeof window !== "undefined") {
+    setPersistence(auth, browserLocalPersistence)
+      .catch((error) => {
+        console.error("Error setting authentication persistence:", error);
+      });
+}
 
 
-export { db, auth, app };
+export { db, auth, app, storage };
