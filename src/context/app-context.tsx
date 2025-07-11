@@ -228,18 +228,21 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkUserAndFetchData = async () => {
         setIsLoading(true);
+        let currentUser = null;
         try {
             const storedUser = sessionStorage.getItem('user');
             if (storedUser) {
-                const parsedUser = JSON.parse(storedUser);
-                setUser(parsedUser);
-                await fetchData();
+                currentUser = JSON.parse(storedUser);
+                setUser(currentUser);
             }
         } catch (error) {
-            console.error("Session check/data fetch failed", error);
+            console.error("Session check failed", error);
             setUser(null);
             sessionStorage.removeItem('user');
         } finally {
+            if (currentUser) {
+                await fetchData();
+            }
             setIsLoading(false);
         }
     };
@@ -257,13 +260,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (foundUser.password === password) {
         sessionStorage.setItem('user', JSON.stringify(foundUser));
         setUser(foundUser);
-        setIsLoading(true); // Set loading to true while fetching data
-        await fetchData();
-        setIsLoading(false); // Set loading to false after fetching
         return true;
     }
     return false;
-  }, [fetchData]);
+  }, []);
   
   const logout = useCallback(() => {
     setUser(null);
@@ -512,9 +512,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const value = {
       user, users, roles, tasks, projects, inventoryItems, inventoryTransferRequests, certificateRequests, plannerEvents, dailyPlannerComments, achievements, activityLogs, manpowerLogs, manpowerProfiles, utMachines, dftMachines, mobileSims, otherEquipments, vehicles, drivers, appName, appLogo, internalRequests, managementRequests, announcements, incidents, isLoading,
       login, logout,
-      addTask, updateTask, deleteTask, addComment, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, requestTaskReassignment,
+      addUser, addTask, updateTask, deleteTask, addComment, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, requestTaskReassignment,
       addProject, updateProject, deleteProject,
-      updateUser, updateProfile, addUser,
+      updateUser, updateProfile, 
       updateBranding,
       getVisibleUsers: unimplemented,
       // MOCK other functions until they are requested
