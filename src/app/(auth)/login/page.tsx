@@ -19,12 +19,20 @@ export default function LoginPage() {
   const title = nameParts[0];
   const subtitle = nameParts.length > 1 ? nameParts.slice(1).join(' - ') : null;
 
-  if (isLoading || (!isLoading && user)) {
+  if (isLoading) {
       return (
           <div className="flex h-screen w-full items-center justify-center bg-background">
-              <p>Loading...</p>
+              <p>Loading application...</p>
           </div>
       );
+  }
+
+  if (user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <p>Redirecting to dashboard...</p>
+      </div>
+    );
   }
 
   return (

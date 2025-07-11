@@ -191,76 +191,82 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const fetchData = useCallback(async () => {
-    try {
-        const collections = {
-            users: setUsers, roles: setRoles, tasks: setTasks, projects: setProjects,
-            inventoryItems: setInventoryItems, inventoryTransferRequests: setInventoryTransferRequests,
-            certificateRequests: setCertificateRequests, plannerEvents: setPlannerEvents,
-            dailyPlannerComments: setDailyPlannerComments, achievements: setAchievements,
-            activityLogs: setActivityLogs, manpowerLogs: setManpowerLogs,
-            manpowerProfiles: setManpowerProfiles, utMachines: setUtMachines,
-            dftMachines: setDftMachines, mobileSims: setMobileSims,
-            otherEquipments: setOtherEquipments, vehicles: setVehicles,
-            drivers: setDrivers, internalRequests: setInternalRequests,
-            managementRequests: setManagementRequests, announcements: setAnnouncements,
-            incidents: setIncidents
-        };
-
-        const brandingQuerySnapshot = await getDocs(collection(db, "branding"));
-        if (!brandingQuerySnapshot.empty) {
-            const brandingData = brandingQuerySnapshot.docs[0].data();
-            setAppName(brandingData.appName || 'Aries Marine');
-            setAppLogo(brandingData.appLogo || null);
-        }
-
-        for (const [key, setter] of Object.entries(collections)) {
-            const querySnapshot = await getDocs(collection(db, key));
-            const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // @ts-ignore
-            setter(data);
-        }
-    } catch (error) {
-        console.error("Error fetching data from Firestore:", error);
-    }
-  }, []);
+  const collectionsToFetch = useMemo(() => ({
+      users: setUsers, roles: setRoles, tasks: setTasks, projects: setProjects,
+      inventoryItems: setInventoryItems, inventoryTransferRequests: setInventoryTransferRequests,
+      certificateRequests: setCertificateRequests, plannerEvents: setPlannerEvents,
+      dailyPlannerComments: setDailyPlannerComments, achievements: setAchievements,
+      activityLogs: setActivityLogs, manpowerLogs: setManpowerLogs,
+      manpowerProfiles: setManpowerProfiles, utMachines: setUtMachines,
+      dftMachines: setDftMachines, mobileSims: setMobileSims,
+      otherEquipments: setOtherEquipments, vehicles: setVehicles,
+      drivers: setDrivers, internalRequests: setInternalRequests,
+      managementRequests: setManagementRequests, announcements: setAnnouncements,
+      incidents: setIncidents
+  }), []);
 
   useEffect(() => {
     const checkUserAndFetchData = async () => {
-        setIsLoading(true);
-        let currentUser = null;
-        try {
-            const storedUser = sessionStorage.getItem('user');
-            if (storedUser) {
-                currentUser = JSON.parse(storedUser);
-                setUser(currentUser);
-            }
-        } catch (error) {
-            console.error("Session check failed", error);
-            setUser(null);
-            sessionStorage.removeItem('user');
-        } finally {
-            if (currentUser) {
-                await fetchData();
-            }
-            setIsLoading(false);
+      let userFromSession = null;
+      try {
+        const storedUser = sessionStorage.getItem('user');
+        if (storedUser) {
+          userFromSession = JSON.parse(storedUser);
+          setUser(userFromSession);
         }
+      } catch (error) {
+        console.error("Session check failed", error);
+      } finally {
+        if (!userFromSession) {
+          setIsLoading(false);
+        }
+      }
     };
     checkUserAndFetchData();
-  }, [fetchData]);
+  }, []);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      if (user) {
+        setIsLoading(true);
+        try {
+          const brandingQuerySnapshot = await getDocs(collection(db, "branding"));
+          if (!brandingQuerySnapshot.empty) {
+            const brandingData = brandingQuerySnapshot.docs[0].data();
+            setAppName(brandingData.appName || 'Aries Marine');
+            setAppLogo(brandingData.appLogo || null);
+          }
+
+          for (const [key, setter] of Object.entries(collectionsToFetch)) {
+            const querySnapshot = await getDocs(collection(db, key));
+            const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setter(data as any);
+          }
+        } catch (error) {
+          console.error("Error fetching data from Firestore:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchData();
+  }, [user, collectionsToFetch]);
+  
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     const q = query(collection(db, "users"), where("email", "==", email.toLowerCase()));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) return false;
-    
-    const foundUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
-    
-    if (foundUser.password === password) {
-        sessionStorage.setItem('user', JSON.stringify(foundUser));
-        setUser(foundUser);
-        return true;
+    try {
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) return false;
+      
+      const foundUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
+      
+      if (foundUser.password === password) {
+          sessionStorage.setItem('user', JSON.stringify(foundUser));
+          setUser(foundUser);
+          return true;
+      }
+    } catch(e) {
+      console.error(e);
     }
     return false;
   }, []);
@@ -282,12 +288,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
   const addTask = useCallback(async (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => {
     if (!user) return;
+    const assignee = users.find(u => u.id === task.assigneeId);
+    if (!assignee) return;
+    
     const newTaskData: Omit<Task, 'id'> = {
         ...task,
         status: 'To Do',
         comments: [{
             userId: user.id,
-            text: `Task created and assigned to ${users.find(u => u.id === task.assigneeId)?.name}.`,
+            text: `Task created and assigned to ${assignee.name}.`,
             date: new Date().toISOString()
         }],
         approvalState: 'none',
@@ -298,9 +307,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [user, users]);
 
   const updateTask = useCallback(async (updatedTask: Task) => {
-    const taskRef = doc(db, 'tasks', updatedTask.id);
-    await setDoc(taskRef, updatedTask, { merge: true });
-    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    const { id, ...taskWithoutId } = updatedTask;
+    await setDoc(doc(db, 'tasks', id), taskWithoutId);
+    setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
   }, []);
 
   const deleteTask = useCallback(async (taskId: string) => {
@@ -315,8 +324,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateProject = useCallback(async (updatedProject: Project) => {
-      await setDoc(doc(db, 'projects', updatedProject.id), updatedProject);
-      setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+      const { id, ...projectWithoutId } = updatedProject;
+      await setDoc(doc(db, 'projects', id), projectWithoutId);
+      setProjects(prev => prev.map(p => p.id === id ? updatedProject : p));
   }, []);
 
   const deleteProject = useCallback(async (projectId: string) => {
@@ -326,7 +336,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
   const updateUser = useCallback(async (updatedUser: User) => {
     const { id, ...userWithoutId } = updatedUser;
-    await setDoc(doc(db, 'users', id), userWithoutId);
+    await setDoc(doc(db, 'users', id), userWithoutId, { merge: true });
     setUsers(prev => prev.map(u => (u.id === id ? updatedUser : u)));
     if (user?.id === id) {
         setUser(updatedUser);
@@ -428,7 +438,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         approvalState: 'returned',
         previousStatus: undefined,
         pendingStatus: undefined,
-        pendingAssigneeId: undefined, // Also clear pending assignee on return
+        pendingAssigneeId: undefined,
     };
 
     await updateDoc(doc(db, 'tasks', taskId), updateData);
@@ -452,7 +462,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       await addComment(taskId, commentText);
   }, [tasks, addComment]);
 
-  // Placeholder for other functions to be implemented...
   const unimplemented = (...args: any[]): any => {
     console.warn("Function not implemented", ...args);
     if(args[0] && typeof args[0] === 'string' && args[0].includes('delete')) {
@@ -517,7 +526,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       updateUser, updateProfile, 
       updateBranding,
       getVisibleUsers: unimplemented,
-      // MOCK other functions until they are requested
       updateUserPlanningScore: unimplemented, deleteUser: unimplemented, addRole: unimplemented, updateRole: unimplemented, deleteRole: unimplemented, 
       markTaskAsViewed: unimplemented, addManualAchievement: unimplemented, approveAchievement: unimplemented, rejectAchievement: unimplemented, updateManualAchievement: unimplemented, deleteManualAchievement: unimplemented,
       addPlannerEvent: unimplemented, updatePlannerEvent: unimplemented, deletePlannerEvent: unimplemented, getExpandedPlannerEvents, addPlannerEventComment: unimplemented, addDailyPlannerComment: unimplemented, updateDailyPlannerComment: unimplemented, deleteDailyPlannerComment: unimplemented, deleteAllDailyPlannerComments: unimplemented,
