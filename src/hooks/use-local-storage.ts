@@ -29,9 +29,15 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const item = window.localStorage.getItem(key);
-      if (item) {
-        setStoredValue(JSON.parse(item));
+      try {
+        const item = window.localStorage.getItem(key);
+        if (item) {
+          setStoredValue(JSON.parse(item));
+        }
+      } catch (error) {
+        console.error(`Error parsing localStorage key "${key}":`, error);
+        // If parsing fails, you might want to fall back to the initial value
+        // or just leave the current state as is. Leaving it is safer.
       }
     }
   }, [key]);
