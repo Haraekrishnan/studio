@@ -15,6 +15,7 @@ import { Separator } from '../ui/separator';
 import type { Comment, PlannerEvent } from '@/lib/types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import EditEventDialog from './EditEventDialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface PlannerCalendarProps {
     selectedUserId: string;
