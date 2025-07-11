@@ -11,7 +11,7 @@ const firebaseConfig = {
   authDomain: "taskmaster-pro-jkvw6.firebaseapp.com",
   databaseURL: "https://taskmaster-pro-jkvw6-default-rtdb.firebaseio.com",
   projectId: "taskmaster-pro-jkvw6",
-  storageBucket: "taskmaster-pro-jkvw6.appspot.com",
+  storageBucket: "taskmaster-pro-jkvw6.firebasestorage.app",
   messagingSenderId: "566300415743",
   appId: "1:566300415743:web:8801a6887881d9b46d9eca",
 };
