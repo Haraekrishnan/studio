@@ -7,7 +7,13 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => voi
     }
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      if (item === null) return initialValue;
+      // Try to parse it as JSON, but if it fails, return the raw item (for simple strings)
+      try {
+        return JSON.parse(item);
+      } catch (e) {
+        return item as unknown as T; // For non-JSON strings
+      }
     } catch (error) {
       console.error(error);
       return initialValue;
@@ -20,18 +26,24 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => voi
         value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        // For objects and arrays, stringify them. For simple strings, store as is.
+        const valueToSave = typeof valueToStore === 'string' ? valueToStore : JSON.stringify(valueToStore);
+        window.localStorage.setItem(key, valueToSave);
       }
     } catch (error) {
       console.error(error);
     }
   };
-
+  
   useEffect(() => {
     if (typeof window !== 'undefined') {
         const item = window.localStorage.getItem(key);
         if (item) {
-            setStoredValue(JSON.parse(item));
+            try {
+                setStoredValue(JSON.parse(item));
+            } catch (e) {
+                 setStoredValue(item as unknown as T);
+            }
         }
     }
   }, [key]);
