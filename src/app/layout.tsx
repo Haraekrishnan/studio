@@ -1,10 +1,9 @@
 'use client';
-import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { AppContextProvider, useAppContext } from '@/context/app-context';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth.tsx';
 import './globals.css';
+import { useEffect } from 'react';
 
 
 function AppTitleUpdater({ children }: { children: React.ReactNode }) {

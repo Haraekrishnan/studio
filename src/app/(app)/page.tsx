@@ -1,14 +1,4 @@
-'use client';
-
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-
-export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace('/dashboard');
-  }, [router]);
-
-  return null;
+// This file is no longer needed and can be deleted.
+export default function AppPage() {
+    return null;
 }

@@ -1,9 +1,8 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
+import { USERS } from '@/lib/mock-data';
 
 interface AuthContextType {
   user: User | null;
@@ -42,31 +41,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    const q = query(collection(db, "users"), where("email", "==", email.toLowerCase()));
+    setIsAuthLoading(true);
+    const foundUser = USERS.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     
-    try {
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        console.log(`Login failed: No user found for email ${email}`);
-        return false;
-      }
-      
-      const foundUserDoc = querySnapshot.docs[0];
-      const foundUser = { id: foundUserDoc.id, ...foundUserDoc.data() } as User;
-      
-      if (foundUser.password === password) {
-          const { password: _password, ...userToStore } = foundUser;
-          sessionStorage.setItem('user', JSON.stringify(userToStore));
-          setUser(userToStore);
-          router.push('/dashboard');
-          return true;
-      } else {
-        console.log('Login failed: Password mismatch.');
-        return false;
-      }
-    } catch(e) {
-      console.error("Login error:", e);
+    if (foundUser) {
+      const { password: _password, ...userToStore } = foundUser;
+      sessionStorage.setItem('user', JSON.stringify(userToStore));
+      setUser(userToStore);
+      router.push('/dashboard');
+      setIsAuthLoading(false);
+      return true;
+    } else {
+      console.log('Login failed: Invalid email or password.');
+      setIsAuthLoading(false);
       return false;
     }
   }, [router]);
