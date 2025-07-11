@@ -50,9 +50,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       const foundUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
       
+      // In a real app, this would be a hashed password check
       if (foundUser.password === password) {
-          sessionStorage.setItem('user', JSON.stringify(foundUser));
-          setUser(foundUser);
+          // Don't store the password in the session or state
+          const { password: _, ...userToStore } = foundUser;
+          sessionStorage.setItem('user', JSON.stringify(userToStore));
+          setUser(userToStore);
           return true;
       }
     } catch(e) {
