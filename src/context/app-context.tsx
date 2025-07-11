@@ -226,22 +226,24 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const checkUser = async () => {
+    const checkUserAndFetchData = async () => {
         setIsLoading(true);
         try {
             const storedUser = sessionStorage.getItem('user');
             if (storedUser) {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                setUser(parsedUser);
                 await fetchData();
             }
         } catch (error) {
-            console.error("Session check failed", error);
+            console.error("Session check/data fetch failed", error);
+            setUser(null);
             sessionStorage.removeItem('user');
         } finally {
             setIsLoading(false);
         }
     };
-    checkUser();
+    checkUserAndFetchData();
   }, [fetchData]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
@@ -255,14 +257,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (foundUser.password === password) {
         sessionStorage.setItem('user', JSON.stringify(foundUser));
         setUser(foundUser);
-        setIsLoading(true);
+        setIsLoading(true); // Set loading to true while fetching data
         await fetchData();
-        setIsLoading(false);
-        router.push('/dashboard');
+        setIsLoading(false); // Set loading to false after fetching
         return true;
     }
     return false;
-  }, [fetchData, router]);
+  }, [fetchData]);
   
   const logout = useCallback(() => {
     setUser(null);
@@ -270,9 +271,18 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   }, [router]);
 
+  const addUser = useCallback(async (userData: Omit<User, 'id' | 'avatar'>) => {
+      const newUser: Omit<User, 'id'> = {
+          ...userData,
+          avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
+      };
+      const docRef = await addDoc(collection(db, 'users'), newUser);
+      setUsers(prev => [...prev, { id: docRef.id, ...newUser }]);
+  }, []);
+
   const addTask = useCallback(async (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => {
     if (!user) return;
-    const newTask: Omit<Task, 'id'> = {
+    const newTaskData: Omit<Task, 'id'> = {
         ...task,
         status: 'To Do',
         comments: [{
@@ -283,8 +293,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         approvalState: 'none',
         isViewedByAssignee: false,
     };
-    const docRef = await addDoc(collection(db, 'tasks'), newTask);
-    setTasks(prev => [...prev, { id: docRef.id, ...newTask }]);
+    const docRef = await addDoc(collection(db, 'tasks'), newTaskData);
+    setTasks(prev => [...prev, { id: docRef.id, ...newTaskData }]);
   }, [user, users]);
 
   const updateTask = useCallback(async (updatedTask: Task) => {
@@ -312,15 +322,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const deleteProject = useCallback(async (projectId: string) => {
       await deleteDoc(doc(db, 'projects', projectId));
       setProjects(prev => prev.filter(p => p.id !== projectId));
-  }, []);
-  
-  const addUser = useCallback(async (userData: Omit<User, 'id' | 'avatar'>) => {
-      const newUser: Omit<User, 'id'> = {
-          ...userData,
-          avatar: `https://i.pravatar.cc/150?u=${Math.random()}`,
-      };
-      const docRef = await addDoc(collection(db, 'users'), newUser);
-      setUsers(prev => [...prev, { id: docRef.id, ...newUser }]);
   }, []);
 
   const updateUser = useCallback(async (updatedUser: User) => {
