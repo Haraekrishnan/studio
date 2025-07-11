@@ -1,10 +1,10 @@
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, Announcement, IncidentReport } from './types';
-import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS, ANNOUNCEMENTS, INCIDENTS } from '@/lib/mock-data';
 import { addDays, isBefore, eachDayOfInterval, endOfMonth, isSameDay, isWeekend, startOfDay, differenceInMinutes, format, differenceInDays, subDays, startOfMonth, isPast, isAfter } from 'date-fns';
-import { useAuth } from '@/hooks/use-auth.tsx';
-
+import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 interface AppContextType {
   // Directly managed state
@@ -67,7 +67,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppContextProvider({ children }: { children: ReactNode }) {
-  const { user, isAuthLoading } = useAuth(); // Use the auth context to get the current user
+  const { user, isAuthLoading } = useAuth();
 
   // Raw data states
   const [users, setUsers] = useState<User[]>([]);
@@ -102,42 +102,50 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
-    // Only load data if auth is done and we have a user.
-    if (!isAuthLoading && user) {
-      setIsDataLoading(true);
-      // Simulate fetching data
-      setTimeout(() => {
-        setUsers(USERS);
-        setRoles(MOCK_ROLES);
-        setTasks(TASKS);
-        setProjects(PROJECTS);
-        setInventoryItems(INVENTORY_ITEMS);
-        setInventoryTransferRequests(INVENTORY_TRANSFER_REQUESTS);
-        setCertificateRequests(CERTIFICATE_REQUESTS);
-        setPlannerEvents(PLANNER_EVENTS);
-        setDailyPlannerComments(DAILY_PLANNER_COMMENTS);
-        setAchievements(ACHIEVEMENTS);
-        setActivityLogs(ACTIVITY_LOGS);
-        setManpowerLogs(MANPOWER_LOGS);
-        setManpowerProfiles(MANPOWER_PROFILES);
-        setUtMachines(UT_MACHINES);
-        setDftMachines(DFT_MACHINES);
-        setMobileSims(MOBILE_SIMS);
-        setOtherEquipments(OTHER_EQUIPMENTS);
-        setVehicles(VEHICLES);
-        setDrivers(DRIVERS);
-        setInternalRequests(INTERNAL_REQUESTS);
-        setManagementRequests(MANAGEMENT_REQUESTS);
-        setAnnouncements(ANNOUNCEMENTS);
-        setIncidents(INCIDENTS);
+    if (!user) {
         setIsDataLoading(false);
-      }, 500);
-    } else if (!isAuthLoading && !user) {
-        // If auth is done and there's no user, we don't need to load data.
-        setIsDataLoading(false);
+        return;
     }
-  }, [isAuthLoading, user]);
 
+    const collections: { name: string; setter: (data: any[]) => void }[] = [
+      { name: 'users', setter: setUsers },
+      { name: 'roles', setter: setRoles },
+      { name: 'tasks', setter: setTasks },
+      { name: 'projects', setter: setProjects },
+      { name: 'inventoryItems', setter: setInventoryItems },
+      { name: 'inventoryTransferRequests', setter: setInventoryTransferRequests },
+      { name: 'certificateRequests', setter: setCertificateRequests },
+      { name: 'plannerEvents', setter: setPlannerEvents },
+      { name: 'dailyPlannerComments', setter: setDailyPlannerComments },
+      { name: 'achievements', setter: setAchievements },
+      { name: 'activityLogs', setter: setActivityLogs },
+      { name: 'manpowerLogs', setter: setManpowerLogs },
+      { name: 'manpowerProfiles', setter: setManpowerProfiles },
+      { name: 'utMachines', setter: setUtMachines },
+      { name: 'dftMachines', setter: setDftMachines },
+      { name: 'mobileSims', setter: setMobileSims },
+      { name: 'otherEquipments', setter: setOtherEquipments },
+      { name: 'vehicles', setter: setVehicles },
+      { name: 'drivers', setter: setDrivers },
+      { name: 'internalRequests', setter: setInternalRequests },
+      { name: 'managementRequests', setter: setManagementRequests },
+      { name: 'announcements', setter: setAnnouncements },
+      { name: 'incidents', setter: setIncidents },
+    ];
+
+    const unsubscribes = collections.map(({ name, setter }) => 
+      onSnapshot(collection(db, name), (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setter(data as any);
+      })
+    );
+
+    setIsDataLoading(false);
+
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [user]);
 
   const getVisibleUsers = useCallback(() => {
     if (!user) return [];
@@ -155,9 +163,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [user, users, roles]);
 
 
-  const updateBranding = useCallback((name: string, logo: string | null) => {
+  const updateBranding = useCallback(async (name: string, logo: string | null) => {
       setAppName(name);
       setAppLogo(logo);
+      // In a real app, you'd save this to a 'settings' collection in Firestore
   }, []);
   
   const getExpandedPlannerEvents = useCallback((date: Date, userId: string) => {
@@ -204,37 +213,73 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return expandedEvents;
   }, [plannerEvents]);
 
-  const addUser = useCallback((newUser: Omit<User, 'id'>) => {
-    const userWithId: User = { ...newUser, id: `user-${Date.now()}` };
-    setUsers(prev => [...prev, userWithId]);
+  const addUser = useCallback(async (newUser: Omit<User, 'id'>) => {
+    await addDoc(collection(db, 'users'), newUser);
   }, []);
 
-  const updateUser = useCallback((updatedUser: User) => {
-    setUsers(prev => prev.map(u => (u.id === updatedUser.id ? updatedUser : u)));
+  const updateUser = useCallback(async (updatedUser: User) => {
+    const { id, ...data } = updatedUser;
+    await setDoc(doc(db, 'users', id), data);
   }, []);
 
-  const deleteUser = useCallback((userId: string) => {
-    setUsers(prev => prev.filter(u => u.id !== userId));
+  const deleteUser = useCallback(async (userId: string) => {
+    await deleteDoc(doc(db, 'users', userId));
   }, []);
 
-  const updateProfile = useCallback((name: string, email: string, avatar: string, password?: string) => {
+  const updateProfile = useCallback(async (name: string, email: string, avatar: string, password?: string) => {
     if (user) {
-      setUsers(prev => prev.map(u => {
-        if (u.id === user.id) {
-          const updatedUser = { ...u, name, email, avatar };
-          if (password) {
-            (updatedUser as any).password = password;
-          }
-          return updatedUser;
-        }
-        return u;
-      }));
+      const userRef = doc(db, 'users', user.id);
+      const dataToUpdate: Partial<User> = { name, email, avatar };
+      if (password) {
+        dataToUpdate.password = password; // In a real app, you would hash this on the server
+      }
+      await updateDoc(userRef, dataToUpdate);
+    }
+  }, [user]);
+
+  const addTask = useCallback(async (newTask: Omit<Task, 'id' | 'status'>) => {
+    const taskData: Omit<Task, 'id'> = {
+      ...newTask,
+      status: 'To Do',
+      isViewedByAssignee: false,
+      approvalState: 'none',
+      comments: [],
+    };
+    await addDoc(collection(db, 'tasks'), taskData);
+  }, []);
+
+  const updateTask = useCallback(async (updatedTask: Task) => {
+    const { id, ...data } = updatedTask;
+    await setDoc(doc(db, 'tasks', id), data);
+  }, []);
+  
+  const deleteTask = useCallback(async (taskId: string) => {
+    await deleteDoc(doc(db, 'tasks', taskId));
+  }, []);
+
+  const addComment = useCallback(async (taskId: string, text: string) => {
+    if (!user) return;
+    const taskRef = doc(db, 'tasks', taskId);
+    const taskDoc = await getDoc(taskRef);
+    if (taskDoc.exists()) {
+      const taskData = taskDoc.data() as Task;
+      const newComment: Comment = {
+        id: `comment-${Date.now()}`,
+        userId: user.id,
+        text,
+        date: new Date().toISOString(),
+      };
+      const updatedComments = [...(taskData.comments || []), newComment];
+      await updateDoc(taskRef, { comments: updatedComments });
     }
   }, [user]);
 
   const approvedAnnouncements = useMemo(() => {
     return announcements.filter(a => a.status === 'approved');
   }, [announcements]);
+
+  // Placeholder for the myriad of functions to be implemented
+  const placeholderFunc = useCallback(() => console.warn("Function not implemented"), []);
 
   const value = {
       user, users, roles, tasks, projects, inventoryItems, inventoryTransferRequests, certificateRequests, plannerEvents, dailyPlannerComments, achievements, activityLogs, manpowerLogs, manpowerProfiles, utMachines, dftMachines, mobileSims, otherEquipments, vehicles, drivers, appName, appLogo, internalRequests, managementRequests, announcements, incidents, 
@@ -246,8 +291,95 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       updateUser,
       deleteUser,
       updateProfile,
+      addTask,
+      updateTask,
+      deleteTask,
+      addComment,
       approvedAnnouncements,
-      // All other functions are placeholders for now and will be implemented
+      // Add all other functions here, pointing to a placeholder for now
+      addProject: placeholderFunc,
+      updateProject: placeholderFunc,
+      deleteProject: placeholderFunc,
+      addRole: placeholderFunc,
+      updateRole: placeholderFunc,
+      deleteRole: placeholderFunc,
+      addManualAchievement: placeholderFunc,
+      approveAchievement: placeholderFunc,
+      rejectAchievement: placeholderFunc,
+      deleteManualAchievement: placeholderFunc,
+      updateUserPlanningScore: placeholderFunc,
+      addPlannerEvent: placeholderFunc,
+      updatePlannerEvent: placeholderFunc,
+      deletePlannerEvent: placeholderFunc,
+      addPlannerEventComment: placeholderFunc,
+      addDailyPlannerComment: placeholderFunc,
+      updateDailyPlannerComment: placeholderFunc,
+      deleteDailyPlannerComment: placeholderFunc,
+      deleteAllDailyPlannerComments: placeholderFunc,
+      requestTaskStatusChange: placeholderFunc,
+      approveTaskStatusChange: placeholderFunc,
+      returnTaskStatusChange: placeholderFunc,
+      markTaskAsViewed: placeholderFunc,
+      requestTaskReassignment: placeholderFunc,
+      addInventoryItem: placeholderFunc,
+      updateInventoryItem: placeholderFunc,
+      deleteInventoryItem: placeholderFunc,
+      addMultipleInventoryItems: placeholderFunc,
+      requestInventoryTransfer: placeholderFunc,
+      approveInventoryTransfer: placeholderFunc,
+      rejectInventoryTransfer: placeholderFunc,
+      addInventoryTransferComment: placeholderFunc,
+      addCertificateRequest: placeholderFunc,
+      fulfillCertificateRequest: placeholderFunc,
+      addCertificateRequestComment: placeholderFunc,
+      markCertificateRequestAsViewed: placeholderFunc,
+      addManpowerLog: placeholderFunc,
+      addManpowerProfile: placeholderFunc,
+      updateManpowerProfile: placeholderFunc,
+      deleteManpowerProfile: placeholderFunc,
+      addUTMachine: placeholderFunc,
+      updateUTMachine: placeholderFunc,
+      deleteUTMachine: placeholderFunc,
+      addUTMachineLog: placeholderFunc,
+      requestUTMachineCertificate: placeholderFunc,
+      addDftMachine: placeholderFunc,
+      updateDftMachine: placeholderFunc,
+      deleteDftMachine: placeholderFunc,
+      addMobileSim: placeholderFunc,
+      updateMobileSim: placeholderFunc,
+      deleteMobileSim: placeholderFunc,
+      addOtherEquipment: placeholderFunc,
+      updateOtherEquipment: placeholderFunc,
+      deleteOtherEquipment: placeholderFunc,
+      addDriver: placeholderFunc,
+      updateDriver: placeholderFunc,
+      deleteDriver: placeholderFunc,
+      addVehicle: placeholderFunc,
+      updateVehicle: placeholderFunc,
+      deleteVehicle: placeholderFunc,
+      addInternalRequest: placeholderFunc,
+      updateInternalRequest: placeholderFunc,
+      deleteInternalRequest: placeholderFunc,
+      markRequestAsViewed: placeholderFunc,
+      forwardInternalRequest: placeholderFunc,
+      escalateInternalRequest: placeholderFunc,
+      addInternalRequestComment: placeholderFunc,
+      addManagementRequest: placeholderFunc,
+      updateManagementRequest: placeholderFunc,
+      addManagementRequestComment: placeholderFunc,
+      markManagementRequestAsViewed: placeholderFunc,
+      addAnnouncement: placeholderFunc,
+      updateAnnouncement: placeholderFunc,
+      approveAnnouncement: placeholderFunc,
+      rejectAnnouncement: placeholderFunc,
+      deleteAnnouncement: placeholderFunc,
+      returnAnnouncement: placeholderFunc,
+      dismissAnnouncement: placeholderFunc,
+      addIncidentReport: placeholderFunc,
+      updateIncident: placeholderFunc,
+      addIncidentComment: placeholderFunc,
+      publishIncident: placeholderFunc,
+      addUsersToIncidentReport: placeholderFunc,
   };
     
   return <AppContext.Provider value={value as any}>{children}</AppContext.Provider>;
