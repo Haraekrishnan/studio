@@ -5,7 +5,7 @@ import type { User, Task, PlannerEvent, Comment, Role, Achievement, ActivityLog,
 import { useLocalStorage } from '../hooks/use-local-storage';
 import * as mock from '../lib/mock-data';
 import { addDays, isBefore, eachDayOfInterval, endOfMonth, isSameDay, isWeekend, startOfDay, differenceInMinutes, format, differenceInDays, subDays, startOfMonth, isPast, isAfter } from 'date-fns';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 
 interface AppContextType {
   // Directly managed state
@@ -187,10 +187,22 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setUsers(prev => prev.filter(u => u.id !== userId));
   };
   
-  const updateProfile = (name: string, email: string, avatar: string) => {
+  const updateProfile = (name: string, email: string, avatar: string, password?: string) => {
     if (user) {
-        updateUser({...user, name, email, avatar});
+        const updatedUser = { ...user, name, email, avatar };
+        if (password) {
+            updatedUser.password = password;
+        }
+        updateUser(updatedUser);
     }
+  };
+
+  const updateUserPlanningScore = (userId: string, score: number) => {
+    setUsers(prevUsers => 
+      prevUsers.map(u => 
+        u.id === userId ? { ...u, planningScore: score } : u
+      )
+    );
   };
 
   const addRole = (roleData: Omit<RoleDefinition, 'id' | 'isEditable'>) => {
