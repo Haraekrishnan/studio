@@ -285,7 +285,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [currentLogId]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
+    // We don't set loading here to avoid layout shifts. The main loading state is handled by the useEffects.
     const usersSnapshot = await getDocs(collection(db, 'users'));
     const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
     
@@ -304,12 +304,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       const newLogRef = await addDoc(collection(db, 'activityLogs'), newLog);
       setCurrentLogId(newLogRef.id);
       
-      setUser(foundUser); // This will trigger the useEffect to fetch data and set isLoading to false
+      setUser(foundUser); // This will trigger the data fetching useEffect and subsequent UI update.
       router.push('/dashboard');
       return true;
     }
-    
-    setIsLoading(false);
     return false;
   }, [router]);
 
