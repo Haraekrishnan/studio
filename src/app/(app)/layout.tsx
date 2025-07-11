@@ -10,17 +10,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // This check now runs after the context has had a chance to check the session
     if (user === null) {
       router.replace('/login');
     }
   }, [user, router]);
 
+  // The context provider now handles the main loading state.
+  // We can return null here and let the context's loading screen show.
   if (!user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <p>Loading...</p>
-      </div>
-    );
+    return null;
   }
 
   return (

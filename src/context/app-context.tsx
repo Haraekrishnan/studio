@@ -194,7 +194,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
     try {
       const collections: { [key: string]: React.Dispatch<React.SetStateAction<any[]>> } = {
         users: setUsers, roles: setRoles, tasks: setTasks, projects: setProjects,
@@ -225,24 +224,30 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
     } catch (error) {
       console.error("Error fetching data from Firestore:", error);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
-
+  
+  // This effect checks for a user session on initial load
   useEffect(() => {
-    // This effect runs once on mount to check for a logged-in user.
-    // We are simulating checking a session here. In a real app, you might check a token.
-    const loggedInUserJson = sessionStorage.getItem('user');
-    if (loggedInUserJson) {
-        const loggedInUser = JSON.parse(loggedInUserJson);
-        setUser(loggedInUser);
-        fetchData(); // Fetch data for the logged-in user
-    } else {
-        setIsLoading(false); // If no user, stop loading
-    }
-  }, [fetchData]);
+    const checkSession = async () => {
+        const loggedInUserJson = sessionStorage.getItem('user');
+        if (loggedInUserJson) {
+            const loggedInUser = JSON.parse(loggedInUserJson);
+            setUser(loggedInUser);
+        } else {
+            setIsLoading(false);
+        }
+    };
+    checkSession();
+  }, []);
 
+  // This effect fetches data when the user object is set (either from session or login)
+  useEffect(() => {
+    if (user) {
+      setIsLoading(true);
+      fetchData().finally(() => setIsLoading(false));
+    }
+  }, [user, fetchData]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -279,7 +284,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [currentLogId]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
     const usersSnapshot = await getDocs(collection(db, 'users'));
     const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
     
@@ -300,13 +304,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       await setDoc(newLogRef, newLog);
       setCurrentLogId(newLogRef.id);
       
-      await fetchData(); // Fetch data after login
       router.push('/dashboard');
       return true;
     }
-    setIsLoading(false);
     return false;
-  }, [router, fetchData]);
+  }, [router]);
 
   const logout = useCallback(async () => {
     if (currentLogId) {
@@ -886,5 +888,3 @@ export function useAppContext() {
   }
   return context;
 }
-
-    
