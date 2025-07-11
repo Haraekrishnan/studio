@@ -1,6 +1,6 @@
 
 'use client';
-import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -48,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const foundUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
       
+      // In a real app, you would hash and compare the password.
+      // For this mock data, we do a direct comparison.
       if (foundUser.password === password) {
           sessionStorage.setItem('user', JSON.stringify(foundUser));
           setUser(foundUser);
