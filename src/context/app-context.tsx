@@ -67,39 +67,77 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppContextProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth(); // Use the auth context to get the current user
+  const { user, isAuthLoading } = useAuth(); // Use the auth context to get the current user
 
   // Raw data states
-  const [users, setUsers] = useState<User[]>(USERS);
-  const [roles, setRoles] = useState<RoleDefinition[]>(MOCK_ROLES);
-  const [tasks, setTasks] = useState<Task[]>(TASKS);
-  const [projects, setProjects] = useState<Project[]>(PROJECTS);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(INVENTORY_ITEMS);
-  const [inventoryTransferRequests, setInventoryTransferRequests] = useState<InventoryTransferRequest[]>(INVENTORY_TRANSFER_REQUESTS);
-  const [certificateRequests, setCertificateRequests] = useState<CertificateRequest[]>(CERTIFICATE_REQUESTS);
-  const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
-  const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>(DAILY_PLANNER_COMMENTS);
-  const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
-  const [manpowerLogs, setManpowerLogs] = useState<ManpowerLog[]>(MANPOWER_LOGS);
-  const [manpowerProfiles, setManpowerProfiles] = useState<ManpowerProfile[]>(MANPOWER_PROFILES);
-  const [utMachines, setUtMachines] = useState<UTMachine[]>(UT_MACHINES);
-  const [dftMachines, setDftMachines] = useState<DftMachine[]>(DFT_MACHINES);
-  const [mobileSims, setMobileSims] = useState<MobileSim[]>(MOBILE_SIMS);
-  const [otherEquipments, setOtherEquipments] = useState<OtherEquipment[]>(OTHER_EQUIPMENTS);
-  const [vehicles, setVehicles] = useState<Vehicle[]>(VEHICLES);
-  const [drivers, setDrivers] = useState<Driver[]>(DRIVERS);
-  const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
-  const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>(MANAGEMENT_REQUESTS);
-  const [announcements, setAnnouncements] = useState<Announcement[]>(ANNOUNCEMENTS);
-  const [incidents, setIncidents] = useState<IncidentReport[]>(INCIDENTS);
+  const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<RoleDefinition[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [inventoryTransferRequests, setInventoryTransferRequests] = useState<InventoryTransferRequest[]>([]);
+  const [certificateRequests, setCertificateRequests] = useState<CertificateRequest[]>([]);
+  const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>([]);
+  const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [manpowerLogs, setManpowerLogs] = useState<ManpowerLog[]>([]);
+  const [manpowerProfiles, setManpowerProfiles] = useState<ManpowerProfile[]>([]);
+  const [utMachines, setUtMachines] = useState<UTMachine[]>([]);
+  const [dftMachines, setDftMachines] = useState<DftMachine[]>([]);
+  const [mobileSims, setMobileSims] = useState<MobileSim[]>([]);
+  const [otherEquipments, setOtherEquipments] = useState<OtherEquipment[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [internalRequests, setInternalRequests] = useState<InternalRequest[]>([]);
+  const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [incidents, setIncidents] = useState<IncidentReport[]>([]);
   
   // App branding state
   const [appName, setAppName] = useState<string>('Aries Marine');
   const [appLogo, setAppLogo] = useState<string | null>(null);
   
   // Loading state for data
-  const [isDataLoading, setIsDataLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  useEffect(() => {
+    // Only load data if auth is done and we have a user.
+    if (!isAuthLoading && user) {
+      setIsDataLoading(true);
+      // Simulate fetching data
+      setTimeout(() => {
+        setUsers(USERS);
+        setRoles(MOCK_ROLES);
+        setTasks(TASKS);
+        setProjects(PROJECTS);
+        setInventoryItems(INVENTORY_ITEMS);
+        setInventoryTransferRequests(INVENTORY_TRANSFER_REQUESTS);
+        setCertificateRequests(CERTIFICATE_REQUESTS);
+        setPlannerEvents(PLANNER_EVENTS);
+        setDailyPlannerComments(DAILY_PLANNER_COMMENTS);
+        setAchievements(ACHIEVEMENTS);
+        setActivityLogs(ACTIVITY_LOGS);
+        setManpowerLogs(MANPOWER_LOGS);
+        setManpowerProfiles(MANPOWER_PROFILES);
+        setUtMachines(UT_MACHINES);
+        setDftMachines(DFT_MACHINES);
+        setMobileSims(MOBILE_SIMS);
+        setOtherEquipments(OTHER_EQUIPMENTS);
+        setVehicles(VEHICLES);
+        setDrivers(DRIVERS);
+        setInternalRequests(INTERNAL_REQUESTS);
+        setManagementRequests(MANAGEMENT_REQUESTS);
+        setAnnouncements(ANNOUNCEMENTS);
+        setIncidents(INCIDENTS);
+        setIsDataLoading(false);
+      }, 500);
+    } else if (!isAuthLoading && !user) {
+        // If auth is done and there's no user, we don't need to load data.
+        setIsDataLoading(false);
+    }
+  }, [isAuthLoading, user]);
+
 
   const getVisibleUsers = useCallback(() => {
     if (!user) return [];
@@ -194,6 +232,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const approvedAnnouncements = useMemo(() => {
+    return announcements.filter(a => a.status === 'approved');
+  }, [announcements]);
+
   const value = {
       user, users, roles, tasks, projects, inventoryItems, inventoryTransferRequests, certificateRequests, plannerEvents, dailyPlannerComments, achievements, activityLogs, manpowerLogs, manpowerProfiles, utMachines, dftMachines, mobileSims, otherEquipments, vehicles, drivers, appName, appLogo, internalRequests, managementRequests, announcements, incidents, 
       isDataLoading,
@@ -204,6 +246,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       updateUser,
       deleteUser,
       updateProfile,
+      approvedAnnouncements,
       // All other functions are placeholders for now and will be implemented
   };
     
