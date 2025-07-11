@@ -2,7 +2,7 @@
 'use client';
 import { AppContextProvider, useAppContext } from '@/context/app-context';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/hooks/use-auth.tsx';
+import { AuthProvider } from '@/hooks/use-auth';
 import './globals.css';
 import { useEffect } from 'react';
 
