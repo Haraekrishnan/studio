@@ -1,3 +1,4 @@
+
 'use client';
 import { AppContextProvider, useAppContext } from '@/context/app-context';
 import { Toaster } from '@/components/ui/toaster';
