@@ -4,11 +4,15 @@ import type { ManpowerProfile, ManpowerDocument } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Edit } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { MANDATORY_DOCS, RA_TRADES } from '@/lib/mock-data';
+import { useAppContext } from '@/context/app-context';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 interface ManpowerListTableProps {
     profiles: ManpowerProfile[];
@@ -23,6 +27,9 @@ const statusVariant: { [key in ManpowerProfile['status']]: "secondary" | "destru
 }
 
 export default function ManpowerListTable({ profiles, onEdit }: ManpowerListTableProps) {
+    const { user, deleteManpowerProfile } = useAppContext();
+    const { toast } = useToast();
+    const isAdmin = user?.role === 'Admin';
 
     const getDocumentProgress = (profile: ManpowerProfile) => {
         const requiredDocs = [...MANDATORY_DOCS];
@@ -64,6 +71,15 @@ export default function ManpowerListTable({ profiles, onEdit }: ManpowerListTabl
         );
     };
 
+    const handleDelete = (profile: ManpowerProfile) => {
+        deleteManpowerProfile(profile.id);
+        toast({
+            variant: 'destructive',
+            title: 'Profile Deleted',
+            description: `${profile.name}'s profile has been removed.`,
+        });
+    };
+
     if (profiles.length === 0) {
         return <p className="text-muted-foreground text-center py-8">No manpower profiles found.</p>;
     }
@@ -100,9 +116,39 @@ export default function ManpowerListTable({ profiles, onEdit }: ManpowerListTabl
                                 </Tooltip>
                             </TableCell>
                             <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" onClick={() => onEdit(profile)}>
-                                    <Edit className="h-4 w-4" />
-                                </Button>
+                                <AlertDialog>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onSelect={() => onEdit(profile)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </DropdownMenuItem>
+                                            {isAdmin && (
+                                                <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                    </DropdownMenuItem>
+                                                </AlertDialogTrigger>
+                                            )}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete the profile for {profile.name}.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDelete(profile)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </TableCell>
                         </TableRow>
                     ))}

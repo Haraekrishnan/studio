@@ -6,21 +6,23 @@ import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { format, isSameDay, formatDistanceToNow } from 'date-fns';
+import { format, isSameDay, formatDistanceToNow, isPast, startOfDay } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { ChevronDown, Send, Edit, Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
-import type { Comment } from '@/lib/types';
+import type { Comment, PlannerEvent } from '@/lib/types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import EditEventDialog from './EditEventDialog';
 
 interface PlannerCalendarProps {
     selectedUserId: string;
 }
 
 export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps) {
-  const { user, users, plannerEvents, getExpandedPlannerEvents, addPlannerEventComment, dailyPlannerComments, addDailyPlannerComment, updateDailyPlannerComment, deleteDailyPlannerComment, deleteAllDailyPlannerComments } = useAppContext();
+  const { user, users, plannerEvents, getExpandedPlannerEvents, addPlannerEventComment, dailyPlannerComments, addDailyPlannerComment, updateDailyPlannerComment, deleteDailyPlannerComment, deleteAllDailyPlannerComments, updatePlannerEvent, deletePlannerEvent } = useAppContext();
+  const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [eventComment, setEventComment] = useState('');
@@ -28,6 +30,7 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
   const [activeCollapsible, setActiveCollapsible] = useState<string | null>(null);
   
   const [editingComment, setEditingComment] = useState<{ id: string, text: string } | null>(null);
+  const [editingEvent, setEditingEvent] = useState<PlannerEvent | null>(null);
 
   useEffect(() => {
     // Reset editing state when selected date changes
@@ -78,12 +81,22 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
     if (!selectedDate) return;
     deleteAllDailyPlannerComments(selectedUserId, format(selectedDate, 'yyyy-MM-dd'));
   };
+
+  const handleDeleteEvent = (event: PlannerEvent) => {
+    deletePlannerEvent(event.id);
+    toast({
+        variant: 'destructive',
+        title: 'Event Deleted',
+        description: `"${event.title}" has been removed from the planner.`,
+    });
+  }
   
   const getEventFromId = (eventId: string) => {
     return plannerEvents.find(e => e.id === eventId);
   }
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <Card className="lg:col-span-2">
         <CardContent className="p-0 sm:p-2">
@@ -123,6 +136,8 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
                                 const creator = users.find(u => u.id === event.creatorId);
                                 const eventUser = users.find(u => u.id === event.userId);
                                 const liveEvent = getEventFromId(event.id);
+                                const canModifyEvent = user?.id === event.creatorId || user?.role === 'Admin';
+                                const isEventInPast = isPast(startOfDay(new Date(event.date)));
 
                                 return (
                                     <Collapsible key={`${event.id}-${index}`} open={activeCollapsible === event.id} onOpenChange={(isOpen) => setActiveCollapsible(isOpen ? event.id : null)}>
@@ -142,6 +157,24 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
                                                 <CardContent>
                                                     <p className="text-sm text-muted-foreground">{event.description}</p>
                                                     
+                                                    {canModifyEvent && !isEventInPast && (
+                                                        <div className='flex justify-end gap-2 mt-2'>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingEvent(liveEvent || null)}><Edit className="h-4 w-4"/></Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
+                                                                </AlertDialogTrigger>
+                                                                 <AlertDialogContent>
+                                                                    <AlertDialogHeader><AlertDialogTitle>Delete Event?</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete the event "{event.title}"?</AlertDialogDescription></AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => liveEvent && handleDeleteEvent(liveEvent)}>Delete</AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </div>
+                                                    )}
+
                                                     <div className="mt-4 pt-4 border-t">
                                                         <h4 className='text-sm font-semibold mb-2'>Event Comments</h4>
                                                         <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
@@ -266,5 +299,13 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
         </Card>
       </div>
     </div>
+    {editingEvent && (
+        <EditEventDialog 
+            isOpen={!!editingEvent}
+            setIsOpen={() => setEditingEvent(null)}
+            event={editingEvent}
+        />
+    )}
+    </>
   );
 }

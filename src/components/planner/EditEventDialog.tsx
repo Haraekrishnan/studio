@@ -1,11 +1,11 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAppContext } from '@/context/app-context';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -14,15 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, startOfDay } from 'date-fns';
-import { PlusCircle, CalendarIcon } from 'lucide-react';
-import type { Frequency } from '@/lib/types';
+import { CalendarIcon } from 'lucide-react';
+import type { Frequency, PlannerEvent } from '@/lib/types';
 import { Label } from '../ui/label';
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string(),
   date: z.date({ required_error: 'Date is required' }).refine(date => startOfDay(date) >= startOfDay(new Date()), {
-    message: "Cannot create an event in the past."
+    message: "Cannot edit an event to a past date."
   }),
   frequency: z.enum(['once', 'daily', 'weekly', 'weekends', 'monthly', 'daily-except-sundays']),
   userId: z.string().min(1, 'Please select an employee for this event'),
@@ -30,61 +30,50 @@ const eventSchema = z.object({
 
 type EventFormValues = z.infer<typeof eventSchema>;
 
-export default function CreateEventDialog() {
-  const { user, addPlannerEvent, getVisibleUsers } = useAppContext();
-  const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
+interface EditEventDialogProps {
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+    event: PlannerEvent;
+}
 
+export default function EditEventDialog({ isOpen, setIsOpen, event }: EditEventDialogProps) {
+  const { user, updatePlannerEvent, getVisibleUsers } = useAppContext();
+  const { toast } = useToast();
+  
   const assignableUsers = useMemo(() => getVisibleUsers(), [getVisibleUsers]);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      frequency: 'once',
-      userId: user?.id,
-    },
   });
+  
+  useEffect(() => {
+    if (event) {
+        form.reset({
+            ...event,
+            date: new Date(event.date)
+        });
+    }
+  }, [event, form]);
 
   const onSubmit = (data: EventFormValues) => {
-    addPlannerEvent({
+    updatePlannerEvent({
+      ...event,
       ...data,
       date: data.date.toISOString(),
-      creatorId: user!.id,
     });
     toast({
-      title: 'Event Created',
-      description: `"${data.title}" has been added to the planner.`,
+      title: 'Event Updated',
+      description: `"${data.title}" has been updated.`,
     });
     setIsOpen(false);
-    form.reset();
   };
-  
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      form.reset({
-        title: '',
-        description: '',
-        frequency: 'once',
-        userId: user?.id,
-      });
-    }
-    setIsOpen(open);
-  };
-
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Event
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Event</DialogTitle>
+          <DialogTitle>Edit Event</DialogTitle>
+          <DialogDescription>Make changes to the event below.</DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <div>
@@ -157,7 +146,8 @@ export default function CreateEventDialog() {
           </div>
           
           <DialogFooter>
-            <Button type="submit">Create Event</Button>
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button type="submit">Save Changes</Button>
           </DialogFooter>
         </form>
       </DialogContent>
