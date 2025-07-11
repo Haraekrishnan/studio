@@ -3,23 +3,27 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/app-context';
+import { useAuth } from '@/hooks/use-auth';
 import { AppSidebar } from '@/components/shared/app-sidebar';
 import Header from '@/components/shared/header';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAppContext(); // Use the context's loading state
+  const { user, isAuthLoading } = useAuth();
+  const { isDataLoading } = useAppContext();
   const router = useRouter();
 
   useEffect(() => {
-    // Only redirect if loading is finished and there's no user
-    if (!isLoading && user === null) {
+    if (!isAuthLoading && !user) {
       router.replace('/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, isAuthLoading, router]);
 
-  // While loading, or if there's no user yet, don't render anything to avoid flashes of content or incorrect redirects.
-  if (isLoading || !user) {
-    return null;
+  if (isAuthLoading || isDataLoading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <p>Loading application...</p>
+      </div>
+    );
   }
 
   return (

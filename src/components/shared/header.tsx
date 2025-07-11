@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAppContext } from '@/context/app-context';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,7 +14,8 @@ import { useRouter } from 'next/navigation';
 import AnnouncementApprovalDialog from '../announcements/AnnouncementApprovalDialog';
 
 export default function Header() {
-  const { user, logout, appName, appLogo, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount, unreadAnnouncementCount, pendingAnnouncementCount, newIncidentCount, myUnreadManagementRequestCount, unreadManagementRequestCountForMe } = useAppContext();
+  const { user, logout } = useAuth();
+  const { appName, appLogo, myRequestUpdateCount, pendingCertificateRequestCount, myNewTaskCount, expiringVehicleDocsCount, expiringUtMachineCalibrationsCount, pendingTaskApprovalCount, myCertificateRequestUpdateCount, roles, expiringManpowerCount, expiringDriverDocsCount, unreadAnnouncementCount, pendingAnnouncementCount, newIncidentCount, myUnreadManagementRequestCount, unreadManagementRequestCountForMe } = useAppContext();
   const pathname = usePathname();
   const router = useRouter();
 

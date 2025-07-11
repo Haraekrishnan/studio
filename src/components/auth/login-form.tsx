@@ -1,11 +1,9 @@
 'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAppContext } from '@/context/app-context';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,8 +18,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const { login } = useAppContext();
-  const router = useRouter();
+  const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -45,7 +42,8 @@ export function LoginForm() {
       });
       setIsLoading(false);
     }
-    // On success, the AppContext will handle the redirect, and the loading state doesn't need to be turned off here as the component will unmount.
+    // On success, the AuthProvider will handle setting the user state,
+    // and the redirect will be handled by the login page's useEffect.
   };
 
   return (

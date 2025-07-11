@@ -1,5 +1,6 @@
 'use client';
 import { AppContextProvider, useAppContext } from '@/context/app-context';
+import { AuthProvider } from '@/hooks/use-auth';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { useEffect } from 'react';
@@ -30,12 +31,14 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased h-full bg-background">
+        <AuthProvider>
           <AppContextProvider>
             <AppTitleUpdater>
               {children}
               <Toaster />
             </AppTitleUpdater>
           </AppContextProvider>
+        </AuthProvider>
       </body>
     </html>
   );
