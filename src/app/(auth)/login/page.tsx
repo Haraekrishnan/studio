@@ -2,7 +2,7 @@
 import { LoginForm } from '@/components/auth/login-form';
 import { Layers } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
