@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, LeaveRecord, Announcement, IncidentReport } from '@/lib/types';
+import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, Announcement, IncidentReport } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS, ANNOUNCEMENTS, INCIDENTS } from '@/lib/mock-data';
 import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format, differenceInDays, subDays } from 'date-fns';
 
@@ -78,6 +78,9 @@ interface AppContextType {
   deleteManualAchievement: (achievementId: string) => void;
   addPlannerEventComment: (eventId: string, commentText: string) => void;
   addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
+  updateDailyPlannerComment: (commentId: string, plannerUserId: string, day: string, newText: string) => void;
+  deleteDailyPlannerComment: (commentId: string, plannerUserId: string, day: string) => void;
+  deleteAllDailyPlannerComments: (plannerUserId: string, day: string) => void;
   updateBranding: (name: string, logo: string | null) => void;
   addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isEscalated'>) => void;
   updateInternalRequest: (updatedRequest: InternalRequest) => void;
@@ -561,6 +564,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         userId: user.id,
         text: commentText,
         date: new Date().toISOString(),
+        id: `comment-${Date.now()}`
     };
 
     setDailyPlannerComments(prev => {
@@ -584,6 +588,34 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const plannerUser = users.find(u => u.id === plannerUserId);
     recordAction(`Commented on ${plannerUser?.name}'s planner for ${dayKey}`);
   }, [user, users, recordAction]);
+  
+  const updateDailyPlannerComment = useCallback((commentId: string, plannerUserId: string, day: string, newText: string) => {
+    setDailyPlannerComments(prev => prev.map(dpc => {
+      if(dpc.plannerUserId === plannerUserId && dpc.day === day) {
+        return {
+          ...dpc,
+          comments: dpc.comments.map(c => c.id === commentId ? { ...c, text: newText } : c)
+        }
+      }
+      return dpc;
+    }));
+  }, []);
+
+  const deleteDailyPlannerComment = useCallback((commentId: string, plannerUserId: string, day: string) => {
+    setDailyPlannerComments(prev => prev.map(dpc => {
+      if(dpc.plannerUserId === plannerUserId && dpc.day === day) {
+        return {
+          ...dpc,
+          comments: dpc.comments.filter(c => c.id !== commentId)
+        }
+      }
+      return dpc;
+    }).filter(dpc => dpc.comments.length > 0));
+  }, []);
+
+  const deleteAllDailyPlannerComments = useCallback((plannerUserId: string, day: string) => {
+    setDailyPlannerComments(prev => prev.filter(dpc => !(dpc.plannerUserId === plannerUserId && dpc.day === day)));
+  }, []);
 
   const addUser = useCallback((newUser: Omit<User, 'id' | 'avatar'>) => {
     const userToAdd: User = {
@@ -1647,6 +1679,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     deleteManualAchievement,
     addPlannerEventComment,
     addDailyPlannerComment,
+    updateDailyPlannerComment,
+    deleteDailyPlannerComment,
+    deleteAllDailyPlannerComments,
     updateBranding,
     addInternalRequest,
     updateInternalRequest,

@@ -65,6 +65,7 @@ export interface User {
 }
 
 export interface Comment {
+    id?: string;
     userId: string;
     text: string;
     date: string;

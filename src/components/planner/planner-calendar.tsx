@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
@@ -10,20 +10,29 @@ import { format, isSameDay, formatDistanceToNow } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
-import { ChevronDown, Send } from 'lucide-react';
+import { ChevronDown, Send, Edit, Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
+import type { Comment } from '@/lib/types';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface PlannerCalendarProps {
     selectedUserId: string;
 }
 
 export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps) {
-  const { users, plannerEvents, getExpandedPlannerEvents, addPlannerEventComment, dailyPlannerComments, addDailyPlannerComment } = useAppContext();
+  const { user, users, plannerEvents, getExpandedPlannerEvents, addPlannerEventComment, dailyPlannerComments, addDailyPlannerComment, updateDailyPlannerComment, deleteDailyPlannerComment, deleteAllDailyPlannerComments } = useAppContext();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [eventComment, setEventComment] = useState('');
   const [dailyComment, setDailyComment] = useState('');
   const [activeCollapsible, setActiveCollapsible] = useState<string | null>(null);
+  
+  const [editingComment, setEditingComment] = useState<{ id: string, text: string } | null>(null);
+
+  useEffect(() => {
+    // Reset editing state when selected date changes
+    setEditingComment(null);
+  }, [selectedDate]);
 
   const expandedEvents = useMemo(() => getExpandedPlannerEvents(currentMonth, selectedUserId), [getExpandedPlannerEvents, currentMonth, selectedUserId]);
 
@@ -53,6 +62,21 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
     if (!dailyComment.trim() || !selectedDate) return;
     addDailyPlannerComment(selectedUserId, selectedDate, dailyComment);
     setDailyComment('');
+  };
+
+  const handleEditComment = (comment: Comment) => {
+    setEditingComment({ id: comment.id, text: comment.text });
+  };
+  
+  const handleSaveEdit = () => {
+    if (!editingComment || !selectedDate) return;
+    updateDailyPlannerComment(editingComment.id, selectedUserId, format(selectedDate, 'yyyy-MM-dd'), editingComment.text);
+    setEditingComment(null);
+  };
+  
+  const handleDeleteAll = () => {
+    if (!selectedDate) return;
+    deleteAllDailyPlannerComments(selectedUserId, format(selectedDate, 'yyyy-MM-dd'));
   };
   
   const getEventFromId = (eventId: string) => {
@@ -167,16 +191,66 @@ export default function PlannerCalendar({ selectedUserId }: PlannerCalendarProps
                     <Separator className="my-4"/>
 
                     <div>
-                        <h3 className="text-sm font-semibold mb-2">Daily Comments</h3>
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-sm font-semibold">Daily Comments</h3>
+                             {user?.role === 'Admin' && selectedDayComments.length > 0 && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" size="sm">Delete All</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>This will permanently delete all comments for this day. This action cannot be undone.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDeleteAll}>Delete All</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                             )}
+                        </div>
                         <div className="space-y-3 mb-2">
                             {selectedDayComments.length > 0 ? selectedDayComments.map((comment, idx) => {
                                 const commentUser = users.find(u => u.id === comment.userId);
+                                const canModify = user?.id === comment.userId || user?.role === 'Admin';
+                                const isEditing = editingComment?.id === comment.id;
                                 return (
-                                    <div key={idx} className="flex items-start gap-2">
+                                    <div key={idx} className="flex items-start gap-2 group">
                                         <Avatar className="h-7 w-7"><AvatarImage src={commentUser?.avatar} /><AvatarFallback>{commentUser?.name.charAt(0)}</AvatarFallback></Avatar>
                                         <div className="bg-muted p-2 rounded-md w-full text-sm">
                                             <div className="flex justify-between items-baseline"><p className="font-semibold text-xs">{commentUser?.name}</p><p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(comment.date), { addSuffix: true })}</p></div>
-                                            <p className="text-foreground/80 mt-1">{comment.text}</p>
+                                            {isEditing ? (
+                                                <div className='mt-2 space-y-2'>
+                                                    <Textarea value={editingComment.text} onChange={(e) => setEditingComment({...editingComment, text: e.target.value})} className="bg-background"/>
+                                                    <div className='flex gap-2'>
+                                                        <Button size="sm" onClick={handleSaveEdit}>Save</Button>
+                                                        <Button size="sm" variant="ghost" onClick={() => setEditingComment(null)}>Cancel</Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className='flex justify-between items-start'>
+                                                    <p className="text-foreground/80 mt-1 whitespace-pre-wrap">{comment.text}</p>
+                                                    {canModify && (
+                                                        <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEditComment(comment)}><Edit className="h-3 w-3"/></Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3"/></Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader><AlertDialogTitle>Delete comment?</AlertDialogTitle><AlertDialogDescription>This action is permanent.</AlertDialogDescription></AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => selectedDate && deleteDailyPlannerComment(comment.id, selectedUserId, format(selectedDate, 'yyyy-MM-dd'))}>Delete</AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )

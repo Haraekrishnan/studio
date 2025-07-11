@@ -126,7 +126,7 @@ export const TASKS: Task[] = [
     creatorId: '11', // Akhil Pillai
     isViewedByAssignee: true,
     comments: [
-        { userId: '11', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+        { id: 'c-1-1', userId: '11', text: 'Let me know if you have any questions on the design brief.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
     ],
     requiresAttachmentForCompletion: true,
     approvalState: 'none'
@@ -170,8 +170,8 @@ export const TASKS: Task[] = [
     creatorId: '5', // Arjun P
     isViewedByAssignee: true,
     comments: [
-        { userId: '5', text: 'This is a top priority, please escalate if you run into issues.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-        { userId: '15', text: 'On it. I think I have an idea of what the issue is.', date: new Date().toISOString() }
+        { id: 'c-4-1', userId: '5', text: 'This is a top priority, please escalate if you run into issues.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+        { id: 'c-4-2', userId: '15', text: 'On it. I think I have an idea of what the issue is.', date: new Date().toISOString() }
     ],
     requiresAttachmentForCompletion: false,
     approvalState: 'none'
@@ -247,7 +247,7 @@ export const INTERNAL_REQUESTS: InternalRequest[] = [
         location: 'Head Office',
         status: 'Pending',
         date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-        comments: [{ userId: '19', text: 'Requesting stationery for the design team.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() }],
+        comments: [{ id: 'c-ireq-1', userId: '19', text: 'Requesting stationery for the design team.', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() }],
         isViewedByRequester: true
     },
     {
@@ -261,8 +261,8 @@ export const INTERNAL_REQUESTS: InternalRequest[] = [
         status: 'Approved',
         date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
         comments: [
-            { userId: '12', text: 'The old ones are malfunctioning.', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
-            { userId: '22', text: 'Approved. Please collect from the main store.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+            { id: 'c-ireq-2-1', userId: '12', text: 'The old ones are malfunctioning.', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+            { id: 'c-ireq-2-2', userId: '22', text: 'Approved. Please collect from the main store.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
         ],
         isViewedByRequester: false
     }
@@ -277,7 +277,7 @@ export const MANAGEMENT_REQUESTS: ManagementRequest[] = [
         details: 'I would like to request enrollment in the advanced project management course to improve my skills.',
         status: 'Pending',
         date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        comments: [{ userId: '13', text: 'Request submitted.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }],
+        comments: [{ id: 'c-mreq-1', userId: '13', text: 'Request submitted.', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }],
         isViewedByRequester: true,
         isViewedByRecipient: false,
     }
@@ -302,7 +302,7 @@ export const CERTIFICATE_REQUESTS: CertificateRequest[] = [
     requestType: 'TP Certificate',
     status: 'Pending',
     date: new Date().toISOString(),
-    comments: [{ userId: '3', text: 'Need this for client audit next week.', date: new Date().toISOString() }],
+    comments: [{ id: 'c-cert-1', userId: '3', text: 'Need this for client audit next week.', date: new Date().toISOString() }],
   }
 ];
 
