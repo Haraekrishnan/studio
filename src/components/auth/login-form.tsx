@@ -33,9 +33,9 @@ export function LoginForm() {
     },
   });
 
-  const handleLogin = (data: LoginFormValues) => {
+  const handleLogin = async (data: LoginFormValues) => {
     setIsLoading(true);
-    const success = login(data.email, data.password);
+    const success = await login(data.email, data.password);
     
     if (!success) {
       toast({
@@ -45,6 +45,7 @@ export function LoginForm() {
       });
       setIsLoading(false);
     }
+    // On success, the AppContext will handle the redirect, and the loading state doesn't need to be turned off here as the component will unmount.
   };
 
   return (

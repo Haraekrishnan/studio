@@ -285,7 +285,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [currentLogId]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    // We don't set loading here to avoid layout shifts. The main loading state is handled by the useEffects.
     const usersSnapshot = await getDocs(collection(db, 'users'));
     const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
     
@@ -889,5 +888,3 @@ export function useAppContext() {
   }
   return context;
 }
-
-    
