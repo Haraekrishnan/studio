@@ -221,7 +221,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     const { id, ...data } = updatedUser;
     await setDoc(doc(db, 'users', id), data);
   }, []);
-
+  
   const deleteUser = useCallback(async (userId: string) => {
     await deleteDoc(doc(db, 'users', userId));
   }, []);
@@ -278,6 +278,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return announcements.filter(a => a.status === 'approved');
   }, [announcements]);
 
+  const myFulfilledUTRequests = useMemo(() => {
+    if (!user) return [];
+    return certificateRequests.filter(req => req.requesterId === user.id && req.status === 'Fulfilled' && !req.isViewedByRequester);
+  }, [certificateRequests, user]);
+
   // Placeholder for the myriad of functions to be implemented
   const placeholderFunc = useCallback(() => console.warn("Function not implemented"), []);
 
@@ -296,6 +301,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       deleteTask,
       addComment,
       approvedAnnouncements,
+      myFulfilledUTRequests,
       // Add all other functions here, pointing to a placeholder for now
       addProject: placeholderFunc,
       updateProject: placeholderFunc,

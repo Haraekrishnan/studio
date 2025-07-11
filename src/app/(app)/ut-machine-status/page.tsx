@@ -50,10 +50,10 @@ export default function EquipmentStatusPage() {
 
 
     useEffect(() => {
-        if (user) {
+        if (user && myFulfilledUTRequests?.length > 0) {
             markUTRequestsAsViewed();
         }
-    }, [user, markUTRequestsAsViewed]);
+    }, [user, markUTRequestsAsViewed, myFulfilledUTRequests]);
 
     const canManageUT = useMemo(() => {
         if (!user) return false;
@@ -127,7 +127,7 @@ export default function EquipmentStatusPage() {
                             </Button>
                         )}
                     </div>
-                     {myFulfilledUTRequests.length > 0 && (
+                     {myFulfilledUTRequests && myFulfilledUTRequests.length > 0 && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Fulfilled Certificate Requests</CardTitle>
