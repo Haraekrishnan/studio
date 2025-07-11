@@ -2,7 +2,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '@/lib/types';
-import { USERS } from '@/lib/mock-data';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -42,19 +43,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     setIsAuthLoading(true);
-    const foundUser = USERS.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-    
-    if (foundUser) {
-      const { password: _password, ...userToStore } = foundUser;
-      sessionStorage.setItem('user', JSON.stringify(userToStore));
-      setUser(userToStore);
-      router.push('/dashboard');
-      setIsAuthLoading(false);
-      return true;
-    } else {
-      console.log('Login failed: Invalid email or password.');
-      setIsAuthLoading(false);
-      return false;
+    try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email.toLowerCase()));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            console.log('Login failed: No user found with that email.');
+            setIsAuthLoading(false);
+            return false;
+        }
+
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data() as User;
+        
+        if (userData.password === password) {
+            const { password: _password, ...userToStore } = userData;
+            const finalUser = { ...userToStore, id: userDoc.id };
+            sessionStorage.setItem('user', JSON.stringify(finalUser));
+            setUser(finalUser);
+            router.push('/dashboard');
+            setIsAuthLoading(false);
+            return true;
+        } else {
+            console.log('Login failed: Invalid password.');
+            setIsAuthLoading(false);
+            return false;
+        }
+    } catch (error) {
+        console.error("Error during login:", error);
+        setIsAuthLoading(false);
+        return false;
     }
   }, [router]);
 
