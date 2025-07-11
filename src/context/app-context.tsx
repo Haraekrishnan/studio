@@ -6,11 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, Announcement, IncidentReport } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS, ANNOUNCEMENTS, INCIDENTS } from '@/lib/mock-data';
 import { addDays, isBefore, eachDayOfInterval, endOfMonth, isSameDay, isWeekend, startOfDay, differenceInMinutes, format, differenceInDays, subDays, startOfMonth } from 'date-fns';
-import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, getDoc, addDoc } from 'firebase/firestore';
 
-// Helper to safely stringify data for Firestore
-const serialize = (data: any) => JSON.parse(JSON.stringify(data));
 
 interface AppContextType {
   user: User | null;
@@ -52,104 +48,105 @@ interface AppContextType {
   newIncidentCount: number;
   myUnreadManagementRequestCount: number;
   unreadManagementRequestCountForMe: number;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  updateTask: (updatedTask: Task) => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => Promise<void>;
-  deleteTask: (taskId: string) => Promise<void>;
-  addPlannerEvent: (event: Omit<PlannerEvent, 'id' | 'comments'>) => Promise<void>;
-  updatePlannerEvent: (event: PlannerEvent) => Promise<void>;
-  deletePlannerEvent: (eventId: string) => Promise<void>;
+  updateTask: (updatedTask: Task) => void;
+  addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => void;
+  deleteTask: (taskId: string) => void;
+  addPlannerEvent: (event: Omit<PlannerEvent, 'id' | 'comments'>) => void;
+  updatePlannerEvent: (event: PlannerEvent) => void;
+  deletePlannerEvent: (eventId: string) => void;
   getExpandedPlannerEvents: (date: Date, userId: string) => (PlannerEvent & { eventDate: Date })[];
   getVisibleUsers: () => User[];
-  addUser: (newUser: Omit<User, 'id' | 'avatar'>) => Promise<void>;
-  updateUser: (updatedUser: User) => Promise<void>;
-  updateUserPlanningScore: (userId: string, score: number) => Promise<void>;
-  deleteUser: (userId: string) => Promise<void>;
-  addRole: (role: Omit<RoleDefinition, 'id' | 'isEditable'>) => Promise<void>;
-  updateRole: (updatedRole: RoleDefinition) => Promise<void>;
-  deleteRole: (roleId: string) => Promise<void>;
-  addProject: (projectName: string) => Promise<void>;
-  updateProject: (updatedProject: Project) => Promise<void>;
-  deleteProject: (projectId: string) => Promise<void>;
-  updateProfile: (name: string, email: string, avatar: string, password?: string) => Promise<void>;
+  addUser: (newUser: Omit<User, 'id' | 'avatar'>) => void;
+  updateUser: (updatedUser: User) => void;
+  updateUserPlanningScore: (userId: string, score: number) => void;
+  deleteUser: (userId: string) => void;
+  addRole: (role: Omit<RoleDefinition, 'id' | 'isEditable'>) => void;
+  updateRole: (updatedRole: RoleDefinition) => void;
+  deleteRole: (roleId: string) => void;
+  addProject: (projectName: string) => void;
+  updateProject: (updatedProject: Project) => void;
+  deleteProject: (projectId: string) => void;
+  updateProfile: (name: string, email: string, avatar: string, password?: string) => void;
   requestTaskStatusChange: (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']) => Promise<boolean>;
-  approveTaskStatusChange: (taskId: string, commentText: string) => Promise<void>;
-  returnTaskStatusChange: (taskId: string, commentText: string) => Promise<void>;
-  requestTaskReassignment: (taskId: string, newAssigneeId: string, commentText: string) => Promise<void>;
-  addComment: (taskId: string, commentText: string) => Promise<void>;
-  markTaskAsViewed: (taskId: string) => Promise<void>;
-  addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => Promise<void>;
-  approveAchievement: (achievementId: string, points: number) => Promise<void>;
-  rejectAchievement: (achievementId: string) => Promise<void>;
-  updateManualAchievement: (achievement: Achievement) => Promise<void>;
-  deleteManualAchievement: (achievementId: string) => Promise<void>;
-  addPlannerEventComment: (eventId: string, commentText: string) => Promise<void>;
-  addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => Promise<void>;
-  updateDailyPlannerComment: (commentId: string, plannerUserId: string, day: string, newText: string) => Promise<void>;
-  deleteDailyPlannerComment: (commentId: string, plannerUserId: string, day: string) => Promise<void>;
-  deleteAllDailyPlannerComments: (plannerUserId: string, day: string) => Promise<void>;
-  updateBranding: (name: string, logo: string | null) => Promise<void>;
-  addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isEscalated'>) => Promise<void>;
-  updateInternalRequest: (updatedRequest: InternalRequest) => Promise<void>;
-  deleteInternalRequest: (requestId: string) => Promise<void>;
-  addInternalRequestComment: (requestId: string, commentText: string) => Promise<void>;
-  markRequestAsViewed: (requestId: string) => Promise<void>;
-  forwardInternalRequest: (requestId: string, role: Role, comment: string) => Promise<void>;
-  escalateInternalRequest: (requestId: string, reason: string) => Promise<void>;
-  createPpeRequestTask: (data: any) => Promise<void>;
-  addInventoryItem: (item: Omit<InventoryItem, 'id'>) => Promise<void>;
-  updateInventoryItem: (item: InventoryItem) => Promise<void>;
-  deleteInventoryItem: (itemId: string) => Promise<void>;
-  addMultipleInventoryItems: (items: any[]) => Promise<number>;
-  requestInventoryTransfer: (items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => Promise<void>;
-  approveInventoryTransfer: (requestId: string, comment: string) => Promise<void>;
-  rejectInventoryTransfer: (requestId: string, comment: string) => Promise<void>;
-  addCertificateRequest: (itemId: string, requestType: CertificateRequestType, comment: string) => Promise<void>;
-  requestUTMachineCertificate: (machineId: string, requestType: CertificateRequestType, comment: string) => Promise<void>;
-  addCertificateRequestComment: (requestId: string, commentText: string) => Promise<void>;
-  fulfillCertificateRequest: (requestId: string, commentText: string) => Promise<void>;
-  markUTRequestsAsViewed: () => Promise<void>;
-  acknowledgeFulfilledUTRequest: (requestId: string) => Promise<void>;
-  addManpowerLog: (log: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => Promise<void>;
-  addManpowerProfile: (profile: Omit<ManpowerProfile, 'id'>) => Promise<void>;
-  updateManpowerProfile: (profile: ManpowerProfile) => Promise<void>;
-  deleteManpowerProfile: (profileId: string) => Promise<void>;
-  addUTMachine: (machine: Omit<UTMachine, 'id' | 'usageLog'>) => Promise<void>;
-  updateUTMachine: (machine: UTMachine) => Promise<void>;
-  deleteUTMachine: (machineId: string) => Promise<void>;
-  addUTMachineLog: (machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => Promise<void>;
-  addDftMachine: (machine: Omit<DftMachine, 'id' | 'usageLog'>) => Promise<void>;
-  updateDftMachine: (machine: DftMachine) => Promise<void>;
-  deleteDftMachine: (machineId: string) => Promise<void>;
-  addMobileSim: (item: Omit<MobileSim, 'id'>) => Promise<void>;
-  updateMobileSim: (item: MobileSim) => Promise<void>;
-  deleteMobileSim: (itemId: string) => Promise<void>;
-  addOtherEquipment: (item: Omit<OtherEquipment, 'id'>) => Promise<void>;
-  updateOtherEquipment: (item: OtherEquipment) => Promise<void>;
-  deleteOtherEquipment: (itemId: string) => Promise<void>;
-  addVehicle: (vehicle: Omit<Vehicle, 'id'>) => Promise<void>;
-  updateVehicle: (vehicle: Vehicle) => Promise<void>;
-  deleteVehicle: (vehicleId: string) => Promise<void>;
-  addDriver: (driver: Omit<Driver, 'id'>) => Promise<void>;
-  updateDriver: (driver: Driver) => Promise<void>;
-  deleteDriver: (driverId: string) => Promise<void>;
-  addManagementRequest: (request: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isViewedByRecipient'>) => Promise<void>;
-  updateManagementRequest: (updatedRequest: ManagementRequest) => Promise<void>;
-  addManagementRequestComment: (requestId: string, commentText: string) => Promise<void>;
-  markManagementRequestAsViewed: (requestId: string) => Promise<void>;
-  addAnnouncement: (announcement: Pick<Announcement, 'title' | 'content'>) => Promise<void>;
-  approveAnnouncement: (announcementId: string) => Promise<void>;
-  rejectAnnouncement: (announcementId: string) => Promise<void>;
-  returnAnnouncement: (announcementId: string, comment: string) => Promise<void>;
-  updateAnnouncement: (announcement: Announcement) => Promise<void>;
-  deleteAnnouncement: (announcementId: string) => Promise<void>;
-  dismissAnnouncement: (announcementId: string) => Promise<void>;
-  addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'reportedToUserIds' | 'isPublished' | 'projectLocation'>) => Promise<void>;
-  updateIncident: (incident: IncidentReport) => Promise<void>;
-  addIncidentComment: (incidentId: string, commentText: string) => Promise<void>;
-  addUsersToIncidentReport: (incidentId: string, userIds: string[]) => Promise<void>;
-  publishIncident: (incidentId: string) => Promise<void>;
+  approveTaskStatusChange: (taskId: string, commentText: string) => void;
+  returnTaskStatusChange: (taskId: string, commentText: string) => void;
+  requestTaskReassignment: (taskId: string, newAssigneeId: string, commentText: string) => void;
+  addComment: (taskId: string, commentText: string) => void;
+  markTaskAsViewed: (taskId: string) => void;
+  addManualAchievement: (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => void;
+  approveAchievement: (achievementId: string, points: number) => void;
+  rejectAchievement: (achievementId: string) => void;
+  updateManualAchievement: (achievement: Achievement) => void;
+  deleteManualAchievement: (achievementId: string) => void;
+  addPlannerEventComment: (eventId: string, commentText: string) => void;
+  addDailyPlannerComment: (plannerUserId: string, date: Date, commentText: string) => void;
+  updateDailyPlannerComment: (commentId: string, plannerUserId: string, day: string, newText: string) => void;
+  deleteDailyPlannerComment: (commentId: string, plannerUserId: string, day: string) => void;
+  deleteAllDailyPlannerComments: (plannerUserId: string, day: string) => void;
+  updateBranding: (name: string, logo: string | null) => void;
+  addInternalRequest: (request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isEscalated'>) => void;
+  updateInternalRequest: (updatedRequest: InternalRequest) => void;
+  deleteInternalRequest: (requestId: string) => void;
+  addInternalRequestComment: (requestId: string, commentText: string) => void;
+  markRequestAsViewed: (requestId: string) => void;
+  forwardInternalRequest: (requestId: string, role: Role, comment: string) => void;
+  escalateInternalRequest: (requestId: string, reason: string) => void;
+  createPpeRequestTask: (data: any) => void;
+  addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
+  updateInventoryItem: (item: InventoryItem) => void;
+  deleteInventoryItem: (itemId: string) => void;
+  addMultipleInventoryItems: (items: any[]) => number;
+  requestInventoryTransfer: (items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => void;
+  approveInventoryTransfer: (requestId: string, comment: string) => void;
+  rejectInventoryTransfer: (requestId: string, comment: string) => void;
+  addCertificateRequest: (itemId: string, requestType: CertificateRequestType, comment: string) => void;
+  requestUTMachineCertificate: (machineId: string, requestType: CertificateRequestType, comment: string) => void;
+  addCertificateRequestComment: (requestId: string, commentText: string) => void;
+  fulfillCertificateRequest: (requestId: string, commentText: string) => void;
+  markUTRequestsAsViewed: () => void;
+  acknowledgeFulfilledUTRequest: (requestId: string) => void;
+  addManpowerLog: (log: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => void;
+  addManpowerProfile: (profile: Omit<ManpowerProfile, 'id'>) => void;
+  updateManpowerProfile: (profile: ManpowerProfile) => void;
+  deleteManpowerProfile: (profileId: string) => void;
+  addUTMachine: (machine: Omit<UTMachine, 'id' | 'usageLog'>) => void;
+  updateUTMachine: (machine: UTMachine) => void;
+  deleteUTMachine: (machineId: string) => void;
+  addUTMachineLog: (machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => void;
+  addDftMachine: (machine: Omit<DftMachine, 'id' | 'usageLog'>) => void;
+  updateDftMachine: (machine: DftMachine) => void;
+  deleteDftMachine: (machineId: string) => void;
+  addMobileSim: (item: Omit<MobileSim, 'id'>) => void;
+  updateMobileSim: (item: MobileSim) => void;
+  deleteMobileSim: (itemId: string) => void;
+  addOtherEquipment: (item: Omit<OtherEquipment, 'id'>) => void;
+  updateOtherEquipment: (item: OtherEquipment) => void;
+  deleteOtherEquipment: (itemId: string) => void;
+  addVehicle: (vehicle: Omit<Vehicle, 'id'>) => void;
+  updateVehicle: (vehicle: Vehicle) => void;
+  deleteVehicle: (vehicleId: string) => void;
+  addDriver: (driver: Omit<Driver, 'id'>) => void;
+  updateDriver: (driver: Driver) => void;
+  deleteDriver: (driverId: string) => void;
+  addManagementRequest: (request: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isViewedByRecipient'>) => void;
+  updateManagementRequest: (updatedRequest: ManagementRequest) => void;
+  addManagementRequestComment: (requestId: string, commentText: string) => void;
+  markManagementRequestAsViewed: (requestId: string) => void;
+  addAnnouncement: (announcement: Pick<Announcement, 'title' | 'content'>) => void;
+  approveAnnouncement: (announcementId: string) => void;
+  rejectAnnouncement: (announcementId: string) => void;
+  returnAnnouncement: (announcementId: string, comment: string) => void;
+  updateAnnouncement: (announcement: Announcement) => void;
+  deleteAnnouncement: (announcementId: string) => void;
+  dismissAnnouncement: (announcementId: string) => void;
+  addIncidentReport: (report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'reportedToUserIds' | 'isPublished' | 'projectLocation'>) => void;
+  updateIncident: (incident: IncidentReport) => void;
+  addIncidentComment: (incidentId: string, commentText: string) => void;
+  addUsersToIncidentReport: (incidentId: string, userIds: string[]) => void;
+  publishIncident: (incidentId: string) => void;
   expiringVehicleDocsCount: number;
   expiringDriverDocsCount: number;
   expiringUtMachineCalibrationsCount: number;
@@ -162,93 +159,41 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppContextProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [roles, setRoles] = useState<RoleDefinition[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [inventoryTransferRequests, setInventoryTransferRequests] = useState<InventoryTransferRequest[]>([]);
-  const [certificateRequests, setCertificateRequests] = useState<CertificateRequest[]>([]);
-  const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>([]);
-  const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>([]);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [manpowerLogs, setManpowerLogs] = useState<ManpowerLog[]>([]);
-  const [manpowerProfiles, setManpowerProfiles] = useState<ManpowerProfile[]>([]);
-  const [utMachines, setUtMachines] = useState<UTMachine[]>([]);
-  const [dftMachines, setDftMachines] = useState<DftMachine[]>([]);
-  const [mobileSims, setMobileSims] = useState<MobileSim[]>([]);
-  const [otherEquipments, setOtherEquipments] = useState<OtherEquipment[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [internalRequests, setInternalRequests] = useState<InternalRequest[]>([]);
-  const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [incidents, setIncidents] = useState<IncidentReport[]>([]);
+  const [users, setUsers] = useState<User[]>(USERS);
+  const [roles, setRoles] = useState<RoleDefinition[]>(MOCK_ROLES);
+  const [tasks, setTasks] = useState<Task[]>(TASKS);
+  const [projects, setProjects] = useState<Project[]>(PROJECTS);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(INVENTORY_ITEMS);
+  const [inventoryTransferRequests, setInventoryTransferRequests] = useState<InventoryTransferRequest[]>(INVENTORY_TRANSFER_REQUESTS);
+  const [certificateRequests, setCertificateRequests] = useState<CertificateRequest[]>(CERTIFICATE_REQUESTS);
+  const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
+  const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>(DAILY_PLANNER_COMMENTS);
+  const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
+  const [manpowerLogs, setManpowerLogs] = useState<ManpowerLog[]>(MANPOWER_LOGS);
+  const [manpowerProfiles, setManpowerProfiles] = useState<ManpowerProfile[]>(MANPOWER_PROFILES);
+  const [utMachines, setUtMachines] = useState<UTMachine[]>(UT_MACHINES);
+  const [dftMachines, setDftMachines] = useState<DftMachine[]>(DFT_MACHINES);
+  const [mobileSims, setMobileSims] = useState<MobileSim[]>(MOBILE_SIMS);
+  const [otherEquipments, setOtherEquipments] = useState<OtherEquipment[]>(OTHER_EQUIPMENTS);
+  const [vehicles, setVehicles] = useState<Vehicle[]>(VEHICLES);
+  const [drivers, setDrivers] = useState<Driver[]>(DRIVERS);
+  const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
+  const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>(MANAGEMENT_REQUESTS);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(ANNOUNCEMENTS);
+  const [incidents, setIncidents] = useState<IncidentReport[]>(INCIDENTS);
   
-  const [appName, setAppName] = useState('Aries Marine - Task Management System');
+  const [appName, setAppName] = useState<string>('Aries Marine - Task Management System');
   const [appLogo, setAppLogo] = useState<string | null>(null);
   
   const [currentLogId, setCurrentLogId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const fetchData = useCallback(async () => {
-    try {
-      const collections: { [key: string]: React.Dispatch<React.SetStateAction<any[]>> } = {
-        users: setUsers, roles: setRoles, tasks: setTasks, projects: setProjects,
-        inventoryItems: setInventoryItems, inventoryTransferRequests: setInventoryTransferRequests,
-        certificateRequests: setCertificateRequests, plannerEvents: setPlannerEvents,
-        dailyPlannerComments: setDailyPlannerComments, achievements: setAchievements,
-        activityLogs: setActivityLogs, manpowerLogs: setManpowerLogs,
-        manpowerProfiles: setManpowerProfiles, utMachines: setUtMachines,
-        dftMachines: setDftMachines, mobileSims: setMobileSims,
-        otherEquipments: setOtherEquipments, vehicles: setVehicles, drivers: setDrivers,
-        internalRequests: setInternalRequests, managementRequests: setManagementRequests,
-        announcements: setAnnouncements, incidents: setIncidents
-      };
-  
-      for (const [collectionName, setter] of Object.entries(collections)) {
-        const querySnapshot = await getDocs(collection(db, collectionName));
-        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setter(data as any);
-      }
-
-      // Fetch branding separately as it's a single document
-      const brandingDoc = await getDoc(doc(db, 'config', 'branding'));
-      if (brandingDoc.exists()) {
-          const brandingData = brandingDoc.data();
-          setAppName(brandingData.appName || 'Aries Marine');
-          setAppLogo(brandingData.appLogo || null);
-      }
-
-    } catch (error) {
-      console.error("Error fetching data from Firestore:", error);
-    }
-  }, []);
-  
-  // This effect checks for a user session on initial load
+  // This effect runs once on mount to set the initial loading state.
   useEffect(() => {
-    const checkSession = async () => {
-        setIsLoading(true);
-        const loggedInUserJson = sessionStorage.getItem('user');
-        if (loggedInUserJson) {
-            const loggedInUser = JSON.parse(loggedInUserJson);
-            setUser(loggedInUser);
-        } else {
-            setUser(null);
-            setIsLoading(false);
-        }
-    };
-    checkSession();
+    setIsLoading(false);
   }, []);
-
-  // This effect fetches data when the user object is set (either from session or login)
-  useEffect(() => {
-    if (user) {
-      fetchData().finally(() => setIsLoading(false));
-    }
-  }, [user, fetchData]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -268,69 +213,60 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [setTasks]);
 
-  const recordAction = useCallback(async (actionText: string) => {
+  const recordAction = useCallback((actionText: string) => {
     if (!currentLogId) return;
     
-    const logRef = doc(db, 'activityLogs', currentLogId);
-    const logSnapshot = await getDoc(logRef);
-
-    if (logSnapshot.exists()) {
-        const logData = logSnapshot.data();
-        const updatedActions = [...logData.actions, actionText];
-        await setDoc(logRef, { actions: updatedActions }, { merge: true });
-        setActivityLogs(prevLogs => prevLogs.map(log => 
-            log.id === currentLogId ? { ...log, actions: updatedActions } : log
-        ));
-    }
-  }, [currentLogId]);
+    setActivityLogs(prevLogs => {
+      return prevLogs.map(log => {
+        if (log.id === currentLogId) {
+          return { ...log, actions: [...log.actions, actionText] };
+        }
+        return log;
+      });
+    });
+  }, [currentLogId, setActivityLogs]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    const usersSnapshot = await getDocs(collection(db, 'users'));
-    const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
-    
-    const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+    const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (foundUser) {
-      sessionStorage.setItem('user', JSON.stringify(foundUser));
-
-      const newLog: Omit<ActivityLog, 'id'> = {
+      setUser(foundUser);
+      const newLog: ActivityLog = {
+        id: `log-${Date.now()}`,
         userId: foundUser.id,
         loginTime: new Date().toISOString(),
         logoutTime: null,
         duration: null,
         actions: ['User logged in.'],
       };
-      
-      const newLogRef = await addDoc(collection(db, 'activityLogs'), newLog);
-      setCurrentLogId(newLogRef.id);
-      
-      setUser(foundUser); // This will trigger the data fetching useEffect and subsequent UI update.
-      router.push('/dashboard');
+      setActivityLogs(prev => [newLog, ...prev]);
+      setCurrentLogId(newLog.id);
       return true;
     }
     return false;
-  }, [router]);
+  }, [users, setUser, setActivityLogs, setCurrentLogId]);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(() => {
     if (currentLogId) {
       const logoutTime = new Date();
-      const logRef = doc(db, 'activityLogs', currentLogId);
-      const logSnapshot = await getDoc(logRef);
-
-      if (logSnapshot.exists()) {
-        const logData = logSnapshot.data();
-        const loginTime = new Date(logData.loginTime);
-        await setDoc(logRef, {
-            logoutTime: logoutTime.toISOString(),
-            duration: differenceInMinutes(logoutTime, loginTime),
-            actions: [...logData.actions, 'User logged out.'],
-        }, { merge: true });
-      }
+      setActivityLogs(prevLogs => {
+        return prevLogs.map(log => {
+          if (log.id === currentLogId) {
+            const loginTime = new Date(log.loginTime);
+            return {
+              ...log,
+              logoutTime: logoutTime.toISOString(),
+              duration: differenceInMinutes(logoutTime, loginTime),
+              actions: [...log.actions, 'User logged out.'],
+            };
+          }
+          return log;
+        });
+      });
       setCurrentLogId(null);
     }
     setUser(null);
-    sessionStorage.removeItem('user');
     router.push('/login');
-  }, [router, currentLogId]);
+  }, [currentLogId, setActivityLogs, setCurrentLogId, setUser, router]);
 
   const getSubordinates = useCallback((managerId: string, allUsers: User[]): string[] => {
     const subordinates: string[] = [];
@@ -365,34 +301,30 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return users.filter(u => u.id === user.id);
   }, [user, users, roles, getSubordinates]);
   
-  const addTask = useCallback(async (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => {
+  const addTask = useCallback((task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => {
     if (!user) return;
-    const newTaskRef = doc(collection(db, 'tasks'));
     const newTask: Task = {
         ...task,
-        id: newTaskRef.id,
+        id: `task-${Date.now()}`,
         comments: [],
         status: 'To Do',
         approvalState: 'none',
         isViewedByAssignee: false,
     };
-    await setDoc(newTaskRef, serialize(newTask));
     setTasks(prevTasks => [newTask, ...prevTasks]);
-    await recordAction(`Created task: "${task.title}"`);
-  }, [user, recordAction]);
+    recordAction(`Created task: "${task.title}"`);
+  }, [user, setTasks, recordAction]);
 
-  const updateTask = useCallback(async (updatedTask: Task) => {
-    const taskRef = doc(db, 'tasks', updatedTask.id);
-    await setDoc(taskRef, serialize(updatedTask), { merge: true });
+  const updateTask = useCallback((updatedTask: Task) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === updatedTask.id ? { ...task, ...updatedTask } : task
       )
     );
-    await recordAction(`Updated task details for: "${updatedTask.title}"`);
-  }, [recordAction]);
+    recordAction(`Updated task details for: "${updatedTask.title}"`);
+  }, [setTasks, recordAction]);
 
-  const addComment = useCallback(async (taskId: string, commentText: string) => {
+  const addComment = useCallback((taskId: string, commentText: string) => {
     if (!user) return;
     const newComment: Comment = {
       userId: user.id,
@@ -400,18 +332,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       date: new Date().toISOString(),
     };
     
-    const taskRef = doc(db, 'tasks', taskId);
-    const taskSnapshot = await getDoc(taskRef);
-    if(taskSnapshot.exists()) {
-        const taskData = taskSnapshot.data();
-        const updatedComments = taskData.comments ? [newComment, ...taskData.comments] : [newComment];
-        updatedComments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        await setDoc(taskRef, { comments: updatedComments }, { merge: true });
-
-        setTasks(prevTasks => prevTasks.map(t => t.id === taskId ? { ...t, comments: updatedComments } : t));
-        await recordAction(`Commented on task: "${taskData.title}"`);
-    }
-  }, [user, recordAction]);
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId
+          ? { ...task, comments: [newComment, ...(task.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()) }
+          : task
+      )
+    );
+    recordAction(`Commented on task: "${tasks.find(t=>t.id === taskId)?.title}"`);
+  }, [user, tasks, setTasks, recordAction]);
   
   const requestTaskStatusChange = useCallback(async (taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']): Promise<boolean> => {
     const task = tasks.find(t => t.id === taskId);
@@ -422,23 +351,25 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
     
     const formattedComment = `Status change requested to "${newStatus}": ${commentText}`;
-    const newComment: Comment = { userId: user.id, text: formattedComment, date: new Date().toISOString() };
+    addComment(taskId, formattedComment);
     
-    const updatedData = {
-        comments: [newComment, ...(task.comments || [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-        previousStatus: task.status,
-        pendingStatus: newStatus,
-        approvalState: 'pending' as ApprovalState,
-        status: 'Pending Approval' as TaskStatus,
-        attachment: attachment || task.attachment,
-    };
-    
-    await updateTask({ ...task, ...updatedData });
-    await recordAction(`Requested status change to "${newStatus}" for task: "${task.title}"`);
+    setTasks(prevTasks => prevTasks.map(t =>
+        t.id === taskId
+        ? {
+            ...t,
+            previousStatus: t.status,
+            pendingStatus: newStatus,
+            approvalState: 'pending',
+            status: 'Pending Approval',
+            attachment: attachment || t.attachment,
+          }
+        : t
+    ));
+    recordAction(`Requested status change to "${newStatus}" for task: "${task.title}"`);
     return true;
-  }, [tasks, user, recordAction, updateTask]);
+  }, [tasks, user, setTasks, addComment, recordAction]);
 
-  const requestTaskReassignment = useCallback(async (taskId: string, newAssigneeId: string, commentText: string) => {
+  const requestTaskReassignment = useCallback((taskId: string, newAssigneeId: string, commentText: string) => {
     if (!user) return;
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
@@ -447,139 +378,129 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (!newAssignee) return;
     
     const formattedComment = `Reassignment requested to ${newAssignee.name}. Reason: ${commentText}`;
-    const newComment: Comment = { userId: user.id, text: formattedComment, date: new Date().toISOString() };
+    addComment(taskId, formattedComment);
     
-    const updatedData = {
-        comments: [newComment, ...(task.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    setTasks(prev => prev.map(t => t.id === taskId ? {
+        ...t,
         pendingAssigneeId: newAssigneeId,
         status: 'Pending Approval',
-        previousStatus: task.status,
+        previousStatus: t.status,
         approvalState: 'pending',
-    };
+    } : t));
 
-    await updateTask({ ...task, ...updatedData });
-    await recordAction(`Requested reassignment of task "${task.title}" to ${newAssignee.name}`);
-  }, [user, users, tasks, recordAction, updateTask]);
+    recordAction(`Requested reassignment of task "${task.title}" to ${newAssignee.name}`);
+  }, [user, users, tasks, setTasks, recordAction, addComment]);
   
-  const approveTaskStatusChange = useCallback(async (taskId: string, commentText: string) => {
+  const approveTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     if (!user) return;
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
     const approvalComment = `Request Approved: ${commentText}`;
-    const newComment: Comment = { userId: user.id, text: approvalComment, date: new Date().toISOString() };
-    
-    let updatedData: Partial<Task> = {
-        comments: [newComment, ...(task.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-    };
+    addComment(taskId, approvalComment);
 
-    if (task.pendingAssigneeId) { 
-      const newAssignee = users.find(u => u.id === task.pendingAssigneeId);
-      await recordAction(`Approved reassignment of task "${task.title}" to ${newAssignee?.name}`);
-      updatedData = {
-        ...updatedData,
-        assigneeId: task.pendingAssigneeId,
-        status: task.previousStatus || 'To Do',
-        pendingAssigneeId: undefined,
-        previousStatus: undefined,
-        pendingStatus: undefined,
-        approvalState: 'approved',
-        isViewedByAssignee: false,
-      };
-    } else if (task.pendingStatus) { 
-      const isCompleting = task.pendingStatus === 'Completed';
-      await recordAction(`Approved status change for task: "${task.title}"`);
-      updatedData = {
-        ...updatedData,
-        status: task.pendingStatus,
-        completionDate: isCompleting ? new Date().toISOString() : task.completionDate,
-        pendingStatus: undefined,
-        previousStatus: undefined,
-        approvalState: 'approved',
-      };
-    }
-    
-    await updateTask({ ...task, ...updatedData });
-  }, [user, users, tasks, recordAction, updateTask]);
+    setTasks(prevTasks => prevTasks.map(t => {
+      if (t.id === taskId) {
+        if (t.pendingAssigneeId) { // Reassignment approval
+          recordAction(`Approved reassignment of task "${t.title}"`);
+          return {
+            ...t,
+            assigneeId: t.pendingAssigneeId,
+            status: t.previousStatus || 'To Do',
+            pendingAssigneeId: undefined,
+            previousStatus: undefined,
+            pendingStatus: undefined,
+            approvalState: 'approved',
+            isViewedByAssignee: false,
+          };
+        }
+        if (t.pendingStatus) { // Status change approval
+          const isCompleting = t.pendingStatus === 'Completed';
+          recordAction(`Approved status change for task: "${t.title}"`);
+          return {
+            ...t,
+            status: t.pendingStatus,
+            completionDate: isCompleting ? new Date().toISOString() : t.completionDate,
+            pendingStatus: undefined,
+            previousStatus: undefined,
+            approvalState: 'approved',
+          };
+        }
+      }
+      return t;
+    }));
+  }, [user, tasks, setTasks, recordAction, addComment]);
   
-  const returnTaskStatusChange = useCallback(async (taskId: string, commentText: string) => {
+  const returnTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     if (!user) return;
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     
     const returnComment = `Request Returned: ${commentText}`;
-    const newComment: Comment = { userId: user.id, text: returnComment, date: new Date().toISOString() };
+    addComment(taskId, returnComment);
     
-    let updatedData: Partial<Task> = {
-      comments: [newComment, ...(task.comments || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-    };
+    setTasks(prevTasks => prevTasks.map(t => {
+      if (t.id === taskId) {
+        if (t.pendingAssigneeId) { // Reassignment rejection
+            recordAction(`Returned (rejected) reassignment of task "${t.title}"`);
+            return {
+                ...t,
+                status: t.previousStatus || 'To Do',
+                pendingAssigneeId: undefined,
+                previousStatus: undefined,
+                approvalState: 'returned',
+            };
+        }
+        if (t.pendingStatus) { // Status change rejection
+            const returnToStatus = t.previousStatus || 'In Progress';
+            recordAction(`Returned task "${t.title}" to status "${returnToStatus}"`);
+            return {
+                ...t,
+                status: returnToStatus,
+                pendingStatus: undefined,
+                previousStatus: undefined,
+                approvalState: 'returned',
+            };
+        }
+      }
+      return t;
+    }));
+  }, [user, tasks, setTasks, recordAction, addComment]);
 
-    if (task.pendingAssigneeId) {
-        await recordAction(`Returned (rejected) reassignment of task "${task.title}"`);
-        updatedData = {
-            ...updatedData,
-            status: task.previousStatus || 'To Do',
-            pendingAssigneeId: undefined,
-            previousStatus: undefined,
-            approvalState: 'returned',
-        };
-    } else if (task.pendingStatus) {
-        const returnToStatus = task.previousStatus || 'In Progress';
-        await recordAction(`Returned task "${task.title}" to status "${returnToStatus}"`);
-        updatedData = {
-            ...updatedData,
-            status: returnToStatus,
-            pendingStatus: undefined,
-            previousStatus: undefined,
-            approvalState: 'returned',
-        };
-    }
-    
-    await updateTask({ ...task, ...updatedData });
-  }, [user, tasks, recordAction, updateTask]);
-
-  const deleteTask = useCallback(async (taskId: string) => {
+  const deleteTask = useCallback((taskId: string) => {
     const taskTitle = tasks.find(t => t.id === taskId)?.title;
-    await deleteDoc(doc(db, 'tasks', taskId));
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-    await recordAction(`Deleted task: "${taskTitle}"`);
-  }, [tasks, recordAction]);
+    recordAction(`Deleted task: "${taskTitle}"`);
+  }, [tasks, setTasks, recordAction]);
 
-  const markTaskAsViewed = useCallback(async (taskId: string) => {
-    const taskRef = doc(db, 'tasks', taskId);
-    await setDoc(taskRef, { isViewedByAssignee: true }, { merge: true });
+  const markTaskAsViewed = useCallback((taskId: string) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isViewedByAssignee: true } : t));
-  }, []);
+  }, [setTasks]);
 
-  const addPlannerEvent = useCallback(async (event: Omit<PlannerEvent, 'id' | 'comments'>) => {
+  const addPlannerEvent = useCallback((event: Omit<PlannerEvent, 'id' | 'comments'>) => {
     if (!user) return;
-    const newEventRef = doc(collection(db, 'plannerEvents'));
     const newEvent: PlannerEvent = {
       ...event,
-      id: newEventRef.id,
+      id: `event-${Date.now()}`,
       creatorId: user.id,
       comments: [],
     };
-    await setDoc(newEventRef, serialize(newEvent));
     setPlannerEvents(prevEvents => [newEvent, ...prevEvents]);
-    await recordAction(`Created planner event: "${event.title}"`);
-  }, [user, recordAction]);
+    recordAction(`Created planner event: "${event.title}"`);
+  }, [user, setPlannerEvents, recordAction]);
 
-  const updatePlannerEvent = useCallback(async (updatedEvent: PlannerEvent) => {
-    const eventRef = doc(db, 'plannerEvents', updatedEvent.id);
-    await setDoc(eventRef, serialize(updatedEvent), { merge: true });
+  const updatePlannerEvent = useCallback((updatedEvent: PlannerEvent) => {
     setPlannerEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e));
-    await recordAction(`Updated planner event: "${updatedEvent.title}"`);
-  }, [recordAction]);
+    recordAction(`Updated planner event: "${updatedEvent.title}"`);
+  }, [setPlannerEvents, recordAction]);
   
-  const deletePlannerEvent = useCallback(async (eventId: string) => {
+  const deletePlannerEvent = useCallback((eventId: string) => {
     const event = plannerEvents.find(e => e.id === eventId);
-    await deleteDoc(doc(db, 'plannerEvents', eventId));
     setPlannerEvents(prev => prev.filter(e => e.id !== eventId));
     if (event) {
-        await recordAction(`Deleted planner event: "${event.title}"`);
+        recordAction(`Deleted planner event: "${event.title}"`);
     }
-  }, [plannerEvents, recordAction]);
+  }, [plannerEvents, setPlannerEvents, recordAction]);
   
   const getExpandedPlannerEvents = useCallback((date: Date, userId: string) => {
     const start = startOfMonth(date);
@@ -621,32 +542,20 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return expandedEvents;
   }, [plannerEvents]);
 
-  const addPlannerEventComment = useCallback(async (eventId: string, commentText: string) => {
+  const addPlannerEventComment = useCallback((eventId: string, commentText: string) => {
     if (!user) return;
     const newComment: Comment = {
       userId: user.id,
       text: commentText,
       date: new Date().toISOString(),
     };
-    
-    const eventRef = doc(db, 'plannerEvents', eventId);
-    const eventSnapshot = await getDoc(eventRef);
-    if(eventSnapshot.exists()) {
-      const eventData = eventSnapshot.data();
-      const updatedComments = eventData.comments ? [...eventData.comments, newComment] : [newComment];
-      updatedComments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      await setDoc(eventRef, { comments: updatedComments }, { merge: true });
-      setPlannerEvents(prev => prev.map(e => e.id === eventId ? {...e, comments: updatedComments} : e));
-      await recordAction(`Commented on event: "${eventData.title}"`);
-    }
-  }, [user, recordAction]);
+    setPlannerEvents(prev => prev.map(e => e.id === eventId ? {...e, comments: [...(e.comments || []), newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())} : e));
+    recordAction(`Commented on event: "${plannerEvents.find(e=>e.id === eventId)?.title}"`);
+  }, [user, plannerEvents, setPlannerEvents, recordAction]);
 
-  const addDailyPlannerComment = useCallback(async (plannerUserId: string, date: Date, commentText: string) => {
+  const addDailyPlannerComment = useCallback((plannerUserId: string, date: Date, commentText: string) => {
     if (!user) return;
     const dayKey = format(date, 'yyyy-MM-dd');
-    const dpcId = `${plannerUserId}_${dayKey}`;
-    const dpcRef = doc(db, 'dailyPlannerComments', dpcId);
-
     const newComment: Comment = {
         userId: user.id,
         text: commentText,
@@ -654,223 +563,204 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         id: `comment-${Date.now()}`
     };
 
-    const dpcSnapshot = await getDoc(dpcRef);
-    if(dpcSnapshot.exists()){
-      const dpcData = dpcSnapshot.data();
-      const updatedComments = [...(dpcData.comments || []), newComment];
-      await setDoc(dpcRef, { comments: updatedComments }, { merge: true });
-    } else {
-      await setDoc(dpcRef, { id: dpcId, plannerUserId, day: dayKey, comments: [newComment] });
-    }
-    
-    await fetchData(); // Refresh data from Firestore
+    setDailyPlannerComments(prev => {
+        const existingEntryIndex = prev.findIndex(dpc => dpc.day === dayKey && dpc.plannerUserId === plannerUserId);
+        if (existingEntryIndex > -1) {
+            const newDpcs = [...prev];
+            const updatedEntry = {
+                ...newDpcs[existingEntryIndex],
+                comments: [...newDpcs[existingEntryIndex].comments, newComment]
+            };
+            newDpcs[existingEntryIndex] = updatedEntry;
+            return newDpcs;
+        } else {
+            const newEntry: DailyPlannerComment = {
+                id: `${plannerUserId}_${dayKey}`,
+                plannerUserId,
+                day: dayKey,
+                comments: [newComment]
+            };
+            return [...prev, newEntry];
+        }
+    });
     const plannerUser = users.find(u => u.id === plannerUserId);
-    await recordAction(`Commented on ${plannerUser?.name}'s planner for ${dayKey}`);
-  }, [user, users, recordAction, fetchData]);
+    recordAction(`Commented on ${plannerUser?.name}'s planner for ${dayKey}`);
+  }, [user, users, setDailyPlannerComments, recordAction]);
   
-  const updateDailyPlannerComment = useCallback(async (commentId: string, plannerUserId: string, day: string, newText: string) => {
-    const dpcId = `${plannerUserId}_${day}`;
-    const dpcRef = doc(db, 'dailyPlannerComments', dpcId);
-    const dpcSnapshot = await getDoc(dpcRef);
-    if(dpcSnapshot.exists()){
-        const dpcData = dpcSnapshot.data();
-        const updatedComments = dpcData.comments.map((c: Comment) => c.id === commentId ? { ...c, text: newText } : c);
-        await setDoc(dpcRef, { comments: updatedComments }, { merge: true });
-        await fetchData();
-    }
-  }, [fetchData]);
+  const updateDailyPlannerComment = useCallback((commentId: string, plannerUserId: string, day: string, newText: string) => {
+    setDailyPlannerComments(prev => prev.map(dpc => {
+      if (dpc.day === day && dpc.plannerUserId === plannerUserId) {
+        return {
+          ...dpc,
+          comments: dpc.comments.map(c => c.id === commentId ? { ...c, text: newText } : c)
+        }
+      }
+      return dpc;
+    }));
+  }, [setDailyPlannerComments]);
 
-  const deleteDailyPlannerComment = useCallback(async (commentId: string, plannerUserId: string, day: string) => {
-    const dpcId = `${plannerUserId}_${day}`;
-    const dpcRef = doc(db, 'dailyPlannerComments', dpcId);
-    const dpcSnapshot = await getDoc(dpcRef);
-    if(dpcSnapshot.exists()){
-        const dpcData = dpcSnapshot.data();
-        const updatedComments = dpcData.comments.filter((c: Comment) => c.id !== commentId);
-        await setDoc(dpcRef, { comments: updatedComments }, { merge: true });
-        await fetchData();
-    }
-  }, [fetchData]);
+  const deleteDailyPlannerComment = useCallback((commentId: string, plannerUserId: string, day: string) => {
+    setDailyPlannerComments(prev => prev.map(dpc => {
+      if (dpc.day === day && dpc.plannerUserId === plannerUserId) {
+        return { ...dpc, comments: dpc.comments.filter(c => c.id !== commentId) }
+      }
+      return dpc;
+    }));
+  }, [setDailyPlannerComments]);
 
-  const deleteAllDailyPlannerComments = useCallback(async (plannerUserId: string, day: string) => {
-    const dpcId = `${plannerUserId}_${day}`;
-    await deleteDoc(doc(db, 'dailyPlannerComments', dpcId));
-    await fetchData();
-  }, [fetchData]);
+  const deleteAllDailyPlannerComments = useCallback((plannerUserId: string, day: string) => {
+     setDailyPlannerComments(prev => prev.map(dpc => {
+      if (dpc.day === day && dpc.plannerUserId === plannerUserId) {
+        return { ...dpc, comments: [] }
+      }
+      return dpc;
+    }));
+  }, [setDailyPlannerComments]);
 
-  const addUser = useCallback(async (newUser: Omit<User, 'id' | 'avatar'>) => {
-    const userRef = doc(collection(db, 'users'));
+  const addUser = useCallback((newUser: Omit<User, 'id' | 'avatar'>) => {
     const userToAdd: User = {
       ...newUser,
-      id: userRef.id,
+      id: `user-${Date.now()}`,
       avatar: `https://i.pravatar.cc/150?u=${Date.now()}`,
       planningScore: 0,
     };
-    await setDoc(userRef, serialize(userToAdd));
     setUsers(prev => [...prev, userToAdd]);
-    await recordAction(`Added new user: ${newUser.name}`);
-  }, [recordAction]);
+    recordAction(`Added new user: ${newUser.name}`);
+  }, [setUsers, recordAction]);
 
-  const updateUser = useCallback(async (updatedUser: User) => {
-    const userRef = doc(db, 'users', updatedUser.id);
-    await setDoc(userRef, serialize(updatedUser), { merge: true });
+  const updateUser = useCallback((updatedUser: User) => {
     setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
     if (user?.id === updatedUser.id) {
         setUser(updatedUser);
     }
-    await recordAction(`Updated user profile: ${updatedUser.name}`);
-  }, [user, recordAction]);
+    recordAction(`Updated user profile: ${updatedUser.name}`);
+  }, [user, setUsers, setUser, recordAction]);
 
-  const updateUserPlanningScore = useCallback(async (userId: string, score: number) => {
-    const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, { planningScore: score }, { merge: true });
+  const updateUserPlanningScore = useCallback((userId: string, score: number) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, planningScore: score } : u));
     const scoredUser = users.find(u => u.id === userId);
-    await recordAction(`Updated planning score for ${scoredUser?.name} to ${score}.`);
-  }, [users, recordAction]);
+    recordAction(`Updated planning score for ${scoredUser?.name} to ${score}.`);
+  }, [users, setUsers, recordAction]);
   
-  const deleteUser = useCallback(async (userId: string) => {
+  const deleteUser = useCallback((userId: string) => {
     const userName = users.find(u => u.id === userId)?.name;
-    await deleteDoc(doc(db, 'users', userId));
     setUsers(prev => prev.filter(u => u.id !== userId));
-    
-    // This part is tricky with Firestore, might need a batch write or cloud function for consistency
-    // For now, updating local state and hoping for the best
+    // Unassign tasks from the deleted user
     setTasks(prev => prev.map(t => t.assigneeId === userId ? {...t, assigneeId: ''} : t));
     
-    await recordAction(`Deleted user: ${userName}`);
-  }, [users, recordAction]);
+    recordAction(`Deleted user: ${userName}`);
+  }, [users, setUsers, setTasks, recordAction]);
 
-  const addRole = useCallback(async (roleData: Omit<RoleDefinition, 'id' | 'isEditable'>) => {
-    const roleRef = doc(collection(db, 'roles'));
+  const addRole = useCallback((roleData: Omit<RoleDefinition, 'id' | 'isEditable'>) => {
     const newRole: RoleDefinition = {
       ...roleData,
-      id: roleRef.id,
+      id: `role-${Date.now()}`,
       isEditable: true,
     };
-    await setDoc(roleRef, serialize(newRole));
     setRoles(prev => [...prev, newRole]);
-    await recordAction(`Added new role: ${newRole.name}`);
-  }, [recordAction]);
+    recordAction(`Added new role: ${newRole.name}`);
+  }, [setRoles, recordAction]);
 
-  const updateRole = useCallback(async (updatedRole: RoleDefinition) => {
-    const roleRef = doc(db, 'roles', updatedRole.id);
-    await setDoc(roleRef, serialize(updatedRole), { merge: true });
+  const updateRole = useCallback((updatedRole: RoleDefinition) => {
     setRoles(prev => prev.map(r => r.id === updatedRole.id ? updatedRole : r));
-    await recordAction(`Updated role: ${updatedRole.name}`);
-  }, [recordAction]);
+    recordAction(`Updated role: ${updatedRole.name}`);
+  }, [setRoles, recordAction]);
 
-  const deleteRole = useCallback(async (roleId: string) => {
+  const deleteRole = useCallback((roleId: string) => {
     const roleName = roles.find(r => r.id === roleId)?.name;
-    await deleteDoc(doc(db, 'roles', roleId));
     setRoles(prev => prev.filter(r => r.id !== roleId));
-    await recordAction(`Deleted role: ${roleName}`);
-  }, [roles, recordAction]);
+    recordAction(`Deleted role: ${roleName}`);
+  }, [roles, setRoles, recordAction]);
 
-  const addProject = useCallback(async (projectName: string) => {
-    const projectRef = doc(collection(db, 'projects'));
-    const newProject: Project = { id: projectRef.id, name: projectName };
-    await setDoc(projectRef, serialize(newProject));
+  const addProject = useCallback((projectName: string) => {
+    const newProject: Project = { id: `proj-${Date.now()}`, name: projectName };
     setProjects(prev => [...prev, newProject]);
-    await recordAction(`Added project: ${projectName}`);
-  }, [recordAction]);
+    recordAction(`Added project: ${projectName}`);
+  }, [setProjects, recordAction]);
 
-  const updateProject = useCallback(async (updatedProject: Project) => {
-    const projectRef = doc(db, 'projects', updatedProject.id);
-    await setDoc(projectRef, serialize(updatedProject), { merge: true });
+  const updateProject = useCallback((updatedProject: Project) => {
     setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
-    await recordAction(`Updated project: ${updatedProject.name}`);
-  }, [recordAction]);
+    recordAction(`Updated project: ${updatedProject.name}`);
+  }, [setProjects, recordAction]);
   
-  const deleteProject = useCallback(async (projectId: string) => {
+  const deleteProject = useCallback((projectId: string) => {
     const projectName = projects.find(p => p.id === projectId)?.name;
-    await deleteDoc(doc(db, 'projects', projectId));
     setProjects(prev => prev.filter(p => p.id !== projectId));
-    await recordAction(`Deleted project: ${projectName}`);
-  }, [projects, recordAction]);
+    recordAction(`Deleted project: ${projectName}`);
+  }, [projects, setProjects, recordAction]);
 
-  const updateProfile = useCallback(async (name: string, email: string, avatar: string, password?: string) => {
+  const updateProfile = useCallback((name: string, email: string, avatar: string, password?: string) => {
     if (user) {
         let updatedUser = {...user, name, email, avatar};
         if (password) {
             updatedUser.password = password;
         }
-        await updateUser(updatedUser);
-        await recordAction(`Updated own profile`);
+        updateUser(updatedUser);
+        recordAction(`Updated own profile`);
     }
   }, [user, recordAction, updateUser]);
 
-  const addManualAchievement = useCallback(async (achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => {
+  const addManualAchievement = useCallback((achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => {
     if (!user) return;
-    const newAchievementRef = doc(collection(db, 'achievements'));
     const newAchievement: Achievement = {
       ...achievement,
-      id: newAchievementRef.id,
+      id: `ach-${Date.now()}`,
       type: 'manual',
       date: new Date().toISOString(),
       awardedById: user.id,
       status: (user.role === 'Admin' || user.role === 'Manager') ? 'approved' : 'pending',
     };
-    await setDoc(newAchievementRef, serialize(newAchievement));
     setAchievements(prev => [newAchievement, ...prev]);
     const userName = users.find(u => u.id === achievement.userId)?.name;
-    await recordAction(`Awarded manual achievement "${achievement.title}" to ${userName}`);
-  }, [user, users, recordAction]);
+    recordAction(`Awarded manual achievement "${achievement.title}" to ${userName}`);
+  }, [user, users, setAchievements, recordAction]);
   
-  const approveAchievement = useCallback(async (achievementId: string, points: number) => {
-    const achievementRef = doc(db, 'achievements', achievementId);
-    await setDoc(achievementRef, { status: 'approved', points }, { merge: true });
+  const approveAchievement = useCallback((achievementId: string, points: number) => {
     setAchievements(prev => prev.map(ach => ach.id === achievementId ? { ...ach, status: 'approved', points } : ach));
     const achTitle = achievements.find(a => a.id === achievementId)?.title;
-    await recordAction(`Approved achievement: "${achTitle}"`);
-  }, [achievements, recordAction]);
+    recordAction(`Approved achievement: "${achTitle}"`);
+  }, [achievements, setAchievements, recordAction]);
 
-  const rejectAchievement = useCallback(async (achievementId: string) => {
+  const rejectAchievement = useCallback((achievementId: string) => {
     const achTitle = achievements.find(a => a.id === achievementId)?.title;
-    await deleteDoc(doc(db, 'achievements', achievementId));
     setAchievements(prev => prev.filter(ach => ach.id !== achievementId));
-    await recordAction(`Rejected achievement: "${achTitle}"`);
-  }, [achievements, recordAction]);
+    recordAction(`Rejected achievement: "${achTitle}"`);
+  }, [achievements, setAchievements, recordAction]);
 
-  const updateManualAchievement = useCallback(async (updatedAchievement: Achievement) => {
-    const achievementRef = doc(db, 'achievements', updatedAchievement.id);
-    await setDoc(achievementRef, serialize(updatedAchievement), { merge: true });
+  const updateManualAchievement = useCallback((updatedAchievement: Achievement) => {
     setAchievements(prev => prev.map(ach => ach.id === updatedAchievement.id ? updatedAchievement : ach));
     const userName = users.find(u => u.id === updatedAchievement.userId)?.name;
-    await recordAction(`Updated manual achievement "${updatedAchievement.title}" for ${userName}`);
-  }, [users, recordAction]);
+    recordAction(`Updated manual achievement "${updatedAchievement.title}" for ${userName}`);
+  }, [users, setAchievements, recordAction]);
 
-  const deleteManualAchievement = useCallback(async (achievementId: string) => {
+  const deleteManualAchievement = useCallback((achievementId: string) => {
     const achievement = achievements.find(a => a.id === achievementId);
     if (achievement) {
         const userName = users.find(u => u.id === achievement.userId)?.name;
-        await recordAction(`Deleted manual achievement "${achievement.title}" for ${userName}`);
+        recordAction(`Deleted manual achievement "${achievement.title}" for ${userName}`);
     }
-    await deleteDoc(doc(db, 'achievements', achievementId));
     setAchievements(prev => prev.filter(ach => ach.id !== achievementId));
-  }, [achievements, users, recordAction]);
+  }, [achievements, users, setAchievements, recordAction]);
 
-  const updateBranding = useCallback(async (name: string, logo: string | null) => {
-    const brandingRef = doc(db, 'config', 'branding');
-    await setDoc(brandingRef, { appName: name, appLogo: logo }, { merge: true });
+  const updateBranding = useCallback((name: string, logo: string | null) => {
     setAppName(name);
     setAppLogo(logo);
-    await recordAction(`Updated app branding.`);
-  }, [recordAction]);
+    recordAction(`Updated app branding.`);
+  }, [setAppName, setAppLogo, recordAction]);
 
   // All other functions need to be converted to async and use Firestore...
   // This is a simplified conversion, more complex logic might be needed for some functions.
 
-  const a = async (d:any) => {};
+  const a = (d:any) => {};
   const b = (d:any):any => {};
   const c = (d:any):any => [];
 
     const value = {
-        user, users, roles, tasks, projects, inventoryItems, inventoryTransferRequests, certificateRequests, plannerEvents, dailyPlannerComments, achievements, activityLogs, manpowerLogs, manpowerProfiles, utMachines, dftMachines, mobileSims, otherEquipments, vehicles, drivers, appName, appLogo, internalRequests, managementRequests, announcements, incidents,
+        user, users, roles, tasks, projects, inventoryItems, inventoryTransferRequests, certificateRequests, plannerEvents, dailyPlannerComments, achievements, activityLogs, manpowerLogs, manpowerProfiles, utMachines, dftMachines, mobileSims, otherEquipments, vehicles, drivers, appName, appLogo, internalRequests, managementRequests, announcements, incidents, isLoading,
         login, logout, updateTask, addTask, deleteTask, addPlannerEvent, updatePlannerEvent, deletePlannerEvent, getExpandedPlannerEvents, getVisibleUsers, addUser, updateUser, updateUserPlanningScore, deleteUser, addRole, updateRole, deleteRole, addProject, updateProject, deleteProject, updateProfile, requestTaskStatusChange, approveTaskStatusChange, returnTaskStatusChange, requestTaskReassignment, addComment, markTaskAsViewed, addManualAchievement, approveAchievement, rejectAchievement, updateManualAchievement, deleteManualAchievement, addPlannerEventComment, addDailyPlannerComment, updateDailyPlannerComment, deleteDailyPlannerComment, deleteAllDailyPlannerComments, updateBranding,
         // TODO: Convert these to async firestore functions
         myRequestUpdateCount: 0, pendingStoreRequestCount: 0, pendingCertificateRequestCount: 0, myCertificateRequestUpdateCount: 0, myFulfilledUTRequests: [], workingManpowerCount: 0, onLeaveManpowerCount: 0, approvedAnnouncements: [], pendingAnnouncementCount: 0, unreadAnnouncementCount: 0, newIncidentCount: 0, myUnreadManagementRequestCount: 0, unreadManagementRequestCountForMe: 0,
-        addInternalRequest: a, updateInternalRequest: a, deleteInternalRequest: a, addInternalRequestComment: a, markRequestAsViewed: a, forwardInternalRequest: a, escalateInternalRequest: a, createPpeRequestTask: a, addInventoryItem: a, updateInventoryItem: a, deleteInventoryItem: a, addMultipleInventoryItems: async (d:any): Promise<any> => 0, requestInventoryTransfer: a, approveInventoryTransfer: a, rejectInventoryTransfer: a, addCertificateRequest: a, requestUTMachineCertificate: a, addCertificateRequestComment: a, fulfillCertificateRequest: a, markUTRequestsAsViewed: a, acknowledgeFulfilledUTRequest: a, addManpowerLog: a, addManpowerProfile: a, updateManpowerProfile: a, deleteManpowerProfile: a, addUTMachine: a, updateUTMachine: a, deleteUTMachine: a, addUTMachineLog: a, addDftMachine: a, updateDftMachine: a, deleteDftMachine: a, addMobileSim: a, updateMobileSim: a, deleteMobileSim: a, addOtherEquipment: a, updateOtherEquipment: a, deleteOtherEquipment: a, addVehicle: a, updateVehicle: a, deleteVehicle: a, addDriver: a, updateDriver: a, deleteDriver: a, addManagementRequest: a, updateManagementRequest: a, addManagementRequestComment: a, markManagementRequestAsViewed: a, addAnnouncement: a, approveAnnouncement: a, rejectAnnouncement: a, returnAnnouncement: a, updateAnnouncement: a, deleteAnnouncement: a, dismissAnnouncement: a, addIncidentReport: a, updateIncident: a, addIncidentComment: a, addUsersToIncidentReport: a, publishIncident: a,
+        addInternalRequest: a, updateInternalRequest: a, deleteInternalRequest: a, addInternalRequestComment: a, markRequestAsViewed: a, forwardInternalRequest: a, escalateInternalRequest: a, createPpeRequestTask: a, addInventoryItem: a, updateInventoryItem: a, deleteInventoryItem: a, addMultipleInventoryItems: (d:any): number => 0, requestInventoryTransfer: a, approveInventoryTransfer: a, rejectInventoryTransfer: a, addCertificateRequest: a, requestUTMachineCertificate: a, addCertificateRequestComment: a, fulfillCertificateRequest: a, markUTRequestsAsViewed: a, acknowledgeFulfilledUTRequest: a, addManpowerLog: a, addManpowerProfile: a, updateManpowerProfile: a, deleteManpowerProfile: a, addUTMachine: a, updateUTMachine: a, deleteUTMachine: a, addUTMachineLog: a, addDftMachine: a, updateDftMachine: a, deleteDftMachine: a, addMobileSim: a, updateMobileSim: a, deleteMobileSim: a, addOtherEquipment: a, updateOtherEquipment: a, deleteOtherEquipment: a, addVehicle: a, updateVehicle: a, deleteVehicle: a, addDriver: a, updateDriver: a, deleteDriver: a, addManagementRequest: a, updateManagementRequest: a, addManagementRequestComment: a, markManagementRequestAsViewed: a, addAnnouncement: a, approveAnnouncement: a, rejectAnnouncement: a, returnAnnouncement: a, updateAnnouncement: a, deleteAnnouncement: a, dismissAnnouncement: a, addIncidentReport: a, updateIncident: a, addIncidentComment: a, addUsersToIncidentReport: a, publishIncident: a,
         expiringVehicleDocsCount: 0, expiringDriverDocsCount: 0, expiringUtMachineCalibrationsCount: 0, expiringManpowerCount: 0, pendingTaskApprovalCount: 0, myNewTaskCount: 0,
     };
     
