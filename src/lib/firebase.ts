@@ -5,15 +5,14 @@ import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
-// IMPORTANT: Replace with your actual Firebase project configuration.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "taskmaster-pro-jkvw6.firebaseapp.com",
-  projectId: "taskmaster-pro-jkvw6",
-  storageBucket: "taskmaster-pro-jkvw6.appspot.com",
-  messagingSenderId: "36734185297",
-  appId: "1:36734185297:web:80c85d89659b67484d6323",
-  databaseURL: "https://taskmaster-pro-jkvw6-default-rtdb.firebaseio.com",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
 
