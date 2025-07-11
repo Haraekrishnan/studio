@@ -231,10 +231,17 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      fetchData();
+    // This effect runs once on mount to check for a logged-in user.
+    // We are simulating checking a session here. In a real app, you might check a token.
+    const loggedInUserJson = sessionStorage.getItem('user');
+    if (loggedInUserJson) {
+        const loggedInUser = JSON.parse(loggedInUserJson);
+        setUser(loggedInUser);
+        fetchData(); // Fetch data for the logged-in user
+    } else {
+        setIsLoading(false); // If no user, stop loading
     }
-  }, [user, fetchData]);
+  }, [fetchData]);
 
 
   useEffect(() => {
@@ -272,11 +279,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [currentLogId]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
     const usersSnapshot = await getDocs(collection(db, 'users'));
     const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
     
     const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (foundUser) {
+      sessionStorage.setItem('user', JSON.stringify(foundUser));
       setUser(foundUser);
       
       const newLog: Omit<ActivityLog, 'id'> = {
@@ -291,11 +300,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       await setDoc(newLogRef, newLog);
       setCurrentLogId(newLogRef.id);
       
+      await fetchData(); // Fetch data after login
       router.push('/dashboard');
       return true;
     }
+    setIsLoading(false);
     return false;
-  }, [router]);
+  }, [router, fetchData]);
 
   const logout = useCallback(async () => {
     if (currentLogId) {
@@ -315,6 +326,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       setCurrentLogId(null);
     }
     setUser(null);
+    sessionStorage.removeItem('user');
     router.push('/login');
   }, [router, currentLogId]);
 
@@ -860,7 +872,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         expiringVehicleDocsCount: 0, expiringDriverDocsCount: 0, expiringUtMachineCalibrationsCount: 0, expiringManpowerCount: 0, pendingTaskApprovalCount: 0, myNewTaskCount: 0,
     };
     
-      if (isLoading && !user) {
+      if (isLoading) {
         return <div className="flex h-screen w-full items-center justify-center bg-background"><p>Loading...</p></div>;
       }
     
@@ -874,3 +886,5 @@ export function useAppContext() {
   }
   return context;
 }
+
+    
