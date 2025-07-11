@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import { useRouter } from 'next/navigation';
 import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, Announcement, IncidentReport } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS, ANNOUNCEMENTS, INCIDENTS } from '@/lib/mock-data';
-import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfMonth, differenceInMinutes, format, differenceInDays, subDays } from 'date-fns';
+import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfDay, differenceInMinutes, format, differenceInDays, subDays } from 'date-fns';
 
 interface AppContextType {
   user: User | null;
@@ -52,6 +52,8 @@ interface AppContextType {
   addTask: (task: Omit<Task, 'id' | 'comments' | 'status' | 'approvalState' | 'isViewedByAssignee' | 'completionDate'>) => void;
   deleteTask: (taskId: string) => void;
   addPlannerEvent: (event: Omit<PlannerEvent, 'id' | 'comments'>) => void;
+  updatePlannerEvent: (event: PlannerEvent) => void;
+  deletePlannerEvent: (eventId: string) => void;
   getExpandedPlannerEvents: (date: Date, userId: string) => (PlannerEvent & { eventDate: Date })[];
   getVisibleUsers: () => User[];
   addUser: (newUser: Omit<User, 'id' | 'avatar'>) => void;
@@ -106,6 +108,7 @@ interface AppContextType {
   addManpowerLog: (log: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => void;
   addManpowerProfile: (profile: Omit<ManpowerProfile, 'id'>) => void;
   updateManpowerProfile: (profile: ManpowerProfile) => void;
+  deleteManpowerProfile: (profileId: string) => void;
   addUTMachine: (machine: Omit<UTMachine, 'id' | 'usageLog'>) => void;
   updateUTMachine: (machine: UTMachine) => void;
   deleteUTMachine: (machineId: string) => void;
@@ -494,6 +497,19 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setPlannerEvents(prevEvents => [newEvent, ...prevEvents]);
     recordAction(`Created planner event: "${event.title}"`);
   }, [user, recordAction]);
+
+  const updatePlannerEvent = useCallback((updatedEvent: PlannerEvent) => {
+    setPlannerEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e));
+    recordAction(`Updated planner event: "${updatedEvent.title}"`);
+  }, [recordAction]);
+  
+  const deletePlannerEvent = useCallback((eventId: string) => {
+    const event = plannerEvents.find(e => e.id === eventId);
+    setPlannerEvents(prev => prev.filter(e => e.id !== eventId));
+    if (event) {
+        recordAction(`Deleted planner event: "${event.title}"`);
+    }
+  }, [plannerEvents, recordAction]);
   
   const getExpandedPlannerEvents = useCallback((date: Date, userId: string) => {
     const start = startOfMonth(date);
@@ -767,7 +783,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       requesterId: user.id,
       date: new Date().toISOString(),
       status: 'Pending',
-      comments: [{ userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
+      comments: [{ id: 'c-ireq-1', userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
       isViewedByRequester: true,
       isEscalated: false,
     };
@@ -1099,6 +1115,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setManpowerProfiles(prev => prev.map(p => p.id === profile.id ? profile : p));
   }, [user]);
 
+  const deleteManpowerProfile = useCallback((profileId: string) => {
+    setManpowerProfiles(prev => prev.filter(p => p.id !== profileId));
+  }, []);
+
   const addUTMachine = useCallback((machineData: Omit<UTMachine, 'id' | 'usageLog'>) => {
     if (!user) return;
     const newMachine: UTMachine = {
@@ -1253,7 +1273,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         requesterId: user.id,
         date: new Date().toISOString(),
         status: 'Pending',
-        comments: [{ userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
+        comments: [{ id: 'c-mreq-1', userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
         isViewedByRequester: true,
         isViewedByRecipient: false,
     };
@@ -1685,6 +1705,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     updateTask,
     deleteTask,
     addPlannerEvent,
+    updatePlannerEvent,
+    deletePlannerEvent,
     getExpandedPlannerEvents,
     getVisibleUsers,
     addUser,
@@ -1739,6 +1761,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     addManpowerLog,
     addManpowerProfile,
     updateManpowerProfile,
+    deleteManpowerProfile,
     addUTMachine,
     updateUTMachine,
     deleteUTMachine,
