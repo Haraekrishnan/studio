@@ -2,8 +2,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '@/lib/types';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseUser } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -24,63 +25,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
 
   useEffect(() => {
-    const checkUserSession = () => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       setIsAuthLoading(true);
-      try {
-        const storedUser = sessionStorage.getItem('user');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+      if (firebaseUser) {
+        // User is signed in, get our custom user data from Firestore
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          setUser({ id: userDoc.id, ...userDoc.data() } as User);
+        } else {
+          // This case might happen if a user is deleted from Firestore but not from Auth
+          console.error("No user document found in Firestore for authenticated user.");
+          setUser(null);
+          await signOut(auth); // Sign out the user from auth as well
         }
-      } catch (error) {
-        console.error("Failed to parse user from session storage", error);
-        sessionStorage.removeItem('user');
-      } finally {
-        setIsAuthLoading(false);
+      } else {
+        // User is signed out
+        setUser(null);
       }
-    };
-    checkUserSession();
+      setIsAuthLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     setIsAuthLoading(true);
     try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("email", "==", email.toLowerCase()));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            console.log('Login failed: No user found with that email.');
-            setIsAuthLoading(false);
-            return false;
-        }
-
-        const userDoc = querySnapshot.docs[0];
-        const userData = userDoc.data() as User;
-        
-        if (userData.password === password) {
-            const { password: _password, ...userToStore } = userData;
-            const finalUser = { ...userToStore, id: userDoc.id };
-            sessionStorage.setItem('user', JSON.stringify(finalUser));
-            setUser(finalUser);
-            router.push('/dashboard');
-            setIsAuthLoading(false);
-            return true;
-        } else {
-            console.log('Login failed: Invalid password.');
-            setIsAuthLoading(false);
-            return false;
-        }
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged will handle setting the user state and routing
+      return true;
     } catch (error) {
-        console.error("Error during login:", error);
-        setIsAuthLoading(false);
-        return false;
+      console.error("Firebase Login Error:", error);
+      setIsAuthLoading(false);
+      return false;
     }
-  }, [router]);
+  }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    sessionStorage.removeItem('user');
-    router.push('/login');
+  const logout = useCallback(async () => {
+    try {
+      await signOut(auth);
+      router.push('/login');
+    } catch (error) {
+      console.error("Firebase Logout Error:", error);
+    }
   }, [router]);
 
   const value = {
