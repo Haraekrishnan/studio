@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, Announcement, IncidentReport } from '@/lib/types';
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS, ANNOUNCEMENTS, INCIDENTS } from '@/lib/mock-data';
 import { addDays, isBefore, addMonths, eachDayOfInterval, endOfMonth, isMatch, isSameDay, isWeekend, startOfDay, differenceInMinutes, format, differenceInDays, subDays, startOfMonth } from 'date-fns';
+import useLocalStorage from '@/hooks/use-local-storage';
 
 interface AppContextType {
   user: User | null;
@@ -155,41 +156,36 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppContextProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(USERS);
-  const [roles, setRoles] = useState<RoleDefinition[]>(MOCK_ROLES);
-  const [tasks, setTasks] = useState<Task[]>(TASKS);
-  const [projects, setProjects] = useState<Project[]>(PROJECTS);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(INVENTORY_ITEMS);
-  const [inventoryTransferRequests, setInventoryTransferRequests] = useState<InventoryTransferRequest[]>(INVENTORY_TRANSFER_REQUESTS);
-  const [certificateRequests, setCertificateRequests] = useState<CertificateRequest[]>(CERTIFICATE_REQUESTS);
-  const [plannerEvents, setPlannerEvents] = useState<PlannerEvent[]>(PLANNER_EVENTS);
-  const [dailyPlannerComments, setDailyPlannerComments] = useState<DailyPlannerComment[]>(DAILY_PLANNER_COMMENTS);
-  const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(ACTIVITY_LOGS);
-  const [manpowerLogs, setManpowerLogs] = useState<ManpowerLog[]>(MANPOWER_LOGS);
-  const [manpowerProfiles, setManpowerProfiles] = useState<ManpowerProfile[]>(MANPOWER_PROFILES);
-  const [utMachines, setUtMachines] = useState<UTMachine[]>(UT_MACHINES);
-  const [dftMachines, setDftMachines] = useState<DftMachine[]>(DFT_MACHINES);
-  const [mobileSims, setMobileSims] = useState<MobileSim[]>(MOBILE_SIMS);
-  const [otherEquipments, setOtherEquipments] = useState<OtherEquipment[]>(OTHER_EQUIPMENTS);
-  const [vehicles, setVehicles] = useState<Vehicle[]>(VEHICLES);
-  const [drivers, setDrivers] = useState<Driver[]>(DRIVERS);
-  const [internalRequests, setInternalRequests] = useState<InternalRequest[]>(INTERNAL_REQUESTS);
-  const [managementRequests, setManagementRequests] = useState<ManagementRequest[]>(MANAGEMENT_REQUESTS);
-  const [announcements, setAnnouncements] = useState<Announcement[]>(ANNOUNCEMENTS);
-  const [incidents, setIncidents] = useState<IncidentReport[]>(INCIDENTS);
-  const [currentLogId, setCurrentLogId] = useState<string | null>(null);
-  const [appName, setAppName] = useState('Aries Marine - Task Management System');
-  const [appLogo, setAppLogo] = useState<string | null>(null);
-  const router = useRouter();
+  const [user, setUser] = useLocalStorage<User | null>('user', null);
+  const [users, setUsers] = useLocalStorage<User[]>('users', USERS);
+  const [roles, setRoles] = useLocalStorage<RoleDefinition[]>('roles', MOCK_ROLES);
+  const [tasks, setTasks] = useLocalStorage<Task[]>('tasks', TASKS);
+  const [projects, setProjects] = useLocalStorage<Project[]>('projects', PROJECTS);
+  const [inventoryItems, setInventoryItems] = useLocalStorage<InventoryItem[]>('inventory_items', INVENTORY_ITEMS);
+  const [inventoryTransferRequests, setInventoryTransferRequests] = useLocalStorage<InventoryTransferRequest[]>('inventory_transfer_requests', INVENTORY_TRANSFER_REQUESTS);
+  const [certificateRequests, setCertificateRequests] = useLocalStorage<CertificateRequest[]>('certificate_requests', CERTIFICATE_REQUESTS);
+  const [plannerEvents, setPlannerEvents] = useLocalStorage<PlannerEvent[]>('planner_events', PLANNER_EVENTS);
+  const [dailyPlannerComments, setDailyPlannerComments] = useLocalStorage<DailyPlannerComment[]>('daily_planner_comments', DAILY_PLANNER_COMMENTS);
+  const [achievements, setAchievements] = useLocalStorage<Achievement[]>('achievements', ACHIEVEMENTS);
+  const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activity_logs', ACTIVITY_LOGS);
+  const [manpowerLogs, setManpowerLogs] = useLocalStorage<ManpowerLog[]>('manpower_logs', MANPOWER_LOGS);
+  const [manpowerProfiles, setManpowerProfiles] = useLocalStorage<ManpowerProfile[]>('manpower_profiles', MANPOWER_PROFILES);
+  const [utMachines, setUtMachines] = useLocalStorage<UTMachine[]>('ut_machines', UT_MACHINES);
+  const [dftMachines, setDftMachines] = useLocalStorage<DftMachine[]>('dft_machines', DFT_MACHINES);
+  const [mobileSims, setMobileSims] = useLocalStorage<MobileSim[]>('mobile_sims', MOBILE_SIMS);
+  const [otherEquipments, setOtherEquipments] = useLocalStorage<OtherEquipment[]>('other_equipments', OTHER_EQUIPMENTS);
+  const [vehicles, setVehicles] = useLocalStorage<Vehicle[]>('vehicles', VEHICLES);
+  const [drivers, setDrivers] = useLocalStorage<Driver[]>('drivers', DRIVERS);
+  const [internalRequests, setInternalRequests] = useLocalStorage<InternalRequest[]>('internal_requests', INTERNAL_REQUESTS);
+  const [managementRequests, setManagementRequests] = useLocalStorage<ManagementRequest[]>('management_requests', MANAGEMENT_REQUESTS);
+  const [announcements, setAnnouncements] = useLocalStorage<Announcement[]>('announcements', ANNOUNCEMENTS);
+  const [incidents, setIncidents] = useLocalStorage<IncidentReport[]>('incidents', INCIDENTS);
   
-  useEffect(() => {
-    const storedAppName = localStorage.getItem('appName');
-    const storedAppLogo = localStorage.getItem('appLogo');
-    if (storedAppName) setAppName(storedAppName);
-    if (storedAppLogo) setAppLogo(storedAppLogo);
-  }, []);
+  const [appName, setAppName] = useLocalStorage('appName', 'Aries Marine - Task Management System');
+  const [appLogo, setAppLogo] = useLocalStorage<string | null>('appLogo', null);
+
+  const [currentLogId, setCurrentLogId] = useLocalStorage<string | null>('current_log_id', null);
+  const router = useRouter();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -207,7 +203,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         );
     }, 60000); // Check every minute
     return () => clearInterval(interval);
-  }, []);
+  }, [setTasks]);
 
   const recordAction = useCallback((actionText: string) => {
     if (!currentLogId) return;
@@ -220,7 +216,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         return log;
       });
     });
-  }, [currentLogId]);
+  }, [currentLogId, setActivityLogs]);
 
   const login = useCallback((email: string, password: string): boolean => {
     const foundUser = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
@@ -242,7 +238,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       return true;
     }
     return false;
-  }, [router, users]);
+  }, [router, users, setActivityLogs, setCurrentLogId, setUser]);
 
   const logout = useCallback(() => {
     if (currentLogId) {
@@ -265,7 +261,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }
     setUser(null);
     router.push('/login');
-  }, [router, currentLogId]);
+  }, [router, currentLogId, setActivityLogs, setCurrentLogId, setUser]);
 
   const getSubordinates = useCallback((managerId: string, allUsers: User[]): string[] => {
     const subordinates: string[] = [];
@@ -311,7 +307,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setTasks(prevTasks => [newTask, ...prevTasks]);
     recordAction(`Created task: "${task.title}"`);
-  }, [recordAction]);
+  }, [recordAction, setTasks]);
 
   const updateTask = useCallback((updatedTask: Task) => {
     setTasks(prevTasks =>
@@ -320,7 +316,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       )
     );
     recordAction(`Updated task details for: "${updatedTask.title}"`);
-  }, [recordAction]);
+  }, [recordAction, setTasks]);
 
   const addComment = useCallback((taskId: string, commentText: string) => {
     if (!user) return;
@@ -341,7 +337,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
     const task = tasks.find(t => t.id === taskId);
     recordAction(`Commented on task: "${task?.title}"`);
-  }, [user, tasks, recordAction]);
+  }, [user, tasks, recordAction, setTasks]);
   
   const requestTaskStatusChange = useCallback((taskId: string, newStatus: TaskStatus, commentText: string, attachment?: Task['attachment']): boolean => {
     const task = tasks.find(t => t.id === taskId);
@@ -370,7 +366,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     
     recordAction(`Requested status change to "${newStatus}" for task: "${task.title}"`);
     return true;
-  }, [tasks, user, recordAction]);
+  }, [tasks, user, recordAction, setTasks]);
 
   const requestTaskReassignment = useCallback((taskId: string, newAssigneeId: string, commentText: string) => {
     if (!user) return;
@@ -397,7 +393,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }));
 
     recordAction(`Requested reassignment of task "${task.title}" to ${newAssignee.name}`);
-  }, [user, users, tasks, recordAction]);
+  }, [user, users, tasks, recordAction, setTasks]);
   
   const approveTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     if (!user) return;
@@ -438,7 +434,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       }
       return t;
     }));
-  }, [user, users, recordAction]);
+  }, [user, users, recordAction, setTasks]);
   
   const returnTaskStatusChange = useCallback((taskId: string, commentText: string) => {
     if (!user) return;
@@ -474,17 +470,17 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       }
       return t;
     }));
-  }, [user, recordAction]);
+  }, [user, recordAction, setTasks]);
 
   const deleteTask = useCallback((taskId: string) => {
     const taskTitle = tasks.find(t => t.id === taskId)?.title;
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
     recordAction(`Deleted task: "${taskTitle}"`);
-  }, [tasks, recordAction]);
+  }, [tasks, recordAction, setTasks]);
 
   const markTaskAsViewed = useCallback((taskId: string) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isViewedByAssignee: true } : t));
-  }, []);
+  }, [setTasks]);
 
   const addPlannerEvent = useCallback((event: Omit<PlannerEvent, 'id' | 'comments'>) => {
     if (!user) return;
@@ -496,12 +492,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setPlannerEvents(prevEvents => [newEvent, ...prevEvents]);
     recordAction(`Created planner event: "${event.title}"`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setPlannerEvents]);
 
   const updatePlannerEvent = useCallback((updatedEvent: PlannerEvent) => {
     setPlannerEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e));
     recordAction(`Updated planner event: "${updatedEvent.title}"`);
-  }, [recordAction]);
+  }, [recordAction, setPlannerEvents]);
   
   const deletePlannerEvent = useCallback((eventId: string) => {
     const event = plannerEvents.find(e => e.id === eventId);
@@ -509,7 +505,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (event) {
         recordAction(`Deleted planner event: "${event.title}"`);
     }
-  }, [plannerEvents, recordAction]);
+  }, [plannerEvents, recordAction, setPlannerEvents]);
   
   const getExpandedPlannerEvents = useCallback((date: Date, userId: string) => {
     const start = startOfMonth(date);
@@ -570,7 +566,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
     const eventTitle = plannerEvents.find(e => e.id === eventId)?.title;
     recordAction(`Commented on event: "${eventTitle}"`);
-  }, [user, plannerEvents, recordAction]);
+  }, [user, plannerEvents, recordAction, setPlannerEvents]);
 
   const addDailyPlannerComment = useCallback((plannerUserId: string, date: Date, commentText: string) => {
     if (!user) return;
@@ -603,7 +599,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
     const plannerUser = users.find(u => u.id === plannerUserId);
     recordAction(`Commented on ${plannerUser?.name}'s planner for ${dayKey}`);
-  }, [user, users, recordAction]);
+  }, [user, users, recordAction, setDailyPlannerComments]);
   
   const updateDailyPlannerComment = useCallback((commentId: string, plannerUserId: string, day: string, newText: string) => {
     setDailyPlannerComments(prev => prev.map(dpc => {
@@ -615,7 +611,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       }
       return dpc;
     }));
-  }, []);
+  }, [setDailyPlannerComments]);
 
   const deleteDailyPlannerComment = useCallback((commentId: string, plannerUserId: string, day: string) => {
     setDailyPlannerComments(prev => prev.map(dpc => {
@@ -627,11 +623,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       }
       return dpc;
     }).filter(dpc => dpc.comments.length > 0));
-  }, []);
+  }, [setDailyPlannerComments]);
 
   const deleteAllDailyPlannerComments = useCallback((plannerUserId: string, day: string) => {
     setDailyPlannerComments(prev => prev.filter(dpc => !(dpc.plannerUserId === plannerUserId && dpc.day === day)));
-  }, []);
+  }, [setDailyPlannerComments]);
 
   const addUser = useCallback((newUser: Omit<User, 'id' | 'avatar'>) => {
     const userToAdd: User = {
@@ -642,7 +638,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setUsers(prev => [...prev, userToAdd]);
     recordAction(`Added new user: ${newUser.name}`);
-  }, [recordAction]);
+  }, [recordAction, setUsers]);
 
   const updateUser = useCallback((updatedUser: User) => {
     setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
@@ -650,20 +646,20 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         setUser(updatedUser);
     }
     recordAction(`Updated user profile: ${updatedUser.name}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setUsers, setUser]);
 
   const updateUserPlanningScore = useCallback((userId: string, score: number) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, planningScore: score } : u));
     const scoredUser = users.find(u => u.id === userId);
     recordAction(`Updated planning score for ${scoredUser?.name} to ${score}.`);
-  }, [users, recordAction]);
+  }, [users, recordAction, setUsers]);
   
   const deleteUser = useCallback((userId: string) => {
     const userName = users.find(u => u.id === userId)?.name;
     setUsers(prev => prev.filter(u => u.id !== userId));
     setTasks(prev => prev.map(t => t.assigneeId === userId ? {...t, assigneeId: ''} : t));
     recordAction(`Deleted user: ${userName}`);
-  }, [users, recordAction]);
+  }, [users, recordAction, setUsers, setTasks]);
 
   const addRole = useCallback((roleData: Omit<RoleDefinition, 'id' | 'isEditable'>) => {
     const newRole: RoleDefinition = {
@@ -673,35 +669,35 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setRoles(prev => [...prev, newRole]);
     recordAction(`Added new role: ${newRole.name}`);
-  }, [recordAction]);
+  }, [recordAction, setRoles]);
 
   const updateRole = useCallback((updatedRole: RoleDefinition) => {
     setRoles(prev => prev.map(r => r.id === updatedRole.id ? updatedRole : r));
     recordAction(`Updated role: ${updatedRole.name}`);
-  }, [recordAction]);
+  }, [recordAction, setRoles]);
 
   const deleteRole = useCallback((roleId: string) => {
     const roleName = roles.find(r => r.id === roleId)?.name;
     setRoles(prev => prev.filter(r => r.id !== roleId));
     recordAction(`Deleted role: ${roleName}`);
-  }, [roles, recordAction]);
+  }, [roles, recordAction, setRoles]);
 
   const addProject = useCallback((projectName: string) => {
     const newProject: Project = { id: `proj-${Date.now()}`, name: projectName };
     setProjects(prev => [...prev, newProject]);
     recordAction(`Added project: ${projectName}`);
-  }, [recordAction]);
+  }, [recordAction, setProjects]);
 
   const updateProject = useCallback((updatedProject: Project) => {
     setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
     recordAction(`Updated project: ${updatedProject.name}`);
-  }, [recordAction]);
+  }, [recordAction, setProjects]);
   
   const deleteProject = useCallback((projectId: string) => {
     const projectName = projects.find(p => p.id === projectId)?.name;
     setProjects(prev => prev.filter(p => p.id !== projectId));
     recordAction(`Deleted project: ${projectName}`);
-  }, [projects, recordAction]);
+  }, [projects, recordAction, setProjects]);
 
   const updateProfile = useCallback((name: string, email: string, avatar: string, password?: string) => {
     if (user) {
@@ -713,7 +709,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         setUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
         recordAction(`Updated own profile`);
     }
-  }, [user, recordAction]);
+  }, [user, recordAction, setUser, setUsers]);
 
   const addManualAchievement = useCallback((achievement: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => {
     if (!user) return;
@@ -728,7 +724,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setAchievements(prev => [...prev, newAchievement]);
     const userName = users.find(u => u.id === achievement.userId)?.name;
     recordAction(`Awarded manual achievement "${achievement.title}" to ${userName}`);
-  }, [user, users, recordAction]);
+  }, [user, users, recordAction, setAchievements]);
   
   const approveAchievement = useCallback((achievementId: string, points: number) => {
     setAchievements(prev => prev.map(ach => {
@@ -739,19 +735,19 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }));
     const achTitle = achievements.find(a => a.id === achievementId)?.title;
     recordAction(`Approved achievement: "${achTitle}"`);
-  }, [achievements, recordAction]);
+  }, [achievements, recordAction, setAchievements]);
 
   const rejectAchievement = useCallback((achievementId: string) => {
     const achTitle = achievements.find(a => a.id === achievementId)?.title;
     setAchievements(prev => prev.filter(ach => ach.id !== achievementId));
     recordAction(`Rejected achievement: "${achTitle}"`);
-  }, [achievements, recordAction]);
+  }, [achievements, recordAction, setAchievements]);
 
   const updateManualAchievement = useCallback((updatedAchievement: Achievement) => {
     setAchievements(prev => prev.map(ach => ach.id === updatedAchievement.id ? updatedAchievement : ach));
     const userName = users.find(u => u.id === updatedAchievement.userId)?.name;
     recordAction(`Updated manual achievement "${updatedAchievement.title}" for ${userName}`);
-  }, [users, recordAction]);
+  }, [users, recordAction, setAchievements]);
 
   const deleteManualAchievement = useCallback((achievementId: string) => {
     const achievement = achievements.find(a => a.id === achievementId);
@@ -760,20 +756,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         recordAction(`Deleted manual achievement "${achievement.title}" for ${userName}`);
     }
     setAchievements(prev => prev.filter(ach => ach.id !== achievementId));
-  }, [achievements, users, recordAction]);
+  }, [achievements, users, recordAction, setAchievements]);
 
   const updateBranding = useCallback((name: string, logo: string | null) => {
     setAppName(name);
-    localStorage.setItem('appName', name);
-    if (logo) {
-      setAppLogo(logo);
-      localStorage.setItem('appLogo', logo);
-    } else {
-      setAppLogo(null);
-      localStorage.removeItem('appLogo');
-    }
+    setAppLogo(logo);
     recordAction(`Updated app branding.`);
-  }, [recordAction]);
+  }, [recordAction, setAppName, setAppLogo]);
 
   const addInternalRequest = useCallback((request: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isEscalated'>) => {
     if (!user) return;
@@ -789,7 +778,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setInternalRequests(prev => [newRequest, ...prev]);
     recordAction(`Created internal request for ${request.category}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setInternalRequests]);
 
   const updateInternalRequest = useCallback((updatedRequest: InternalRequest) => {
     setInternalRequests(prev => prev.map(r => {
@@ -805,12 +794,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       return r;
     }));
     recordAction(`Updated internal request ID: ${updatedRequest.id}`);
-  }, [user, internalRequests, recordAction]);
+  }, [user, internalRequests, recordAction, setInternalRequests]);
 
   const deleteInternalRequest = useCallback((requestId: string) => {
     setInternalRequests(prev => prev.filter(r => r.id !== requestId));
     recordAction(`Deleted internal request ID: ${requestId}`);
-  }, [recordAction]);
+  }, [recordAction, setInternalRequests]);
 
   const addInternalRequestComment = useCallback((requestId: string, commentText: string) => {
     if (!user) return;
@@ -830,13 +819,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
     const request = internalRequests.find(r => r.id === requestId);
     recordAction(`Commented on internal request ID: ${request?.id}`);
-  }, [user, internalRequests, recordAction]);
+  }, [user, internalRequests, recordAction, setInternalRequests]);
 
   const markRequestAsViewed = useCallback((requestId: string) => {
     setInternalRequests(prev => prev.map(r => 
       r.id === requestId ? { ...r, isViewedByRequester: true } : r
     ));
-  }, []);
+  }, [setInternalRequests]);
   
   const forwardInternalRequest = useCallback((requestId: string, role: Role, comment: string) => {
     if (!user) return;
@@ -861,7 +850,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       return r;
     }));
     recordAction(`Forwarded internal request ID: ${requestId}`);
-  }, [user, internalRequests, recordAction]);
+  }, [user, internalRequests, recordAction, setInternalRequests]);
   
   const escalateInternalRequest = useCallback((requestId: string, reason: string) => {
       if (!user) return;
@@ -888,7 +877,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         return r;
       }));
       recordAction(`Escalated internal request ID: ${requestId}`);
-  }, [user, internalRequests, recordAction]);
+  }, [user, internalRequests, recordAction, setInternalRequests]);
 
 
   const createPpeRequestTask = useCallback((data: any) => {
@@ -908,15 +897,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const addInventoryItem = useCallback((item: Omit<InventoryItem, 'id'>) => {
     const newItem: InventoryItem = { ...item, id: `inv-${Date.now()}` };
     setInventoryItems(prev => [newItem, ...prev]);
-  }, []);
+  }, [setInventoryItems]);
   
   const updateInventoryItem = useCallback((item: InventoryItem) => {
     setInventoryItems(prev => prev.map(i => i.id === item.id ? item : i));
-  }, []);
+  }, [setInventoryItems]);
 
   const deleteInventoryItem = useCallback((itemId: string) => {
     setInventoryItems(prev => prev.filter(i => i.id !== itemId));
-  }, []);
+  }, [setInventoryItems]);
   
   const addMultipleInventoryItems = useCallback((itemsData: any[]): number => {
     let importedCount = 0;
@@ -965,7 +954,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
 
     return importedCount;
-  }, [projects, inventoryItems]);
+  }, [projects, inventoryItems, setInventoryItems]);
   
   const requestInventoryTransfer = useCallback((items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => {
     if (!user) return;
@@ -980,13 +969,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
     };
     setInventoryTransferRequests(prev => [newRequest, ...prev]);
-  }, [user]);
+  }, [user, setInventoryTransferRequests]);
 
   const addInventoryTransferComment = useCallback((requestId: string, commentText: string) => {
     if (!user) return;
      const newComment: Comment = { userId: user.id, text: commentText, date: new Date().toISOString() };
      setInventoryTransferRequests(prev => prev.map(req => req.id === requestId ? { ...req, comments: [...req.comments, newComment] } : req));
-  }, [user]);
+  }, [user, setInventoryTransferRequests]);
 
   const approveInventoryTransfer = useCallback((requestId: string, comment: string) => {
     addInventoryTransferComment(requestId, comment);
@@ -1000,12 +989,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
             return item;
         }));
     }
-  }, [inventoryTransferRequests, projects, addInventoryTransferComment]);
+  }, [inventoryTransferRequests, projects, addInventoryTransferComment, setInventoryTransferRequests, setInventoryItems]);
   
   const rejectInventoryTransfer = useCallback((requestId: string, comment: string) => {
     addInventoryTransferComment(requestId, comment);
     setInventoryTransferRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Rejected' } : req));
-  }, [addInventoryTransferComment]);
+  }, [addInventoryTransferComment, setInventoryTransferRequests]);
 
   const addCertificateRequest = useCallback((itemId: string, requestType: CertificateRequestType, comment: string) => {
     if (!user) return;
@@ -1019,7 +1008,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
     };
     setCertificateRequests(prev => [newRequest, ...prev]);
-  }, [user]);
+  }, [user, setCertificateRequests]);
 
   const requestUTMachineCertificate = useCallback((machineId: string, requestType: CertificateRequestType, comment: string) => {
     if (!user) return;
@@ -1035,7 +1024,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setCertificateRequests(prev => [newRequest, ...prev]);
     recordAction(`Requested ${requestType} for UT Machine ID ${machineId}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setCertificateRequests]);
 
   const addCertificateRequestComment = useCallback((requestId: string, commentText: string) => {
     if (!user) return;
@@ -1045,7 +1034,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       ? { ...req, comments: [...req.comments, newComment].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), isViewedByRequester: user.id !== req.requesterId ? false : true } 
       : req
     ));
-  }, [user]);
+  }, [user, setCertificateRequests]);
 
   const fulfillCertificateRequest = useCallback((requestId: string, commentText: string) => {
       if (!user) return;
@@ -1071,20 +1060,20 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       if (request) {
           recordAction(`Fulfilled certificate request for item ID ${request.itemId || request.utMachineId}`);
       }
-  }, [user, recordAction, certificateRequests]);
+  }, [user, recordAction, certificateRequests, setCertificateRequests]);
 
   const acknowledgeFulfilledUTRequest = useCallback((requestId: string) => {
     if (!user) return;
     setCertificateRequests(prev => prev.filter(req => req.id !== requestId));
     recordAction(`Acknowledged fulfilled certificate request ID: ${requestId}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setCertificateRequests]);
 
   const markUTRequestsAsViewed = useCallback(() => {
     if (!user) return;
     setCertificateRequests(prev => prev.map(req => 
         (req.requesterId === user.id && req.utMachineId) ? { ...req, isViewedByRequester: true } : req
     ));
-  }, [user]);
+  }, [user, setCertificateRequests]);
 
   const addManpowerLog = useCallback((logData: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => {
     if (!user) return;
@@ -1099,7 +1088,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         const otherLogs = prev.filter(l => !(l.date === todayStr && l.projectId === newLog.projectId));
         return [...otherLogs, newLog];
     });
-  }, [user]);
+  }, [user, setManpowerLogs]);
 
   const addManpowerProfile = useCallback((profileData: Omit<ManpowerProfile, 'id'>) => {
     if (!user) return;
@@ -1108,16 +1097,16 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         id: `mpprof-${Date.now()}`
     };
     setManpowerProfiles(prev => [newProfile, ...prev]);
-  }, [user]);
+  }, [user, setManpowerProfiles]);
   
   const updateManpowerProfile = useCallback((profile: ManpowerProfile) => {
     if (!user) return;
     setManpowerProfiles(prev => prev.map(p => p.id === profile.id ? profile : p));
-  }, [user]);
+  }, [user, setManpowerProfiles]);
 
   const deleteManpowerProfile = useCallback((profileId: string) => {
     setManpowerProfiles(prev => prev.filter(p => p.id !== profileId));
-  }, []);
+  }, [setManpowerProfiles]);
 
   const addUTMachine = useCallback((machineData: Omit<UTMachine, 'id' | 'usageLog'>) => {
     if (!user) return;
@@ -1128,13 +1117,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setUtMachines(prev => [newMachine, ...prev]);
     recordAction(`Added new UT Machine: ${newMachine.machineName}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setUtMachines]);
 
   const updateUTMachine = useCallback((updatedMachine: UTMachine) => {
       if (!user) return;
       setUtMachines(prev => prev.map(m => m.id === updatedMachine.id ? updatedMachine : m));
       recordAction(`Updated UT Machine: ${updatedMachine.machineName}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setUtMachines]);
 
   const addUTMachineLog = useCallback((machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => {
     if (!user) return;
@@ -1151,74 +1140,74 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         return m;
     }));
     recordAction(`Added usage log for UT Machine ID: ${machineId}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setUtMachines]);
 
   const deleteUTMachine = useCallback((machineId: string) => {
       if (!user) return;
       const machineName = utMachines.find(m => m.id === machineId)?.machineName;
       setUtMachines(prev => prev.filter(m => m.id !== machineId));
       recordAction(`Deleted UT Machine: ${machineName}`);
-  }, [user, utMachines, recordAction]);
+  }, [user, utMachines, recordAction, setUtMachines]);
 
   const addDftMachine = useCallback((machineData: Omit<DftMachine, 'id' | 'usageLog'>) => {
     if (!user) return;
     const newMachine: DftMachine = { ...machineData, id: `dft-${Date.now()}`, usageLog: [] };
     setDftMachines(prev => [newMachine, ...prev]);
     recordAction(`Added new DFT Machine: ${newMachine.machineName}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setDftMachines]);
 
   const updateDftMachine = useCallback((updatedMachine: DftMachine) => {
     if (!user) return;
     setDftMachines(prev => prev.map(m => m.id === updatedMachine.id ? updatedMachine : m));
     recordAction(`Updated DFT Machine: ${updatedMachine.machineName}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setDftMachines]);
 
   const deleteDftMachine = useCallback((machineId: string) => {
     if (!user) return;
     const machineName = dftMachines.find(m => m.id === machineId)?.name;
     setDftMachines(prev => prev.filter(m => m.id !== machineId));
     recordAction(`Deleted DFT Machine: ${machineName}`);
-  }, [user, dftMachines, recordAction]);
+  }, [user, dftMachines, recordAction, setDftMachines]);
 
   const addMobileSim = useCallback((itemData: Omit<MobileSim, 'id'>) => {
     if (!user) return;
     const newItem: MobileSim = { ...itemData, id: `ms-${Date.now()}` };
     setMobileSims(prev => [newItem, ...prev]);
     recordAction(`Added new Mobile/SIM: ${newItem.number}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setMobileSims]);
 
   const updateMobileSim = useCallback((updatedItem: MobileSim) => {
     if (!user) return;
     setMobileSims(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
     recordAction(`Updated Mobile/SIM: ${updatedItem.number}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setMobileSims]);
 
   const deleteMobileSim = useCallback((itemId: string) => {
     if (!user) return;
     const itemNumber = mobileSims.find(i => i.id === itemId)?.number;
     setMobileSims(prev => prev.filter(i => i.id !== itemId));
     recordAction(`Deleted Mobile/SIM: ${itemNumber}`);
-  }, [user, mobileSims, recordAction]);
+  }, [user, mobileSims, recordAction, setMobileSims]);
 
   const addOtherEquipment = useCallback((itemData: Omit<OtherEquipment, 'id'>) => {
     if (!user) return;
     const newItem: OtherEquipment = { ...itemData, id: `oe-${Date.now()}` };
     setOtherEquipments(prev => [newItem, ...prev]);
     recordAction(`Added new equipment: ${newItem.name}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setOtherEquipments]);
 
   const updateOtherEquipment = useCallback((updatedItem: OtherEquipment) => {
     if (!user) return;
     setOtherEquipments(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
     recordAction(`Updated equipment: ${updatedItem.name}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setOtherEquipments]);
 
   const deleteOtherEquipment = useCallback((itemId: string) => {
     if (!user) return;
     const itemName = otherEquipments.find(i => i.id === itemId)?.name;
     setOtherEquipments(prev => prev.filter(i => i.id !== itemId));
     recordAction(`Deleted equipment: ${itemName}`);
-  }, [user, otherEquipments, recordAction]);
+  }, [user, otherEquipments, recordAction, setOtherEquipments]);
 
   const addVehicle = useCallback((vehicleData: Omit<Vehicle, 'id'>) => {
       if (!user) return;
@@ -1228,33 +1217,33 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       };
       setVehicles(prev => [newVehicle, ...prev]);
       recordAction(`Added new vehicle: ${newVehicle.vehicleNumber}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setVehicles]);
 
   const updateVehicle = useCallback((updatedVehicle: Vehicle) => {
       if (!user) return;
       setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
       recordAction(`Updated vehicle: ${updatedVehicle.vehicleNumber}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setVehicles]);
 
   const deleteVehicle = useCallback((vehicleId: string) => {
       if (!user) return;
       const vehicleNumber = vehicles.find(v => v.id === vehicleId)?.vehicleNumber;
       setVehicles(prev => prev.filter(v => v.id !== vehicleId));
       recordAction(`Deleted vehicle: ${vehicleNumber}`);
-  }, [user, vehicles, recordAction]);
+  }, [user, vehicles, recordAction, setVehicles]);
 
   const addDriver = useCallback((driverData: Omit<Driver, 'id'>) => {
     if (!user) return;
     const newDriver: Driver = { ...driverData, id: `drv-${Date.now()}` };
     setDrivers(prev => [newDriver, ...prev]);
     recordAction(`Added new driver: ${newDriver.name}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setDrivers]);
 
   const updateDriver = useCallback((updatedDriver: Driver) => {
     if (!user) return;
     setDrivers(prev => prev.map(d => d.id === updatedDriver.id ? updatedDriver : d));
     recordAction(`Updated driver: ${updatedDriver.name}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setDrivers]);
 
   const deleteDriver = useCallback((driverId: string) => {
     if (!user) return;
@@ -1263,7 +1252,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     // Also unassign from any vehicle
     setVehicles(prev => prev.map(v => v.driverId === driverId ? { ...v, driverId: undefined } : v));
     recordAction(`Deleted driver: ${driverName}`);
-  }, [user, drivers, recordAction]);
+  }, [user, drivers, recordAction, setDrivers, setVehicles]);
 
   const addManagementRequest = useCallback((request: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester' | 'isViewedByRecipient'>) => {
     if (!user) return;
@@ -1279,7 +1268,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setManagementRequests(prev => [newRequest, ...prev]);
     recordAction(`Created management request: ${request.subject}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setManagementRequests]);
 
   const updateManagementRequest = useCallback((updatedRequest: ManagementRequest) => {
       if (!user) return;
@@ -1300,7 +1289,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
           return r;
       }));
       recordAction(`Updated management request: ${updatedRequest.subject}`);
-  }, [user, managementRequests, recordAction]);
+  }, [user, managementRequests, recordAction, setManagementRequests]);
 
   const addManagementRequestComment = useCallback((requestId: string, commentText: string) => {
     if (!user) return;
@@ -1322,7 +1311,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     }));
     const request = managementRequests.find(r => r.id === requestId);
     recordAction(`Commented on management request: ${request?.subject}`);
-  }, [user, managementRequests, recordAction]);
+  }, [user, managementRequests, recordAction, setManagementRequests]);
 
   const markManagementRequestAsViewed = useCallback((requestId: string) => {
     if (!user) return;
@@ -1333,7 +1322,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         }
         return r;
     }));
-  }, [user]);
+  }, [user, setManagementRequests]);
 
   const addAnnouncement = useCallback((announcement: Pick<Announcement, 'title' | 'content'>) => {
     if (!user) return;
@@ -1350,11 +1339,11 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setAnnouncements(prev => [newAnnouncement, ...prev]);
     recordAction(`Submitted announcement: "${announcement.title}"`);
-  }, [user, users, recordAction]);
+  }, [user, users, recordAction, setAnnouncements]);
   
   const approveAnnouncement = useCallback((announcementId: string) => {
     setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'approved' } : a));
-  }, []);
+  }, [setAnnouncements]);
   
   const returnAnnouncement = useCallback((announcementId: string, comment: string) => {
     if (!user) return;
@@ -1372,26 +1361,26 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         }
         return a;
     }));
-  }, [user]);
+  }, [user, setAnnouncements]);
 
   const updateAnnouncement = useCallback((announcement: Announcement) => {
     setAnnouncements(prev => prev.map(a => a.id === announcement.id ? announcement : a));
-  }, []);
+  }, [setAnnouncements]);
 
   const deleteAnnouncement = useCallback((announcementId: string) => {
       setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
-  }, []);
+  }, [setAnnouncements]);
   
   const rejectAnnouncement = useCallback((announcementId: string) => {
     setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'rejected' } : a));
-  }, []);
+  }, [setAnnouncements]);
 
   const dismissAnnouncement = useCallback((announcementId: string) => {
     if (!user) return;
     setAnnouncements(prev => prev.map(a => 
       a.id === announcementId ? { ...a, isViewed: [...new Set([...a.isViewed, user.id])] } : a
     ));
-  }, [user]);
+  }, [user, setAnnouncements]);
   
   const addIncidentReport = useCallback((report: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'reportedToUserIds' | 'isPublished' | 'projectLocation'>) => {
     if (!user) return;
@@ -1420,12 +1409,12 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     };
     setIncidents(prev => [newIncident, ...prev]);
     recordAction(`Reported new incident`);
-  }, [user, projects, users, recordAction]);
+  }, [user, projects, users, recordAction, setIncidents]);
 
   const updateIncident = useCallback((incident: IncidentReport) => {
     setIncidents(prev => prev.map(i => i.id === incident.id ? incident : i));
     recordAction(`Updated incident ID: ${incident.id}`);
-  }, [recordAction]);
+  }, [recordAction, setIncidents]);
 
   const addIncidentComment = useCallback((incidentId: string, commentText: string) => {
     if (!user) return;
@@ -1436,7 +1425,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         : i
     ));
     recordAction(`Commented on incident ID: ${incidentId}`);
-  }, [user, recordAction]);
+  }, [user, recordAction, setIncidents]);
 
   const addUsersToIncidentReport = useCallback((incidentId: string, userIds: string[]) => {
     if (!user) return;
@@ -1458,7 +1447,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         }
         return i;
     }));
-  }, [user, users]);
+  }, [user, users, setIncidents]);
   
   const publishIncident = useCallback((incidentId: string) => {
     if (!user) return;
@@ -1481,7 +1470,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setAnnouncements(prev => [newAnnouncement, ...prev]);
 
     recordAction(`Published incident ID: ${incidentId}`);
-  }, [user, recordAction, incidents]);
+  }, [user, recordAction, incidents, setIncidents, setAnnouncements]);
   
   const approvedAnnouncements = useMemo(() => {
     return announcements.filter(a => a.status === 'approved');

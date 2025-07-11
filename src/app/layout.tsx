@@ -3,7 +3,6 @@ import { AppContextProvider, useAppContext } from '@/context/app-context';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { useEffect } from 'react';
-import { cn } from '@/lib/utils';
 
 function AppTitleUpdater({ children }: { children: React.ReactNode }) {
   const { appName } = useAppContext();
