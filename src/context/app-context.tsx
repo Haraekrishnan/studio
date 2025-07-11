@@ -7,7 +7,7 @@ import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, App
 import { USERS, TASKS, PLANNER_EVENTS, ACHIEVEMENTS, ACTIVITY_LOGS, DAILY_PLANNER_COMMENTS, ROLES as MOCK_ROLES, INTERNAL_REQUESTS, PROJECTS, INVENTORY_ITEMS, INVENTORY_TRANSFER_REQUESTS, CERTIFICATE_REQUESTS, MANPOWER_LOGS, UT_MACHINES, VEHICLES, DRIVERS, MANPOWER_PROFILES, MANAGEMENT_REQUESTS, DFT_MACHINES, MOBILE_SIMS, OTHER_EQUIPMENTS, ANNOUNCEMENTS, INCIDENTS } from '@/lib/mock-data';
 import { addDays, isBefore, eachDayOfInterval, endOfMonth, isSameDay, isWeekend, startOfDay, differenceInMinutes, format, differenceInDays, subDays, startOfMonth } from 'date-fns';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, getDoc, addDoc } from 'firebase/firestore';
 
 // Helper to safely stringify data for Firestore
 const serialize = (data: any) => JSON.parse(JSON.stringify(data));
@@ -230,11 +230,13 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   // This effect checks for a user session on initial load
   useEffect(() => {
     const checkSession = async () => {
+        setIsLoading(true);
         const loggedInUserJson = sessionStorage.getItem('user');
         if (loggedInUserJson) {
             const loggedInUser = JSON.parse(loggedInUserJson);
             setUser(loggedInUser);
         } else {
+            setUser(null);
             setIsLoading(false);
         }
     };
@@ -244,7 +246,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   // This effect fetches data when the user object is set (either from session or login)
   useEffect(() => {
     if (user) {
-      setIsLoading(true);
       fetchData().finally(() => setIsLoading(false));
     }
   }, [user, fetchData]);
@@ -284,14 +285,14 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [currentLogId]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
     const usersSnapshot = await getDocs(collection(db, 'users'));
     const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
     
     const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
     if (foundUser) {
       sessionStorage.setItem('user', JSON.stringify(foundUser));
-      setUser(foundUser);
-      
+
       const newLog: Omit<ActivityLog, 'id'> = {
         userId: foundUser.id,
         loginTime: new Date().toISOString(),
@@ -300,13 +301,15 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
         actions: ['User logged in.'],
       };
       
-      const newLogRef = doc(collection(db, 'activityLogs'));
-      await setDoc(newLogRef, newLog);
+      const newLogRef = await addDoc(collection(db, 'activityLogs'), newLog);
       setCurrentLogId(newLogRef.id);
       
+      setUser(foundUser); // This will trigger the useEffect to fetch data and set isLoading to false
       router.push('/dashboard');
       return true;
     }
+    
+    setIsLoading(false);
     return false;
   }, [router]);
 
@@ -888,3 +891,5 @@ export function useAppContext() {
   }
   return context;
 }
+
+    
