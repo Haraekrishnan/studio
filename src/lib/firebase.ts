@@ -6,8 +6,6 @@ import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth"
 import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
-// IMPORTANT: This is hardcoded for debugging purposes. In a real-world scenario,
-// these should be in environment variables.
 const firebaseConfig = {
   apiKey: "AIzaSyDZRzVFHIASG-LH6M_8xX0u63piyagIAeo",
   authDomain: "taskmaster-pro-jkvw6.firebaseapp.com",
