@@ -1,3 +1,4 @@
+'use client';
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -48,12 +49,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return false;
       }
       
-      const foundUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
+      const foundUserWithPassword = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
       
-      // In a real app, this would be a hashed password check
-      if (foundUser.password === password) {
-          // Don't store the password in the session or state
-          const { password: _, ...userToStore } = foundUser;
+      if (foundUserWithPassword.password === password) {
+          const { password: _, ...userToStore } = foundUserWithPassword;
           sessionStorage.setItem('user', JSON.stringify(userToStore));
           setUser(userToStore);
           return true;
