@@ -4,7 +4,8 @@ import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, App
 import { addDays, isBefore, eachDayOfInterval, endOfMonth, isSameDay, isWeekend, startOfDay, differenceInMinutes, format, differenceInDays, subDays, startOfMonth, isPast, isAfter } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 interface AppContextType {
   // Directly managed state
@@ -68,6 +69,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppContextProvider({ children }: { children: ReactNode }) {
   const { user, isAuthLoading } = useAuth();
+  const { toast } = useToast();
 
   // Raw data states
   const [users, setUsers] = useState<User[]>([]);
@@ -102,11 +104,21 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
+    if (isAuthLoading) return; // Wait for authentication to resolve
     if (!user) {
         setIsDataLoading(false);
+        // Clear all data if user logs out
+        setUsers([]); setRoles([]); setTasks([]); setProjects([]);
+        setInventoryItems([]); setInventoryTransferRequests([]); setCertificateRequests([]);
+        setPlannerEvents([]); setDailyPlannerComments([]); setAchievements([]);
+        setActivityLogs([]); setManpowerLogs([]); setManpowerProfiles([]);
+        setUtMachines([]); setDftMachines([]); setMobileSims([]); setOtherEquipments([]);
+        setVehicles([]); setDrivers([]); setInternalRequests([]); setManagementRequests([]);
+        setAnnouncements([]); setIncidents([]);
         return;
     }
 
+    setIsDataLoading(true);
     const collections: { name: string; setter: (data: any[]) => void }[] = [
       { name: 'users', setter: setUsers },
       { name: 'roles', setter: setRoles },
@@ -137,6 +149,9 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       onSnapshot(collection(db, name), (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setter(data as any);
+      }, (error) => {
+        console.error(`Error fetching ${name}:`, error);
+        toast({ variant: 'destructive', title: `Error loading ${name}`, description: 'Could not fetch data from the database.' });
       })
     );
 
@@ -145,21 +160,23 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return () => {
       unsubscribes.forEach(unsub => unsub());
     };
-  }, [user]);
+  }, [user, isAuthLoading, toast]);
+
 
   const getVisibleUsers = useCallback(() => {
     if (!user) return [];
 
-    const userRoleLevel = roles.find(r => r.name === user.role)?.permissions.length || 0;
-    const canViewAll = user.role === 'Admin' || user.role === 'Manager' || user.role === 'Store in Charge';
+    const userRole = roles.find(r => r.name === user.role);
+    if (!userRole) return [user];
 
-    if (canViewAll) return users;
-
-    const subordinates = users.filter(u => u.supervisorId === user.id);
-    const subIds = subordinates.map(s => s.id);
-    const subSubordinates = users.filter(u => u.supervisorId && subIds.includes(u.supervisorId));
-
-    return [user, ...subordinates, ...subSubordinates];
+    if (userRole.permissions.includes('view_all_users')) return users;
+    if (userRole.permissions.includes('view_subordinates_users')) {
+      const subordinates = users.filter(u => u.supervisorId === user.id);
+      const subIds = subordinates.map(s => s.id);
+      const subSubordinates = users.filter(u => u.supervisorId && subIds.includes(u.supervisorId));
+      return [user, ...subordinates, ...subSubordinates];
+    }
+    return [user];
   }, [user, users, roles]);
 
 
@@ -212,67 +229,32 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     });
     return expandedEvents;
   }, [plannerEvents]);
-
-  const addUser = useCallback(async (newUser: Omit<User, 'id'>) => {
-    await addDoc(collection(db, 'users'), newUser);
-  }, []);
-
-  const updateUser = useCallback(async (updatedUser: User) => {
-    const { id, ...data } = updatedUser;
-    await setDoc(doc(db, 'users', id), data);
-  }, []);
   
-  const deleteUser = useCallback(async (userId: string) => {
-    await deleteDoc(doc(db, 'users', userId));
-  }, []);
-
-  const updateProfile = useCallback(async (name: string, email: string, avatar: string, password?: string) => {
-    if (user) {
-      const userRef = doc(db, 'users', user.id);
-      const dataToUpdate: Partial<User> = { name, email, avatar };
-      if (password) {
-        dataToUpdate.password = password; // In a real app, you would hash this on the server
-      }
-      await updateDoc(userRef, dataToUpdate);
+  // Generic CRUD Functions
+  const addDocToCollection = useCallback(async (collectionName: string, data: any) => {
+    try {
+      await addDoc(collection(db, collectionName), data);
+    } catch (e) {
+      console.error(`Error adding document to ${collectionName}:`, e);
     }
-  }, [user]);
-
-  const addTask = useCallback(async (newTask: Omit<Task, 'id' | 'status'>) => {
-    const taskData: Omit<Task, 'id'> = {
-      ...newTask,
-      status: 'To Do',
-      isViewedByAssignee: false,
-      approvalState: 'none',
-      comments: [],
-    };
-    await addDoc(collection(db, 'tasks'), taskData);
   }, []);
 
-  const updateTask = useCallback(async (updatedTask: Task) => {
-    const { id, ...data } = updatedTask;
-    await setDoc(doc(db, 'tasks', id), data);
-  }, []);
-  
-  const deleteTask = useCallback(async (taskId: string) => {
-    await deleteDoc(doc(db, 'tasks', taskId));
-  }, []);
-
-  const addComment = useCallback(async (taskId: string, text: string) => {
-    if (!user) return;
-    const taskRef = doc(db, 'tasks', taskId);
-    const taskDoc = await getDoc(taskRef);
-    if (taskDoc.exists()) {
-      const taskData = taskDoc.data() as Task;
-      const newComment: Comment = {
-        id: `comment-${Date.now()}`,
-        userId: user.id,
-        text,
-        date: new Date().toISOString(),
-      };
-      const updatedComments = [...(taskData.comments || []), newComment];
-      await updateDoc(taskRef, { comments: updatedComments });
+  const updateDocInCollection = useCallback(async (collectionName: string, docId: string, data: any) => {
+    try {
+      const { id, ...rest } = data;
+      await updateDoc(doc(db, collectionName, docId), rest);
+    } catch (e) {
+      console.error(`Error updating document in ${collectionName}:`, e);
     }
-  }, [user]);
+  }, []);
+
+  const deleteDocFromCollection = useCallback(async (collectionName: string, docId: string) => {
+    try {
+      await deleteDoc(doc(db, collectionName, docId));
+    } catch (e) {
+      console.error(`Error deleting document from ${collectionName}:`, e);
+    }
+  }, []);
 
   const approvedAnnouncements = useMemo(() => {
     return announcements.filter(a => a.status === 'approved');
@@ -282,9 +264,23 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     if (!user) return [];
     return certificateRequests.filter(req => req.requesterId === user.id && req.status === 'Fulfilled' && !req.isViewedByRequester);
   }, [certificateRequests, user]);
-
-  // Placeholder for the myriad of functions to be implemented
-  const placeholderFunc = useCallback(() => console.warn("Function not implemented"), []);
+  
+  const addCommentToDoc = useCallback(async (collectionName: string, docId: string, text: string) => {
+    if (!user) return;
+    const docRef = doc(db, collectionName, docId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const docData = docSnap.data();
+      const newComment: Comment = {
+        id: `comment-${Date.now()}`,
+        userId: user.id,
+        text,
+        date: new Date().toISOString(),
+      };
+      const updatedComments = [...(docData.comments || []), newComment];
+      await updateDoc(docRef, { comments: updatedComments });
+    }
+  }, [user]);
 
   const value = {
       user, users, roles, tasks, projects, inventoryItems, inventoryTransferRequests, certificateRequests, plannerEvents, dailyPlannerComments, achievements, activityLogs, manpowerLogs, manpowerProfiles, utMachines, dftMachines, mobileSims, otherEquipments, vehicles, drivers, appName, appLogo, internalRequests, managementRequests, announcements, incidents, 
@@ -292,100 +288,264 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       updateBranding,
       getExpandedPlannerEvents,
       getVisibleUsers,
-      addUser,
-      updateUser,
-      deleteUser,
-      updateProfile,
-      addTask,
-      updateTask,
-      deleteTask,
-      addComment,
       approvedAnnouncements,
       myFulfilledUTRequests,
-      // Add all other functions here, pointing to a placeholder for now
-      addProject: placeholderFunc,
-      updateProject: placeholderFunc,
-      deleteProject: placeholderFunc,
-      addRole: placeholderFunc,
-      updateRole: placeholderFunc,
-      deleteRole: placeholderFunc,
-      addManualAchievement: placeholderFunc,
-      approveAchievement: placeholderFunc,
-      rejectAchievement: placeholderFunc,
-      deleteManualAchievement: placeholderFunc,
-      updateUserPlanningScore: placeholderFunc,
-      addPlannerEvent: placeholderFunc,
-      updatePlannerEvent: placeholderFunc,
-      deletePlannerEvent: placeholderFunc,
-      addPlannerEventComment: placeholderFunc,
-      addDailyPlannerComment: placeholderFunc,
-      updateDailyPlannerComment: placeholderFunc,
-      deleteDailyPlannerComment: placeholderFunc,
-      deleteAllDailyPlannerComments: placeholderFunc,
-      requestTaskStatusChange: placeholderFunc,
-      approveTaskStatusChange: placeholderFunc,
-      returnTaskStatusChange: placeholderFunc,
-      markTaskAsViewed: placeholderFunc,
-      requestTaskReassignment: placeholderFunc,
-      addInventoryItem: placeholderFunc,
-      updateInventoryItem: placeholderFunc,
-      deleteInventoryItem: placeholderFunc,
-      addMultipleInventoryItems: placeholderFunc,
-      requestInventoryTransfer: placeholderFunc,
-      approveInventoryTransfer: placeholderFunc,
-      rejectInventoryTransfer: placeholderFunc,
-      addInventoryTransferComment: placeholderFunc,
-      addCertificateRequest: placeholderFunc,
-      fulfillCertificateRequest: placeholderFunc,
-      addCertificateRequestComment: placeholderFunc,
-      markCertificateRequestAsViewed: placeholderFunc,
-      addManpowerLog: placeholderFunc,
-      addManpowerProfile: placeholderFunc,
-      updateManpowerProfile: placeholderFunc,
-      deleteManpowerProfile: placeholderFunc,
-      addUTMachine: placeholderFunc,
-      updateUTMachine: placeholderFunc,
-      deleteUTMachine: placeholderFunc,
-      addUTMachineLog: placeholderFunc,
-      requestUTMachineCertificate: placeholderFunc,
-      addDftMachine: placeholderFunc,
-      updateDftMachine: placeholderFunc,
-      deleteDftMachine: placeholderFunc,
-      addMobileSim: placeholderFunc,
-      updateMobileSim: placeholderFunc,
-      deleteMobileSim: placeholderFunc,
-      addOtherEquipment: placeholderFunc,
-      updateOtherEquipment: placeholderFunc,
-      deleteOtherEquipment: placeholderFunc,
-      addDriver: placeholderFunc,
-      updateDriver: placeholderFunc,
-      deleteDriver: placeholderFunc,
-      addVehicle: placeholderFunc,
-      updateVehicle: placeholderFunc,
-      deleteVehicle: placeholderFunc,
-      addInternalRequest: placeholderFunc,
-      updateInternalRequest: placeholderFunc,
-      deleteInternalRequest: placeholderFunc,
-      markRequestAsViewed: placeholderFunc,
-      forwardInternalRequest: placeholderFunc,
-      escalateInternalRequest: placeholderFunc,
-      addInternalRequestComment: placeholderFunc,
-      addManagementRequest: placeholderFunc,
-      updateManagementRequest: placeholderFunc,
-      addManagementRequestComment: placeholderFunc,
-      markManagementRequestAsViewed: placeholderFunc,
-      addAnnouncement: placeholderFunc,
-      updateAnnouncement: placeholderFunc,
-      approveAnnouncement: placeholderFunc,
-      rejectAnnouncement: placeholderFunc,
-      deleteAnnouncement: placeholderFunc,
-      returnAnnouncement: placeholderFunc,
-      dismissAnnouncement: placeholderFunc,
-      addIncidentReport: placeholderFunc,
-      updateIncident: placeholderFunc,
-      addIncidentComment: placeholderFunc,
-      publishIncident: placeholderFunc,
-      addUsersToIncidentReport: placeholderFunc,
+      
+      // User Functions
+      addUser: (data: any) => addDocToCollection('users', data),
+      updateUser: (data: User) => updateDocInCollection('users', data.id, data),
+      deleteUser: (id: string) => deleteDocFromCollection('users', id),
+      updateProfile: (name: string, email: string, avatar: string, password?: string) => {
+        if (user) {
+          const dataToUpdate: Partial<User> = { name, email, avatar };
+          if (password) dataToUpdate.password = password; // Hashing should be done server-side in a real app
+          updateDocInCollection('users', user.id, dataToUpdate);
+        }
+      },
+      updateUserPlanningScore: (userId: string, newScore: number) => updateDocInCollection('users', userId, { planningScore: newScore }),
+
+      // Project Functions
+      addProject: (name: string) => addDocToCollection('projects', { name }),
+      updateProject: (data: Project) => updateDocInCollection('projects', data.id, data),
+      deleteProject: (id: string) => deleteDocFromCollection('projects', id),
+
+      // Role Functions
+      addRole: (data: Omit<RoleDefinition, 'id'>) => addDocToCollection('roles', {...data, isEditable: true}),
+      updateRole: (data: RoleDefinition) => updateDocInCollection('roles', data.id, data),
+      deleteRole: (id: string) => deleteDocFromCollection('roles', id),
+
+      // Task Functions
+      addTask: (data: Omit<Task, 'id'|'status'|'isViewedByAssignee'|'approvalState'|'comments'>) => addDocToCollection('tasks', {...data, status: 'To Do', isViewedByAssignee: false, approvalState: 'none', comments: []}),
+      updateTask: (data: Task) => updateDocInCollection('tasks', data.id, data),
+      deleteTask: (id: string) => deleteDocFromCollection('tasks', id),
+      addComment: (taskId: string, text: string) => addCommentToDoc('tasks', taskId, text),
+      requestTaskStatusChange: (taskId: string, newStatus: TaskStatus, comment: string, attachment?: Task['attachment']) => {
+        if (!user) return;
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        const dataToUpdate: Partial<Task> = {
+          status: 'Pending Approval',
+          previousStatus: task.status,
+          pendingStatus: newStatus,
+          approvalState: 'pending'
+        };
+        if (attachment) dataToUpdate.attachment = attachment;
+        
+        updateDocInCollection('tasks', taskId, dataToUpdate);
+        addCommentToDoc('tasks', taskId, `Status change to ${newStatus} requested: ${comment}`);
+      },
+      approveTaskStatusChange: (taskId: string, comment: string) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || !task.pendingStatus) return;
+
+        const dataToUpdate: Partial<Task> = {
+          status: task.pendingStatus,
+          completionDate: task.pendingStatus === 'Completed' ? new Date().toISOString() : undefined,
+          approvalState: 'approved',
+          pendingStatus: undefined,
+          previousStatus: undefined,
+        };
+        updateDocInCollection('tasks', taskId, dataToUpdate);
+        addCommentToDoc('tasks', taskId, `Request Approved: ${comment}`);
+      },
+      returnTaskStatusChange: (taskId: string, comment: string) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || !task.previousStatus) return;
+        
+        const dataToUpdate: Partial<Task> = {
+          status: task.previousStatus,
+          approvalState: 'returned',
+          pendingStatus: undefined,
+          previousStatus: undefined,
+        };
+        updateDocInCollection('tasks', taskId, dataToUpdate);
+        addCommentToDoc('tasks', taskId, `Request Returned: ${comment}`);
+      },
+      markTaskAsViewed: (taskId: string) => updateDocInCollection('tasks', taskId, { isViewedByAssignee: true }),
+      requestTaskReassignment: (taskId: string, newAssigneeId: string, comment: string) => {
+          updateDocInCollection('tasks', taskId, {
+            status: 'Pending Approval',
+            approvalState: 'pending',
+            pendingAssigneeId: newAssigneeId,
+          });
+          addCommentToDoc('tasks', taskId, `Reassignment requested to ${users.find(u => u.id === newAssigneeId)?.name}: ${comment}`);
+      },
+
+      // Other entities...
+      addManpowerProfile: (data: any) => addDocToCollection('manpowerProfiles', data),
+      updateManpowerProfile: (data: ManpowerProfile) => updateDocInCollection('manpowerProfiles', data.id, data),
+      deleteManpowerProfile: (id: string) => deleteDocFromCollection('manpowerProfiles', id),
+      addManpowerLog: (data: any) => addDocToCollection('manpowerLogs', {...data, date: format(new Date(), 'yyyy-MM-dd'), updatedBy: user?.id}),
+      
+      addInventoryItem: (data: any) => addDocToCollection('inventoryItems', data),
+      updateInventoryItem: (data: InventoryItem) => updateDocInCollection('inventoryItems', data.id, data),
+      deleteInventoryItem: (id: string) => deleteDocFromCollection('inventoryItems', id),
+      
+      addUTMachine: (data: any) => addDocToCollection('utMachines', {...data, usageLog: []}),
+      updateUTMachine: (data: UTMachine) => updateDocInCollection('utMachines', data.id, data),
+      deleteUTMachine: (id: string) => deleteDocFromCollection('utMachines', id),
+      addUTMachineLog: (machineId: string, logData: any) => {
+        const machine = utMachines.find(m => m.id === machineId);
+        if (machine) {
+            const newLog = { ...logData, id: `log-${Date.now()}`, date: new Date().toISOString(), loggedBy: user?.id };
+            const updatedLogs = [...(machine.usageLog || []), newLog];
+            updateDocInCollection('utMachines', machineId, { usageLog: updatedLogs });
+        }
+      },
+      requestUTMachineCertificate: (machineId: string, requestType: CertificateRequestType, comment: string) => {
+        if (!user) return;
+        const newRequest = {
+            utMachineId: machineId,
+            requesterId: user.id,
+            requestType,
+            status: 'Pending',
+            date: new Date().toISOString(),
+            comments: [{ userId: user.id, text: comment, date: new Date().toISOString(), id: `c-${Date.now()}`}]
+        };
+        addDocToCollection('certificateRequests', newRequest);
+      },
+
+      addDftMachine: (data: any) => addDocToCollection('dftMachines', {...data, usageLog: []}),
+      updateDftMachine: (data: DftMachine) => updateDocInCollection('dftMachines', data.id, data),
+      deleteDftMachine: (id: string) => deleteDocFromCollection('dftMachines', id),
+
+      addMobileSim: (data: any) => addDocToCollection('mobileSims', data),
+      updateMobileSim: (data: MobileSim) => updateDocInCollection('mobileSims', data.id, data),
+      deleteMobileSim: (id: string) => deleteDocFromCollection('mobileSims', id),
+
+      addOtherEquipment: (data: any) => addDocToCollection('otherEquipments', data),
+      updateOtherEquipment: (data: OtherEquipment) => updateDocInCollection('otherEquipments', data.id, data),
+      deleteOtherEquipment: (id: string) => deleteDocFromCollection('otherEquipments', id),
+
+      addDriver: (data: any) => addDocToCollection('drivers', data),
+      updateDriver: (data: Driver) => updateDocInCollection('drivers', data.id, data),
+      deleteDriver: (id: string) => deleteDocFromCollection('drivers', id),
+
+      addVehicle: (data: any) => addDocToCollection('vehicles', data),
+      updateVehicle: (data: Vehicle) => updateDocInCollection('vehicles', data.id, data),
+      deleteVehicle: (id: string) => deleteDocFromCollection('vehicles', id),
+      
+      addInternalRequest: (data: Omit<InternalRequest, 'id'>) => {
+        if(!user) return;
+        const newRequest: Partial<InternalRequest> = {
+            ...data,
+            requesterId: user.id,
+            date: new Date().toISOString(),
+            status: 'Pending',
+            isViewedByRequester: true,
+            comments: [{ id: `c-${Date.now()}`, userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
+        }
+        addDocToCollection('internalRequests', newRequest);
+      },
+      updateInternalRequest: (data: InternalRequest) => updateDocInCollection('internalRequests', data.id, data),
+      deleteInternalRequest: (id: string) => deleteDocFromCollection('internalRequests', id),
+      addInternalRequestComment: (requestId: string, text: string) => addCommentToDoc('internalRequests', requestId, text),
+      markRequestAsViewed: (requestId: string) => updateDocInCollection('internalRequests', requestId, { isViewedByRequester: true }),
+      forwardInternalRequest: (requestId: string, role: Role, comment: string) => {
+        updateDocInCollection('internalRequests', requestId, { forwardedTo: role });
+        addCommentToDoc('internalRequests', requestId, `Forwarded to ${role}: ${comment}`);
+      },
+      escalateInternalRequest: (requestId: string, comment: string) => {
+        updateDocInCollection('internalRequests', requestId, { isEscalated: true, forwardedTo: 'Manager' });
+        addCommentToDoc('internalRequests', requestId, `Request Escalated: ${comment}`);
+      },
+      
+      addManagementRequest: (data: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRecipient' | 'isViewedByRequester'>) => {
+        if(!user) return;
+        const newRequest: Partial<ManagementRequest> = {
+            ...data,
+            requesterId: user.id,
+            date: new Date().toISOString(),
+            status: 'Pending',
+            isViewedByRecipient: false,
+            isViewedByRequester: true,
+            comments: [{ id: `c-${Date.now()}`, userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
+        }
+        addDocToCollection('managementRequests', newRequest);
+      },
+      updateManagementRequest: (data: ManagementRequest) => updateDocInCollection('managementRequests', data.id, data),
+      addManagementRequestComment: (requestId: string, text: string) => addCommentToDoc('managementRequests', requestId, text),
+      markManagementRequestAsViewed: (requestId: string) => {
+          const request = managementRequests.find(r => r.id === requestId);
+          if(!request || !user) return;
+          if(user.id === request.requesterId) {
+            updateDocInCollection('managementRequests', requestId, { isViewedByRequester: true });
+          } else if(user.id === request.recipientId) {
+            updateDocInCollection('managementRequests', requestId, { isViewedByRecipient: true });
+          }
+      },
+      
+      addAnnouncement: (data: Pick<Announcement, 'title' | 'content'>) => {
+        if(!user || !user.supervisorId) {
+          toast({ variant: 'destructive', title: 'Cannot create announcement', description: 'You do not have a supervisor assigned to approve your announcement.' });
+          return;
+        }
+        const newAnnouncement: Partial<Announcement> = {
+            ...data,
+            creatorId: user.id,
+            approverId: user.supervisorId,
+            date: new Date().toISOString(),
+            status: 'pending',
+            isViewed: [],
+        }
+        addDocToCollection('announcements', newAnnouncement);
+      },
+      updateAnnouncement: (data: Announcement) => updateDocInCollection('announcements', data.id, data),
+      approveAnnouncement: (id: string) => updateDocInCollection('announcements', id, { status: 'approved' }),
+      rejectAnnouncement: (id: string) => updateDocInCollection('announcements', id, { status: 'rejected' }),
+      deleteAnnouncement: (id: string) => deleteDocFromCollection('announcements', id),
+      returnAnnouncement: (id: string, comment: string) => {
+         // In a real app, you might have a different status like 'returned'. For now, just add a comment.
+         addCommentToDoc('announcements', id, `Returned for modification: ${comment}`);
+      },
+      dismissAnnouncement: (id: string) => {
+        if(!user) return;
+        const announcement = announcements.find(a => a.id === id);
+        if(announcement && !announcement.isViewed.includes(user.id)) {
+            updateDocInCollection('announcements', id, { isViewed: [...announcement.isViewed, user.id] });
+        }
+      },
+      
+      addIncidentReport: (data: any) => {
+        if(!user) return;
+        const supervisorId = user.supervisorId;
+        const hseUser = users.find(u => u.role === 'HSE');
+        const reportedToUserIds = [supervisorId, hseUser?.id].filter(Boolean) as string[];
+        
+        const newIncident: Partial<IncidentReport> = {
+            ...data,
+            reporterId: user.id,
+            reportedToUserIds,
+            reportTime: new Date().toISOString(),
+            status: 'New',
+            isPublished: false,
+            comments: [{ id: `c-${Date.now()}`, userId: user.id, text: 'Incident reported.', date: new Date().toISOString() }],
+        }
+        addDocToCollection('incidents', newIncident);
+      },
+      updateIncident: (data: IncidentReport) => updateDocInCollection('incidents', data.id, data),
+      addIncidentComment: (id: string, text: string) => addCommentToDoc('incidents', id, text),
+      publishIncident: (id: string) => updateDocInCollection('incidents', id, { isPublished: true }),
+      addUsersToIncidentReport: (id: string, userIds: string[]) => {
+        const incident = incidents.find(i => i.id === id);
+        if(!incident) return;
+        const updatedUserIds = Array.from(new Set([...(incident.reportedToUserIds || []), ...userIds]));
+        updateDocInCollection('incidents', id, { reportedToUserIds: updatedUserIds });
+      },
+      
+      // Other functions to be implemented...
+      addMultipleInventoryItems: () => {},
+      approveInventoryTransfer: () => {},
+      rejectInventoryTransfer: () => {},
+      addInventoryTransferComment: () => {},
+      addCertificateRequest: () => {},
+      fulfillCertificateRequest: () => {},
+      addCertificateRequestComment: () => {},
+      markCertificateRequestAsViewed: () => {},
+      approveManualAchievement: () => {},
+      rejectManualAchievement: () => {},
+      deleteManualAchievement: () => {},
   };
     
   return <AppContext.Provider value={value as any}>{children}</AppContext.Provider>;
