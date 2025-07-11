@@ -40,9 +40,9 @@ export default function ImportItemsDialog({ isOpen, setIsOpen }: ImportItemsDial
                 const worksheet = workbook.Sheets[sheetName];
                 const json: any[] = XLSX.utils.sheet_to_json(worksheet);
                 
-                addMultipleInventoryItems(json);
+                const importedCount = addMultipleInventoryItems(json);
 
-                toast({ title: 'Import Successful', description: `${json.length} items have been imported/updated.` });
+                toast({ title: 'Import Complete', description: `${importedCount} of ${json.length} items were successfully imported/updated.` });
                 setIsOpen(false);
             } catch (error) {
                 console.error("Import error:", error);
@@ -68,15 +68,15 @@ export default function ImportItemsDialog({ isOpen, setIsOpen }: ImportItemsDial
                     <AlertDescription>
                         <p className="mb-2">The first row of your Excel sheet must be the header row with the following columns in order:</p>
                         <ul className="list-disc list-inside text-xs space-y-1">
-                            <li><b>A1:</b> ITEM NAME (e.g., Harness)</li>
-                            <li><b>B1:</b> SERIAL NUMBER (Unique identifier)</li>
-                            <li><b>C1:</b> CHEST CROLL NO (Optional, for Harnesses)</li>
-                            <li><b>D1:</b> ARIES ID (Optional, for Harnesses)</li>
-                            <li><b>E1:</b> INSPECTION DATE (Format: YYYY-MM-DD)</li>
-                            <li><b>F1:</b> INSPECTION DUE DATE (Format: YYYY-MM-DD)</li>
-                            <li><b>G1:</b> TP INSPECTION DUE DATE (Format: YYYY-MM-DD)</li>
-                            <li><b>H1:</b> STATUS (In Use, In Store, Damaged, Expired)</li>
-                            <li><b>I1:</b> PROJECT (Exact name, e.g., "SEZ", "DTA")</li>
+                            <li><b>ITEM NAME</b> (e.g., Harness)</li>
+                            <li><b>SERIAL NUMBER</b> (Unique identifier)</li>
+                            <li><b>CHEST CROLL NO</b> (Optional, for Harnesses)</li>
+                            <li><b>ARIES ID</b> (Optional, for Harnesses)</li>
+                            <li><b>INSPECTION DATE</b> (Format: YYYY-MM-DD)</li>
+                            <li><b>INSPECTION DUE DATE</b> (Format: YYYY-MM-DD)</li>
+                            <li><b>TP INSPECTION DUE DATE</b> (Format: YYYY-MM-DD)</li>
+                            <li><b>STATUS</b> (In Use, In Store, Damaged, Expired)</li>
+                            <li><b>PROJECT</b> (Exact name, e.g., "SEZ", "DTA")</li>
                         </ul>
                     </AlertDescription>
                 </Alert>

@@ -93,7 +93,7 @@ interface AppContextType {
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
   updateInventoryItem: (item: InventoryItem) => void;
   deleteInventoryItem: (itemId: string) => void;
-  addMultipleInventoryItems: (items: any[]) => void;
+  addMultipleInventoryItems: (items: any[]) => number;
   requestInventoryTransfer: (items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => void;
   approveInventoryTransfer: (requestId: string, comment: string) => void;
   rejectInventoryTransfer: (requestId: string, comment: string) => void;
@@ -902,22 +902,54 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     setInventoryItems(prev => prev.filter(i => i.id !== itemId));
   }, []);
   
-  const addMultipleInventoryItems = useCallback((items: any[]) => {
-      const newItems: InventoryItem[] = items.map((item, index) => ({
-        id: `inv-import-${Date.now()}-${index}`,
-        name: item.name,
-        serialNumber: item.serialNumber,
-        chestCrollNo: item.chestCrollNo,
-        ariesId: item.ariesId,
-        status: item.status,
-        projectId: projects.find(p => p.name.toLowerCase() === item.location?.toLowerCase())?.id || '',
-        location: item.location,
-        inspectionDate: new Date(item.inspectionDate).toISOString(),
-        inspectionDueDate: new Date(item.inspectionDueDate).toISOString(),
-        tpInspectionDueDate: new Date(item.tpInspectionDueDate).toISOString(),
-      }));
-      setInventoryItems(prev => [...prev, ...newItems]);
-  }, [projects]);
+  const addMultipleInventoryItems = useCallback((itemsData: any[]): number => {
+    let importedCount = 0;
+    const newItems: InventoryItem[] = [];
+    const updatedItems = new Map<string, InventoryItem>();
+
+    itemsData.forEach((item, index) => {
+        try {
+            const projectName = item['PROJECT'];
+            const project = projects.find(p => p.name.toLowerCase() === projectName?.toLowerCase());
+
+            if (!item['ITEM NAME'] || !item['SERIAL NUMBER'] || !item['INSPECTION DATE'] || !item['INSPECTION DUE DATE'] || !item['TP INSPECTION DUE DATE'] || !item['STATUS'] || !project) {
+                console.warn(`Skipping row ${index + 2} due to missing required data.`);
+                return;
+            }
+
+            const parsedItem = {
+                id: `inv-import-${Date.now()}-${index}`,
+                name: item['ITEM NAME'],
+                serialNumber: String(item['SERIAL NUMBER']),
+                chestCrollNo: item['CHEST CROLL NO'] ? String(item['CHEST CROLL NO']) : undefined,
+                ariesId: item['ARIES ID'] ? String(item['ARIES ID']) : undefined,
+                status: item['STATUS'] as InventoryItem['status'],
+                inspectionDate: new Date(item['INSPECTION DATE']).toISOString(),
+                inspectionDueDate: new Date(item['INSPECTION DUE DATE']).toISOString(),
+                tpInspectionDueDate: new Date(item['TP INSPECTION DUE DATE']).toISOString(),
+                projectId: project.id,
+                location: project.name,
+            };
+
+            const existingItem = inventoryItems.find(i => i.serialNumber === parsedItem.serialNumber);
+            if (existingItem) {
+                updatedItems.set(existingItem.id, { ...existingItem, ...parsedItem, id: existingItem.id });
+            } else {
+                newItems.push(parsedItem);
+            }
+            importedCount++;
+        } catch(e) {
+            console.error(`Failed to process row ${index + 2}`, e);
+        }
+    });
+
+    setInventoryItems(prev => {
+        const afterUpdates = prev.map(item => updatedItems.get(item.id) || item);
+        return [...afterUpdates, ...newItems];
+    });
+
+    return importedCount;
+  }, [projects, inventoryItems]);
   
   const requestInventoryTransfer = useCallback((items: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => {
     if (!user) return;
