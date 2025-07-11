@@ -46,10 +46,13 @@ export default function AddEmployeeDialog({ isOpen, setIsOpen }: AddEmployeeDial
   });
 
   const onSubmit = (data: EmployeeFormValues) => {
-    addUser({
-      ...data,
-      supervisorId: (data.supervisorId === 'unassigned' || !data.supervisorId) ? undefined : data.supervisorId,
-    });
+    const dataToSave: any = { ...data };
+    if (data.supervisorId === 'unassigned' || !data.supervisorId) {
+      delete dataToSave.supervisorId;
+    }
+
+    addUser(dataToSave);
+
     toast({
       title: 'User Added',
       description: `${data.name} has been added to the system.`,
