@@ -1,47 +1,25 @@
 'use client';
-import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppContextProvider, useAppContext } from '@/context/app-context';
-import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/hooks/use-auth.tsx';
-import './globals.css';
+import { useAuth } from '@/hooks/use-auth';
 
+export default function RootPage() {
+  const { user, isAuthLoading } = useAuth();
+  const router = useRouter();
 
-function AppTitleUpdater({ children }: { children: React.ReactNode }) {
-  const { appName } = useAppContext();
   useEffect(() => {
-    document.title = appName;
-  }, [appName]);
+    if (!isAuthLoading) {
+      if (user) {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/login');
+      }
+    }
+  }, [user, isAuthLoading, router]);
 
-  return <>{children}</>;
-}
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
   return (
-    <html lang="en" className='h-full'>
-      <head>
-        <meta name="description" content="A collaborative task management application." />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="font-body antialiased h-full bg-background">
-        <AuthProvider>
-          <AppContextProvider>
-            <AppTitleUpdater>
-              {children}
-              <Toaster />
-            </AppTitleUpdater>
-          </AppContextProvider>
-        </AuthProvider>
-      </body>
-    </html>
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <p>Loading...</p>
+    </div>
   );
 }
