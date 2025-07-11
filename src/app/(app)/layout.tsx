@@ -7,19 +7,18 @@ import { AppSidebar } from '@/components/shared/app-sidebar';
 import Header from '@/components/shared/header';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAppContext();
+  const { user, isLoading } = useAppContext(); // Use the context's loading state
   const router = useRouter();
 
   useEffect(() => {
-    // This check now runs after the context has had a chance to check the session
-    if (user === null) {
+    // Only redirect if loading is finished and there's no user
+    if (!isLoading && user === null) {
       router.replace('/login');
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
-  // The context provider now handles the main loading state.
-  // We can return null here and let the context's loading screen show.
-  if (!user) {
+  // While loading, or if there's no user yet, don't render anything to avoid flashes of content or incorrect redirects.
+  if (isLoading || !user) {
     return null;
   }
 
@@ -35,5 +34,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-    
