@@ -4,10 +4,6 @@ import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
-import { AppContextProvider, useAppContext } from '@/context/app-context';
-import { Toaster } from '@/components/ui/toaster';
-
-// --- Start of AuthProvider logic ---
 
 interface AuthContextType {
   user: User | null;
@@ -16,7 +12,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -55,7 +51,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       const foundUser = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
       
-      // NOTE: In a real app, hash and compare the password. For this demo, we do a direct comparison.
       if (foundUser.password === password) {
           sessionStorage.setItem('user', JSON.stringify(foundUser));
           setUser(foundUser);
@@ -87,44 +82,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
-// --- End of AuthProvider logic ---
-
-
-function AppTitleUpdater({ children }: { children: React.ReactNode }) {
-  const { appName } = useAppContext();
-  useEffect(() => {
-    document.title = appName;
-  }, [appName]);
-
-  return <>{children}</>;
-}
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en" className='h-full'>
-      <head>
-        <meta name="description" content="A collaborative task management application." />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="font-body antialiased h-full bg-background">
-        <AuthProvider>
-          <AppContextProvider>
-            <AppTitleUpdater>
-              {children}
-              <Toaster />
-            </AppTitleUpdater>
-          </AppContextProvider>
-        </AuthProvider>
-      </body>
-    </html>
-  );
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
