@@ -113,7 +113,7 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
     defaultValues: { documents: [], skills: [], hasSkills: false, status: 'Working', leaveHistory: [] }
   });
   
-  const { fields: docFields, append: appendDoc, remove: removeDoc } = useFieldArray({ control: form.control, name: "documents" });
+  const { fields: docFields, append: appendDoc, remove: removeDoc, replace: replaceDocs } = useFieldArray({ control: form.control, name: "documents" });
   const { fields: skillFields, append: appendSkill, remove: removeSkill } = useFieldArray({ control: form.control, name: "skills" });
   const { fields: leaveFields, update: updateLeave, remove: removeLeave } = useFieldArray({ control: form.control, name: "leaveHistory" });
 
@@ -147,38 +147,40 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
 
 
   useEffect(() => {
-    if (profile) {
-      form.reset({
-        ...profile,
-        hasSkills: !!profile.skills && profile.skills.length > 0,
-        leaveHistory: profile.leaveHistory?.map(l => ({
-            ...l,
-            leaveStartDate: new Date(l.leaveStartDate),
-            plannedEndDate: l.plannedEndDate ? new Date(l.plannedEndDate) : undefined,
-            leaveEndDate: l.leaveEndDate ? new Date(l.leaveEndDate) : undefined,
-            rejoinedDate: l.rejoinedDate ? new Date(l.rejoinedDate) : undefined,
-        })) || [],
-        passIssueDate: profile.passIssueDate ? new Date(profile.passIssueDate) : undefined,
-        joiningDate: profile.joiningDate ? new Date(profile.joiningDate) : undefined,
-        woValidity: profile.woValidity ? new Date(profile.woValidity) : undefined,
-        wcPolicyValidity: profile.wcPolicyValidity ? new Date(profile.wcPolicyValidity) : undefined,
-        labourContractValidity: profile.labourContractValidity ? new Date(profile.labourContractValidity) : undefined,
-        medicalExpiryDate: profile.medicalExpiryDate ? new Date(profile.medicalExpiryDate) : undefined,
-        safetyExpiryDate: profile.safetyExpiryDate ? new Date(profile.safetyExpiryDate) : undefined,
-        irataValidity: profile.irataValidity ? new Date(profile.irataValidity) : undefined,
-        contractValidity: profile.contractValidity ? new Date(profile.contractValidity) : undefined,
-        terminationDate: profile.terminationDate ? new Date(profile.terminationDate) : undefined,
-        resignationDate: profile.resignationDate ? new Date(profile.resignationDate) : undefined,
-      });
-    } else {
-        const defaultDocs = MANDATORY_DOCS.map(name => ({ name, details: '', status: 'Pending' as const }));
-        form.reset({
-            name: '', trade: '', documentFolderUrl: '',
-            documents: defaultDocs,
-            skills: [], hasSkills: false, status: 'Working', leaveHistory: [],
-        });
+    if (isOpen) {
+        if (profile) {
+            form.reset({
+                ...profile,
+                hasSkills: !!profile.skills && profile.skills.length > 0,
+                leaveHistory: profile.leaveHistory?.map(l => ({
+                    ...l,
+                    leaveStartDate: new Date(l.leaveStartDate),
+                    plannedEndDate: l.plannedEndDate ? new Date(l.plannedEndDate) : undefined,
+                    leaveEndDate: l.leaveEndDate ? new Date(l.leaveEndDate) : undefined,
+                    rejoinedDate: l.rejoinedDate ? new Date(l.rejoinedDate) : undefined,
+                })) || [],
+                passIssueDate: profile.passIssueDate ? new Date(profile.passIssueDate) : undefined,
+                joiningDate: profile.joiningDate ? new Date(profile.joiningDate) : undefined,
+                woValidity: profile.woValidity ? new Date(profile.woValidity) : undefined,
+                wcPolicyValidity: profile.wcPolicyValidity ? new Date(profile.wcPolicyValidity) : undefined,
+                labourContractValidity: profile.labourContractValidity ? new Date(profile.labourContractValidity) : undefined,
+                medicalExpiryDate: profile.medicalExpiryDate ? new Date(profile.medicalExpiryDate) : undefined,
+                safetyExpiryDate: profile.safetyExpiryDate ? new Date(profile.safetyExpiryDate) : undefined,
+                irataValidity: profile.irataValidity ? new Date(profile.irataValidity) : undefined,
+                contractValidity: profile.contractValidity ? new Date(profile.contractValidity) : undefined,
+                terminationDate: profile.terminationDate ? new Date(profile.terminationDate) : undefined,
+                resignationDate: profile.resignationDate ? new Date(profile.resignationDate) : undefined,
+            });
+        } else {
+            const defaultDocs = MANDATORY_DOCS.map(name => ({ name, details: '', status: 'Pending' as const }));
+            form.reset({
+                name: '', trade: '', documentFolderUrl: '',
+                documents: defaultDocs,
+                skills: [], hasSkills: false, status: 'Working', leaveHistory: [],
+            });
+        }
     }
-  }, [profile, form.reset]);
+  }, [profile, isOpen, form]);
   
   useEffect(() => {
     const isRATrade = RA_TRADES.includes(watchedTrade as Trade);
@@ -193,6 +195,7 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
   }, [watchedTrade, watchedDocuments, appendDoc, removeDoc]);
   
   useEffect(() => {
+    if (!isOpen) return;
     const currentStatus = form.getValues('status');
     const hasActiveLeave = form.getValues('leaveHistory')?.some(l => !l.rejoinedDate);
 
@@ -200,10 +203,10 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
         const newLeave: LeaveRecord = { id: `leave-${Date.now()}`, leaveStartDate: new Date().toISOString() };
         form.setValue('leaveHistory', [...(form.getValues('leaveHistory') || []), newLeave as any]);
     }
-  }, [watchedStatus, form]);
+  }, [watchedStatus, form, isOpen]);
 
   useEffect(() => {
-    if (activeLeaveIndex > -1) {
+    if (activeLeaveIndex > -1 && isOpen) {
         const rejoinedDate = form.watch(`leaveHistory.${activeLeaveIndex}.rejoinedDate`);
         if (rejoinedDate) {
             const currentLeave = form.getValues(`leaveHistory.${activeLeaveIndex}`);
@@ -212,7 +215,7 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
             form.setValue('status', 'Working');
         }
     }
-  }, [form.watch(`leaveHistory.${activeLeaveIndex}.rejoinedDate`), activeLeaveIndex, form, updateLeave]);
+  }, [form.watch(`leaveHistory.${activeLeaveIndex}.rejoinedDate`), activeLeaveIndex, form, updateLeave, isOpen]);
 
 
   const onSubmit = (data: ProfileFormValues) => {
@@ -239,7 +242,7 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
     };
 
     if (profile) {
-      updateManpowerProfile({ ...profile, ...dataToSubmit });
+      updateManpowerProfile({ ...profile, ...dataToSubmit } as ManpowerProfile);
       toast({ title: 'Profile Updated' });
     } else {
       addManpowerProfile(dataToSubmit as Omit<ManpowerProfile, 'id'>);
