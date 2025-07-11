@@ -2,12 +2,14 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import type { User } from '@/lib/types';
-import { USERS } from '@/lib/mock-data';
-import { useLocalStorage } from './use-local-storage';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User as FirebaseAuthUser } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import type { User as AppUser } from '@/lib/types';
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
+  firebaseUser: FirebaseAuthUser | null;
   isAuthLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -20,36 +22,61 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useLocalStorage<User | null>('user', null);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // This effect simply ensures that the loading state is turned off after the initial check.
-    // The actual user state is managed by useLocalStorage.
-    setIsAuthLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      setFirebaseUser(fbUser);
+      if (fbUser) {
+        // Fetch app-specific user data from Firestore
+        const userDocRef = doc(db, 'users', fbUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setUser({ id: userDocSnap.id, ...userDocSnap.data() } as AppUser);
+        } else {
+          // Handle case where user exists in Auth but not in Firestore
+          console.error("User document not found in Firestore:", fbUser.uid);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+      setIsAuthLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     setIsAuthLoading(true);
-    const foundUser = USERS.find(u => u.email === email && u.password === password);
-    if (foundUser) {
-      setUser(foundUser);
-      router.replace('/dashboard');
-      setIsAuthLoading(false);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged will handle setting the user state and routing
       return true;
+    } catch (error) {
+      console.error("Firebase login error:", error);
+      setIsAuthLoading(false);
+      return false;
     }
-    setIsAuthLoading(false);
-    return false;
-  }, [setUser, router]);
+  }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    router.replace('/login');
-  }, [setUser, router]);
+  const logout = useCallback(async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setFirebaseUser(null);
+      router.replace('/login');
+    } catch (error) {
+      console.error("Firebase logout error:", error);
+    }
+  }, [router]);
 
   const value = {
     user,
+    firebaseUser,
     isAuthLoading,
     login,
     logout,

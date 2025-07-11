@@ -2,13 +2,13 @@
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import type { User, Task, PlannerEvent, Comment, Role, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, Announcement, IncidentReport } from '../lib/types';
-import { useLocalStorage } from '../hooks/use-local-storage';
-import * as mock from '../lib/mock-data';
+import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, where, query, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { addDays, isBefore, eachDayOfInterval, endOfMonth, isSameDay, isWeekend, startOfDay, differenceInMinutes, format, differenceInDays, subDays, startOfMonth, isPast, isAfter } from 'date-fns';
-import { useAuth } from '@/hooks/use-auth.tsx';
 
 interface AppContextType {
-  // Directly managed state
+  // Directly managed state from Firestore
   users: User[];
   roles: RoleDefinition[];
   tasks: Task[];
@@ -68,36 +68,73 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Helper function to create a listener for a collection
+const useCollection = <T,>(collectionName: string) => {
+  const [data, setData] = useState<T[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, collectionName));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const items: T[] = [];
+      querySnapshot.forEach((doc) => {
+        items.push({ id: doc.id, ...doc.data() } as T);
+      });
+      setData(items);
+      setLoading(false);
+    }, (error) => {
+      console.error(`Error fetching ${collectionName}: `, error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [collectionName]);
+
+  return { data, loading };
+};
+
+
 export function AppContextProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   
-  const [users, setUsers] = useLocalStorage<User[]>('users', mock.USERS);
-  const [roles, setRoles] = useLocalStorage<RoleDefinition[]>('roles', mock.ROLES);
-  const [tasks, setTasks] = useLocalStorage<Task[]>('tasks', mock.TASKS);
-  const [projects, setProjects] = useLocalStorage<Project[]>('projects', mock.PROJECTS);
-  const [inventoryItems, setInventoryItems] = useLocalStorage<InventoryItem[]>('inventoryItems', mock.INVENTORY_ITEMS);
-  const [inventoryTransferRequests, setInventoryTransferRequests] = useLocalStorage<InventoryTransferRequest[]>('inventoryTransferRequests', mock.INVENTORY_TRANSFER_REQUESTS);
-  const [certificateRequests, setCertificateRequests] = useLocalStorage<CertificateRequest[]>('certificateRequests', mock.CERTIFICATE_REQUESTS);
-  const [plannerEvents, setPlannerEvents] = useLocalStorage<PlannerEvent[]>('plannerEvents', mock.PLANNER_EVENTS);
-  const [dailyPlannerComments, setDailyPlannerComments] = useLocalStorage<DailyPlannerComment[]>('dailyPlannerComments', mock.DAILY_PLANNER_COMMENTS);
-  const [achievements, setAchievements] = useLocalStorage<Achievement[]>('achievements', mock.ACHIEVEMENTS);
-  const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('activityLogs', mock.ACTIVITY_LOGS);
-  const [manpowerLogs, setManpowerLogs] = useLocalStorage<ManpowerLog[]>('manpowerLogs', mock.MANPOWER_LOGS);
-  const [manpowerProfiles, setManpowerProfiles] = useLocalStorage<ManpowerProfile[]>('manpowerProfiles', mock.MANPOWER_PROFILES);
-  const [utMachines, setUtMachines] = useLocalStorage<UTMachine[]>('utMachines', mock.UT_MACHINES);
-  const [dftMachines, setDftMachines] = useLocalStorage<DftMachine[]>('dftMachines', mock.DFT_MACHINES);
-  const [mobileSims, setMobileSims] = useLocalStorage<MobileSim[]>('mobileSims', mock.MOBILE_SIMS);
-  const [otherEquipments, setOtherEquipments] = useLocalStorage<OtherEquipment[]>('otherEquipments', mock.OTHER_EQUIPMENTS);
-  const [vehicles, setVehicles] = useLocalStorage<Vehicle[]>('vehicles', mock.VEHICLES);
-  const [drivers, setDrivers] = useLocalStorage<Driver[]>('drivers', mock.DRIVERS);
-  const [internalRequests, setInternalRequests] = useLocalStorage<InternalRequest[]>('internalRequests', mock.INTERNAL_REQUESTS);
-  const [managementRequests, setManagementRequests] = useLocalStorage<ManagementRequest[]>('managementRequests', mock.MANAGEMENT_REQUESTS);
-  const [announcements, setAnnouncements] = useLocalStorage<Announcement[]>('announcements', mock.ANNOUNCEMENTS);
-  const [incidents, setIncidents] = useLocalStorage<IncidentReport[]>('incidents', mock.INCIDENTS);
+  // Use the custom hook for each collection
+  const { data: users, loading: usersLoading } = useCollection<User>('users');
+  const { data: roles, loading: rolesLoading } = useCollection<RoleDefinition>('roles');
+  const { data: tasks, loading: tasksLoading } = useCollection<Task>('tasks');
+  const { data: projects, loading: projectsLoading } = useCollection<Project>('projects');
+  const { data: inventoryItems, loading: inventoryItemsLoading } = useCollection<InventoryItem>('inventoryItems');
+  const { data: inventoryTransferRequests, loading: inventoryTransferRequestsLoading } = useCollection<InventoryTransferRequest>('inventoryTransferRequests');
+  const { data: certificateRequests, loading: certificateRequestsLoading } = useCollection<CertificateRequest>('certificateRequests');
+  const { data: plannerEvents, loading: plannerEventsLoading } = useCollection<PlannerEvent>('plannerEvents');
+  const { data: dailyPlannerComments, loading: dailyPlannerCommentsLoading } = useCollection<DailyPlannerComment>('dailyPlannerComments');
+  const { data: achievements, loading: achievementsLoading } = useCollection<Achievement>('achievements');
+  const { data: activityLogs, loading: activityLogsLoading } = useCollection<ActivityLog>('activityLogs');
+  const { data: manpowerLogs, loading: manpowerLogsLoading } = useCollection<ManpowerLog>('manpowerLogs');
+  const { data: manpowerProfiles, loading: manpowerProfilesLoading } = useCollection<ManpowerProfile>('manpowerProfiles');
+  const { data: utMachines, loading: utMachinesLoading } = useCollection<UTMachine>('utMachines');
+  const { data: dftMachines, loading: dftMachinesLoading } = useCollection<DftMachine>('dftMachines');
+  const { data: mobileSims, loading: mobileSimsLoading } = useCollection<MobileSim>('mobileSims');
+  const { data: otherEquipments, loading: otherEquipmentsLoading } = useCollection<OtherEquipment>('otherEquipments');
+  const { data: vehicles, loading: vehiclesLoading } = useCollection<Vehicle>('vehicles');
+  const { data: drivers, loading: driversLoading } = useCollection<Driver>('drivers');
+  const { data: internalRequests, loading: internalRequestsLoading } = useCollection<InternalRequest>('internalRequests');
+  const { data: managementRequests, loading: managementRequestsLoading } = useCollection<ManagementRequest>('managementRequests');
+  const { data: announcements, loading: announcementsLoading } = useCollection<Announcement>('announcements');
+  const { data: incidents, loading: incidentsLoading } = useCollection<IncidentReport>('incidents');
+  const { data: brandingData, loading: brandingLoading } = useCollection<{ name: string; logo: string | null }>('branding');
+
+  const appName = useMemo(() => brandingData.find(b => b.id === 'main')?.name || 'TaskMaster Pro', [brandingData]);
+  const appLogo = useMemo(() => brandingData.find(b => b.id === 'main')?.logo || null, [brandingData]);
   
-  const [appName, setAppName] = useLocalStorage<string>('appName', 'Aries Marine');
-  const [appLogo, setAppLogo] = useLocalStorage<string | null>('appLogo', null);
-  const [isDataLoading, setIsDataLoading] = useState(false);
+  const isDataLoading = [
+    usersLoading, rolesLoading, tasksLoading, projectsLoading, inventoryItemsLoading,
+    inventoryTransferRequestsLoading, certificateRequestsLoading, plannerEventsLoading,
+    dailyPlannerCommentsLoading, achievementsLoading, activityLogsLoading,
+    manpowerLogsLoading, manpowerProfilesLoading, utMachinesLoading, dftMachinesLoading,
+    mobileSimsLoading, otherEquipmentsLoading, vehiclesLoading, driversLoading,
+    internalRequestsLoading, managementRequestsLoading, announcementsLoading,
+    incidentsLoading, brandingLoading
+  ].some(Boolean);
 
   const getVisibleUsers = useCallback(() => {
     if (!user) return [];
@@ -116,10 +153,10 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [user, users, roles]);
 
 
-  const updateBranding = useCallback((name: string, logo: string | null) => {
-    setAppName(name);
-    setAppLogo(logo);
-  }, [setAppName, setAppLogo]);
+  const updateBranding = useCallback(async (name: string, logo: string | null) => {
+    const brandingDocRef = doc(db, 'branding', 'main');
+    await updateDoc(brandingDocRef, { name, logo });
+  }, []);
   
   const getExpandedPlannerEvents = useCallback((date: Date, userId: string) => {
     const events = plannerEvents.filter(e => e.userId === userId);
@@ -174,228 +211,217 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
     return certificateRequests.filter(req => req.requesterId === user.id && req.status === 'Fulfilled' && !req.isViewedByRequester);
   }, [certificateRequests, user]);
   
-  const addUser = (userData: Omit<User, 'id'>) => {
-    const newUser = { ...userData, id: `user-${Date.now()}` };
-    setUsers(prev => [...prev, newUser]);
+  const addUser = async (userData: Omit<User, 'id'>) => {
+    // Note: This only adds to Firestore. You need to create the user in Firebase Auth separately.
+    await addDoc(collection(db, "users"), userData);
   };
   
-  const updateUser = (updatedUser: User) => {
-    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+  const updateUser = async (updatedUser: User) => {
+    const { id, ...data } = updatedUser;
+    await updateDoc(doc(db, "users", id), data);
   };
   
-  const deleteUser = (userId: string) => {
-    setUsers(prev => prev.filter(u => u.id !== userId));
+  const deleteUser = async (userId: string) => {
+    // Note: This only deletes from Firestore. You need to delete the user from Firebase Auth separately.
+    await deleteDoc(doc(db, "users", userId));
   };
   
   const updateProfile = (name: string, email: string, avatar: string, password?: string) => {
     if (user) {
+        // Note: Updating email/password requires Firebase Auth functions which should be handled carefully.
+        // This function will only update the Firestore document.
         const updatedUser = { ...user, name, email, avatar };
-        if (password) {
-            updatedUser.password = password;
-        }
         updateUser(updatedUser);
     }
   };
 
-  const updateUserPlanningScore = (userId: string, score: number) => {
-    setUsers(prevUsers => 
-      prevUsers.map(u => 
-        u.id === userId ? { ...u, planningScore: score } : u
-      )
-    );
+  const updateUserPlanningScore = async (userId: string, score: number) => {
+    await updateDoc(doc(db, "users", userId), { planningScore: score });
   };
 
-  const addRole = (roleData: Omit<RoleDefinition, 'id' | 'isEditable'>) => {
-    const newRole = { ...roleData, id: `role-${Date.now()}`, isEditable: true };
-    setRoles(prev => [...prev, newRole]);
+  const addRole = async (roleData: Omit<RoleDefinition, 'id' | 'isEditable'>) => {
+    await addDoc(collection(db, "roles"), { ...roleData, isEditable: true });
   };
   
-  const updateRole = (updatedRole: RoleDefinition) => {
-    setRoles(prev => prev.map(r => r.id === updatedRole.id ? updatedRole : r));
+  const updateRole = async (updatedRole: RoleDefinition) => {
+    const { id, ...data } = updatedRole;
+    await updateDoc(doc(db, "roles", id), data);
   };
   
-  const deleteRole = (roleId: string) => {
-    setRoles(prev => prev.filter(r => r.id !== roleId));
+  const deleteRole = async (roleId: string) => {
+    await deleteDoc(doc(db, "roles", roleId));
   };
 
-  const addProject = (projectName: string) => {
-    const newProject = { id: `proj-${Date.now()}`, name: projectName };
-    setProjects(prev => [...prev, newProject]);
+  const addProject = async (projectName: string) => {
+    await addDoc(collection(db, "projects"), { name: projectName });
   };
 
-  const updateProject = (updatedProject: Project) => {
-      setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+  const updateProject = async (updatedProject: Project) => {
+    const { id, ...data } = updatedProject;
+    await updateDoc(doc(db, "projects", id), data);
   };
 
-  const deleteProject = (projectId: string) => {
-      setProjects(prev => prev.filter(p => p.id !== projectId));
+  const deleteProject = async (projectId: string) => {
+    await deleteDoc(doc(db, "projects", projectId));
   };
   
-  const addTask = (taskData: Omit<Task, 'id' | 'status' | 'isViewedByAssignee' | 'approvalState' | 'comments'>) => {
-    const newTask: Task = {
+  const addTask = async (taskData: Omit<Task, 'id' | 'status' | 'isViewedByAssignee' | 'approvalState' | 'comments'>) => {
+    const newTask: Omit<Task, 'id'> = {
         ...taskData,
-        id: `task-${Date.now()}`,
         status: 'To Do',
         isViewedByAssignee: false,
         approvalState: 'none',
         comments: [],
     };
-    setTasks(prev => [newTask, ...prev]);
+    await addDoc(collection(db, "tasks"), newTask);
   };
 
-  const updateTask = (updatedTask: Task) => {
-    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+  const updateTask = async (updatedTask: Task) => {
+    const { id, ...data } = updatedTask;
+    await updateDoc(doc(db, "tasks", id), data);
   };
 
-  const deleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+  const deleteTask = async (taskId: string) => {
+    await deleteDoc(doc(db, "tasks", taskId));
   };
   
-  const addComment = (taskId: string, text: string) => {
+  const addComment = async (taskId: string, text: string) => {
     if (!user) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
     const newComment: Comment = {
-      id: `comment-${Date.now()}`,
       userId: user.id,
       text,
       date: new Date().toISOString(),
     };
-    setTasks(prev => prev.map(t => 
-        t.id === taskId ? { ...t, comments: [...(t.comments || []), newComment] } : t
-    ));
+    const updatedComments = [...(task.comments || []), newComment];
+    await updateDoc(doc(db, "tasks", taskId), { comments: updatedComments });
   };
 
-  const requestTaskStatusChange = (taskId: string, newStatus: TaskStatus, comment: string, attachment?: Task['attachment']) => {
+  const requestTaskStatusChange = async (taskId: string, newStatus: TaskStatus, comment: string, attachment?: Task['attachment']) => {
     if(!user) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
 
-    setTasks(prev => prev.map(t => {
-      if (t.id === taskId) {
-        const updatedTask: Task = {
-          ...t,
-          status: 'Pending Approval',
-          previousStatus: t.status,
-          pendingStatus: newStatus,
-          approvalState: 'pending',
-          comments: [...(t.comments || []), { id: `c-${Date.now()}`, userId: user.id, text: `Status change to ${newStatus} requested: ${comment}`, date: new Date().toISOString()}]
-        };
-        if (attachment) {
-            updatedTask.attachment = attachment;
-        }
-        return updatedTask;
-      }
-      return t;
-    }));
-  };
-  
-  const approveTaskStatusChange = (taskId: string, comment: string) => {
-    if(!user) return;
-
-    setTasks(prev => prev.map(t => {
-      if (t.id === taskId && t.pendingStatus) {
-        const finalStatus = t.pendingStatus;
-        const newAssigneeId = t.pendingAssigneeId || t.assigneeId;
-
-        return {
-          ...t,
-          status: finalStatus,
-          completionDate: finalStatus === 'Completed' ? new Date().toISOString() : t.completionDate,
-          approvalState: 'approved',
-          assigneeId: newAssigneeId,
-          pendingStatus: undefined,
-          previousStatus: undefined,
-          pendingAssigneeId: undefined,
-          comments: [...(t.comments || []), { id: `c-${Date.now()}`, userId: user.id, text: `Request Approved: ${comment}`, date: new Date().toISOString() }]
-        };
-      }
-      return t;
-    }));
-  };
-  
-  const returnTaskStatusChange = (taskId: string, comment: string) => {
-    if(!user) return;
-    setTasks(prev => prev.map(t => {
-        if (t.id === taskId) {
-            return {
-                ...t,
-                status: t.previousStatus || t.status,
-                approvalState: 'returned',
-                pendingStatus: undefined,
-                previousStatus: undefined,
-                pendingAssigneeId: undefined,
-                comments: [...(t.comments || []), { id: `c-${Date.now()}`, userId: user.id, text: `Request Returned: ${comment}`, date: new Date().toISOString() }]
-            }
-        }
-        return t;
-    }));
-  };
-
-  const markTaskAsViewed = (taskId: string) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, isViewedByAssignee: true } : t));
-  };
-  
-  const requestTaskReassignment = (taskId: string, newAssigneeId: string, comment: string) => {
-    if(!user) return;
-    setTasks(prev => prev.map(t => {
-      if (t.id === taskId) {
-        return {
-          ...t,
-          status: 'Pending Approval',
-          approvalState: 'pending',
-          previousStatus: t.status,
-          pendingAssigneeId: newAssigneeId,
-          comments: [...(t.comments || []), { id: `c-${Date.now()}`, userId: user.id, text: `Reassignment requested to ${users.find(u => u.id === newAssigneeId)?.name}: ${comment}`, date: new Date().toISOString() }]
-        }
-      }
-      return t;
-    }));
-  };
-  
-  const addManpowerProfile = (data: Omit<ManpowerProfile, 'id'>) => {
-    setManpowerProfiles(prev => [...prev, { ...data, id: `mp-prof-${Date.now()}` }]);
-  };
-
-  const updateManpowerProfile = (updatedProfile: ManpowerProfile) => {
-    setManpowerProfiles(prev => prev.map(p => p.id === updatedProfile.id ? updatedProfile : p));
-  };
-
-  const deleteManpowerProfile = (profileId: string) => {
-    setManpowerProfiles(prev => prev.filter(p => p.id !== profileId));
-  };
-
-  const addManpowerLog = (logData: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => {
-    if(!user) return;
-    const newLog = {
-      ...logData,
-      id: `mp-log-${Date.now()}`,
-      date: format(new Date(), 'yyyy-MM-dd'),
-      updatedBy: user.id
+    const newComment: Comment = { userId: user.id, text: `Status change to ${newStatus} requested: ${comment}`, date: new Date().toISOString()};
+    const updatedTaskData: Partial<Task> = {
+      status: 'Pending Approval',
+      previousStatus: task.status,
+      pendingStatus: newStatus,
+      approvalState: 'pending',
+      comments: [...(task.comments || []), newComment]
     };
-    setManpowerLogs(prev => [...prev, newLog]);
+     if (attachment) {
+        updatedTaskData.attachment = attachment;
+    }
+    await updateDoc(doc(db, "tasks", taskId), updatedTaskData);
   };
   
-  const addInventoryItem = (itemData: Omit<InventoryItem, 'id'>) => {
-    setInventoryItems(prev => [...prev, { ...itemData, id: `inv-${Date.now()}` }]);
+  const approveTaskStatusChange = async (taskId: string, comment: string) => {
+    if(!user) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !task.pendingStatus) return;
+
+    const finalStatus = task.pendingStatus;
+    const newAssigneeId = task.pendingAssigneeId || task.assigneeId;
+
+    const updatedTaskData: Partial<Task> = {
+      status: finalStatus,
+      completionDate: finalStatus === 'Completed' ? new Date().toISOString() : task.completionDate,
+      approvalState: 'approved',
+      assigneeId: newAssigneeId,
+      pendingStatus: undefined,
+      previousStatus: undefined,
+      pendingAssigneeId: undefined,
+      comments: [...(task.comments || []), { id: `c-${Date.now()}`, userId: user.id, text: `Request Approved: ${comment}`, date: new Date().toISOString() }]
+    };
+    await updateDoc(doc(db, "tasks", taskId), updatedTaskData);
   };
   
-  const updateInventoryItem = (updatedItem: InventoryItem) => {
-    setInventoryItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
-  };
-  
-  const deleteInventoryItem = (itemId: string) => {
-    setInventoryItems(prev => prev.filter(item => item.id !== itemId));
+  const returnTaskStatusChange = async (taskId: string, comment: string) => {
+    if(!user) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    const updatedTaskData: Partial<Task> = {
+        status: task.previousStatus || task.status,
+        approvalState: 'returned',
+        pendingStatus: undefined,
+        previousStatus: undefined,
+        pendingAssigneeId: undefined,
+        comments: [...(task.comments || []), { id: `c-${Date.now()}`, userId: user.id, text: `Request Returned: ${comment}`, date: new Date().toISOString() }]
+    };
+    await updateDoc(doc(db, "tasks", taskId), updatedTaskData);
   };
 
-  const addMultipleInventoryItems = (items: any[]) => {
-    const existingSerialNumbers = new Set(inventoryItems.map(i => i.serialNumber));
-    const newItems: InventoryItem[] = [];
-    let updatedCount = 0;
+  const markTaskAsViewed = async (taskId: string) => {
+    await updateDoc(doc(db, "tasks", taskId), { isViewedByAssignee: true });
+  };
+  
+  const requestTaskReassignment = async (taskId: string, newAssigneeId: string, comment: string) => {
+    if(!user) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    const updatedTaskData: Partial<Task> = {
+        status: 'Pending Approval',
+        approvalState: 'pending',
+        previousStatus: task.status,
+        pendingAssigneeId: newAssigneeId,
+        comments: [...(task.comments || []), { id: `c-${Date.now()}`, userId: user.id, text: `Reassignment requested to ${users.find(u => u.id === newAssigneeId)?.name}: ${comment}`, date: new Date().toISOString() }]
+    };
+    await updateDoc(doc(db, "tasks", taskId), updatedTaskData);
+  };
+  
+  const addManpowerProfile = async (data: Omit<ManpowerProfile, 'id'>) => {
+    await addDoc(collection(db, "manpowerProfiles"), data);
+  };
+
+  const updateManpowerProfile = async (updatedProfile: ManpowerProfile) => {
+    const { id, ...data } = updatedProfile;
+    await updateDoc(doc(db, "manpowerProfiles", id), data);
+  };
+
+  const deleteManpowerProfile = async (profileId: string) => {
+    await deleteDoc(doc(db, "manpowerProfiles", profileId));
+  };
+
+  const addManpowerLog = async (logData: Omit<ManpowerLog, 'id' | 'date' | 'updatedBy'>) => {
+    if(!user) return;
+    await addDoc(collection(db, "manpowerLogs"), {
+        ...logData,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        updatedBy: user.id
+    });
+  };
+  
+  const addInventoryItem = async (itemData: Omit<InventoryItem, 'id'>) => {
+    await addDoc(collection(db, "inventoryItems"), itemData);
+  };
+  
+  const updateInventoryItem = async (updatedItem: InventoryItem) => {
+    const { id, ...data } = updatedItem;
+    await updateDoc(doc(db, "inventoryItems", id), data);
+  };
+  
+  const deleteInventoryItem = async (itemId: string) => {
+    await deleteDoc(doc(db, "inventoryItems", itemId));
+  };
+
+  const addMultipleInventoryItems = async (items: any[]) => {
+    const existingItemsQuery = query(collection(db, "inventoryItems"));
+    const querySnapshot = await getDocs(existingItemsQuery);
+    const existingItems = new Map(querySnapshot.docs.map(doc => [doc.data().serialNumber, doc.id]));
+
+    const batch = writeBatch(db);
+    let importedCount = 0;
 
     items.forEach(item => {
         const serialNumber = item['SERIAL NUMBER'];
         if (!serialNumber) return;
 
         const location = projects.find(p => p.name === item['PROJECT']);
-
-        const newItemData: Omit<InventoryItem, 'id'> = {
+        const newItemData = {
             name: item['ITEM NAME'] || 'Unknown',
             serialNumber: serialNumber,
             chestCrollNo: item['CHEST CROLL NO'] || '',
@@ -408,450 +434,446 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
             projectId: location?.id || projects.find(p => p.name === 'Head Office')?.id || '',
         };
 
-        if (existingSerialNumbers.has(serialNumber)) {
-            // Update existing
-            setInventoryItems(prev => prev.map(i => i.serialNumber === serialNumber ? { ...i, ...newItemData } : i));
-            updatedCount++;
+        const existingId = existingItems.get(serialNumber);
+        if (existingId) {
+            batch.update(doc(db, "inventoryItems", existingId), newItemData);
         } else {
-            // Add new
-            newItems.push({ ...newItemData, id: `inv-${Date.now()}-${serialNumber}` });
+            batch.set(doc(collection(db, "inventoryItems")), newItemData);
         }
+        importedCount++;
     });
 
-    setInventoryItems(prev => [...prev, ...newItems]);
-    return newItems.length + updatedCount;
+    await batch.commit();
+    return importedCount;
   };
 
-  const requestInventoryTransfer = (itemsToTransfer: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => {
+  const requestInventoryTransfer = async (itemsToTransfer: InventoryItem[], fromProjectId: string, toProjectId: string, comment: string) => {
     if(!user) return;
-    const newRequest: InventoryTransferRequest = {
-        id: `inv-transfer-${Date.now()}`,
+    await addDoc(collection(db, "inventoryTransferRequests"), {
         items: itemsToTransfer,
         fromProjectId,
         toProjectId,
         requesterId: user.id,
         date: new Date().toISOString(),
         status: 'Pending',
-        comments: [{ id: `c-${Date.now()}`, userId: user.id, text: comment, date: new Date().toISOString() }],
-    };
-    setInventoryTransferRequests(prev => [...prev, newRequest]);
+        comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
+    });
   };
   
-  const addInventoryTransferComment = (requestId: string, text: string) => {
+  const addInventoryTransferComment = async (requestId: string, text: string) => {
     if(!user) return;
-    const newComment: Comment = { id: `c-${Date.now()}`, userId: user.id, text, date: new Date().toISOString() };
-    setInventoryTransferRequests(prev => prev.map(r => 
-        r.id === requestId ? { ...r, comments: [...r.comments, newComment] } : r
-    ));
+    const request = inventoryTransferRequests.find(r => r.id === requestId);
+    if(!request) return;
+    const newComment: Comment = { userId: user.id, text, date: new Date().toISOString() };
+    await updateDoc(doc(db, "inventoryTransferRequests", requestId), { comments: [...request.comments, newComment] });
   };
   
-  const approveInventoryTransfer = (requestId: string, comment: string) => {
+  const approveInventoryTransfer = async (requestId: string, comment: string) => {
     const request = inventoryTransferRequests.find(r => r.id === requestId);
     if (!request) return;
+
+    const batch = writeBatch(db);
     
     // Move items
-    const movedItemIds = new Set(request.items.map(i => i.id));
-    setInventoryItems(prev => prev.map(item =>
-        movedItemIds.has(item.id) ? { ...item, projectId: request.toProjectId, location: projects.find(p => p.id === request.toProjectId)?.name || 'Unknown' } : item
-    ));
+    request.items.forEach(item => {
+        batch.update(doc(db, "inventoryItems", item.id), { 
+            projectId: request.toProjectId, 
+            location: projects.find(p => p.id === request.toProjectId)?.name || 'Unknown' 
+        });
+    });
 
     // Update request
-    addInventoryTransferComment(requestId, `Approved: ${comment}`);
-    setInventoryTransferRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Approved' } : r));
+    const newComment: Comment = { userId: user.id, text: `Approved: ${comment}`, date: new Date().toISOString() };
+    batch.update(doc(db, "inventoryTransferRequests", requestId), { status: 'Approved', comments: [...request.comments, newComment] });
+    
+    await batch.commit();
   };
   
-  const rejectInventoryTransfer = (requestId: string, comment: string) => {
+  const rejectInventoryTransfer = async (requestId: string, comment: string) => {
      addInventoryTransferComment(requestId, `Rejected: ${comment}`);
-     setInventoryTransferRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Rejected' } : r));
+     await updateDoc(doc(db, "inventoryTransferRequests", requestId), { status: 'Rejected' });
   };
 
-  const addCertificateRequest = (itemId: string, requestType: CertificateRequestType, comment: string) => {
+  const addCertificateRequest = async (itemId: string, requestType: CertificateRequestType, comment: string) => {
     if(!user) return;
-    const newRequest: CertificateRequest = {
-        id: `cert-req-${Date.now()}`,
+    await addDoc(collection(db, "certificateRequests"), {
         itemId: itemId,
         requesterId: user.id,
         requestType,
         status: 'Pending',
         date: new Date().toISOString(),
-        comments: [{ id: `c-${Date.now()}`, userId: user.id, text: comment, date: new Date().toISOString() }],
+        comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
         isViewedByRequester: true,
-    };
-    setCertificateRequests(prev => [...prev, newRequest]);
+    });
   };
   
-  const addUTMachine = (data: Omit<UTMachine, 'id' | 'usageLog'>) => {
-    setUtMachines(prev => [...prev, { ...data, id: `ut-${Date.now()}`, usageLog: [] }]);
+  const addUTMachine = async (data: Omit<UTMachine, 'id' | 'usageLog'>) => {
+    await addDoc(collection(db, "utMachines"), { ...data, usageLog: [] });
   };
 
-  const updateUTMachine = (updatedMachine: UTMachine) => {
-    setUtMachines(prev => prev.map(m => m.id === updatedMachine.id ? updatedMachine : m));
+  const updateUTMachine = async (updatedMachine: UTMachine) => {
+    const { id, ...data } = updatedMachine;
+    await updateDoc(doc(db, "utMachines", id), data);
   };
   
-  const deleteUTMachine = (machineId: string) => {
-    setUtMachines(prev => prev.filter(m => m.id !== machineId));
+  const deleteUTMachine = async (machineId: string) => {
+    await deleteDoc(doc(db, "utMachines", machineId));
   };
 
-  const addUTMachineLog = (machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => {
+  const addUTMachineLog = async (machineId: string, logData: Omit<UTMachineUsageLog, 'id' | 'date' | 'loggedBy'>) => {
     if(!user) return;
+    const machine = utMachines.find(m => m.id === machineId);
+    if(!machine) return;
+
     const newLog: UTMachineUsageLog = {
       ...logData,
       id: `log-${Date.now()}`,
       date: new Date().toISOString(),
       loggedBy: user.id,
     };
-    setUtMachines(prev => prev.map(m => m.id === machineId ? { ...m, usageLog: [...(m.usageLog || []), newLog] } : m));
+    await updateDoc(doc(db, "utMachines", machineId), { usageLog: [...(machine.usageLog || []), newLog] });
   };
 
-  const requestUTMachineCertificate = (machineId: string, requestType: CertificateRequestType, comment: string) => {
+  const requestUTMachineCertificate = async (machineId: string, requestType: CertificateRequestType, comment: string) => {
      if(!user) return;
-    const newRequest: CertificateRequest = {
-        id: `cert-req-${Date.now()}`,
+    await addDoc(collection(db, "certificateRequests"), {
         utMachineId: machineId,
         requesterId: user.id,
         requestType,
         status: 'Pending',
         date: new Date().toISOString(),
-        comments: [{ id: `c-${Date.now()}`, userId: user.id, text: comment, date: new Date().toISOString() }],
+        comments: [{ userId: user.id, text: comment, date: new Date().toISOString() }],
         isViewedByRequester: true,
-    };
-    setCertificateRequests(prev => [...prev, newRequest]);
+    });
   };
   
-  const fulfillCertificateRequest = (requestId: string, comment: string) => {
+  const fulfillCertificateRequest = async (requestId: string, comment: string) => {
     if(!user) return;
-    setCertificateRequests(prev => prev.map(req => {
-        if(req.id === requestId) {
-            const newComment: Comment = { id: `c-${Date.now()}`, userId: user.id, text: `Fulfilled: ${comment}`, date: new Date().toISOString() };
-            return { ...req, status: 'Fulfilled', isViewedByRequester: false, comments: [...req.comments, newComment] };
-        }
-        return req;
-    }));
+    const request = certificateRequests.find(r => r.id === requestId);
+    if (!request) return;
+
+    const newComment: Comment = { userId: user.id, text: `Fulfilled: ${comment}`, date: new Date().toISOString() };
+    await updateDoc(doc(db, "certificateRequests", requestId), { status: 'Fulfilled', isViewedByRequester: false, comments: [...request.comments, newComment] });
   };
 
-  const addCertificateRequestComment = (requestId: string, text: string) => {
+  const addCertificateRequestComment = async (requestId: string, text: string) => {
     if(!user) return;
-    const newComment: Comment = { id: `c-${Date.now()}`, userId: user.id, text, date: new Date().toISOString() };
-    setCertificateRequests(prev => prev.map(req => 
-        req.id === requestId ? { ...req, comments: [...req.comments, newComment] } : req
-    ));
+    const request = certificateRequests.find(r => r.id === requestId);
+    if(!request) return;
+
+    const newComment: Comment = { userId: user.id, text, date: new Date().toISOString() };
+    await updateDoc(doc(db, "certificateRequests", requestId), { comments: [...request.comments, newComment] });
   };
   
-  const acknowledgeFulfilledUTRequest = (requestId: string) => {
-    setCertificateRequests(prev => prev.map(req => req.id === requestId ? { ...req, isViewedByRequester: true } : req));
+  const acknowledgeFulfilledUTRequest = async (requestId: string) => {
+    await updateDoc(doc(db, "certificateRequests", requestId), { isViewedByRequester: true });
   };
 
-  const addDftMachine = (data: Omit<DftMachine, 'id' | 'usageLog'>) => {
-    setDftMachines(prev => [...prev, { ...data, id: `dft-${Date.now()}`, usageLog: [] }]);
+  const addDftMachine = async (data: Omit<DftMachine, 'id' | 'usageLog'>) => {
+    await addDoc(collection(db, "dftMachines"), { ...data, usageLog: [] });
   };
-  const updateDftMachine = (updatedMachine: DftMachine) => {
-    setDftMachines(prev => prev.map(m => m.id === updatedMachine.id ? updatedMachine : m));
+  const updateDftMachine = async (updatedMachine: DftMachine) => {
+    const { id, ...data } = updatedMachine;
+    await updateDoc(doc(db, "dftMachines", id), data);
   };
-  const deleteDftMachine = (machineId: string) => {
-    setDftMachines(prev => prev.filter(m => m.id !== machineId));
-  };
-
-  const addMobileSim = (data: Omit<MobileSim, 'id'>) => {
-    setMobileSims(prev => [...prev, { ...data, id: `ms-${Date.now()}` }]);
-  };
-  const updateMobileSim = (updatedItem: MobileSim) => {
-    setMobileSims(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
-  };
-  const deleteMobileSim = (itemId: string) => {
-    setMobileSims(prev => prev.filter(item => item.id !== itemId));
+  const deleteDftMachine = async (machineId: string) => {
+    await deleteDoc(doc(db, "dftMachines", machineId));
   };
 
-  const addOtherEquipment = (data: Omit<OtherEquipment, 'id'>) => {
-    setOtherEquipments(prev => [...prev, { ...data, id: `oe-${Date.now()}` }]);
+  const addMobileSim = async (data: Omit<MobileSim, 'id'>) => {
+    await addDoc(collection(db, "mobileSims"), data);
   };
-  const updateOtherEquipment = (updatedItem: OtherEquipment) => {
-    setOtherEquipments(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+  const updateMobileSim = async (updatedItem: MobileSim) => {
+    const { id, ...data } = updatedItem;
+    await updateDoc(doc(db, "mobileSims", id), data);
   };
-  const deleteOtherEquipment = (itemId: string) => {
-    setOtherEquipments(prev => prev.filter(item => item.id !== itemId));
+  const deleteMobileSim = async (itemId: string) => {
+    await deleteDoc(doc(db, "mobileSims", itemId));
+  };
+
+  const addOtherEquipment = async (data: Omit<OtherEquipment, 'id'>) => {
+    await addDoc(collection(db, "otherEquipments"), data);
+  };
+  const updateOtherEquipment = async (updatedItem: OtherEquipment) => {
+    const { id, ...data } = updatedItem;
+    await updateDoc(doc(db, "otherEquipments", id), data);
+  };
+  const deleteOtherEquipment = async (itemId: string) => {
+    await deleteDoc(doc(db, "otherEquipments", itemId));
   };
   
-  const addDriver = (data: Omit<Driver, 'id'>) => {
-    setDrivers(prev => [...prev, { ...data, id: `driver-${Date.now()}` }]);
+  const addDriver = async (data: Omit<Driver, 'id'>) => {
+    await addDoc(collection(db, "drivers"), data);
   };
-  const updateDriver = (updatedDriver: Driver) => {
-    setDrivers(prev => prev.map(d => d.id === updatedDriver.id ? updatedDriver : d));
+  const updateDriver = async (updatedDriver: Driver) => {
+    const { id, ...data } = updatedDriver;
+    await updateDoc(doc(db, "drivers", id), data);
   };
-  const deleteDriver = (driverId: string) => {
-    setDrivers(prev => prev.filter(d => d.id !== driverId));
-  };
-
-  const addVehicle = (data: Omit<Vehicle, 'id'>) => {
-    setVehicles(prev => [...prev, { ...data, id: `vh-${Date.now()}` }]);
-  };
-  const updateVehicle = (updatedVehicle: Vehicle) => {
-    setVehicles(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
-  };
-  const deleteVehicle = (vehicleId: string) => {
-    setVehicles(prev => prev.filter(v => v.id !== vehicleId));
+  const deleteDriver = async (driverId: string) => {
+    await deleteDoc(doc(db, "drivers", driverId));
   };
 
-  const addInternalRequest = (data: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester'>) => {
+  const addVehicle = async (data: Omit<Vehicle, 'id'>) => {
+    await addDoc(collection(db, "vehicles"), data);
+  };
+  const updateVehicle = async (updatedVehicle: Vehicle) => {
+    const { id, ...data } = updatedVehicle;
+    await updateDoc(doc(db, "vehicles", id), data);
+  };
+  const deleteVehicle = async (vehicleId: string) => {
+    await deleteDoc(doc(db, "vehicles", vehicleId));
+  };
+
+  const addInternalRequest = async (data: Omit<InternalRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRequester'>) => {
     if (!user) return;
-    const newRequest: InternalRequest = {
+    const newRequest: Omit<InternalRequest, 'id'> = {
         ...data,
-        id: `ireq-${Date.now()}`,
         requesterId: user.id,
         date: new Date().toISOString(),
         status: 'Pending',
-        comments: [{ id: `c-${Date.now()}`, userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
+        comments: [{ userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
         isViewedByRequester: true
     };
-    setInternalRequests(prev => [...prev, newRequest]);
+    await addDoc(collection(db, "internalRequests"), newRequest);
   };
-  const updateInternalRequest = (updatedRequest: InternalRequest) => {
-    setInternalRequests(prev => prev.map(req => req.id === updatedRequest.id ? {...updatedRequest, isViewedByRequester: false } : req));
+  const updateInternalRequest = async (updatedRequest: InternalRequest) => {
+    const { id, ...data } = updatedRequest;
+    await updateDoc(doc(db, "internalRequests", id), {...data, isViewedByRequester: false });
   };
-  const addInternalRequestComment = (requestId: string, text: string) => {
+  const addInternalRequestComment = async (requestId: string, text: string) => {
     if(!user) return;
-    const newComment: Comment = { id: `c-${Date.now()}`, userId: user.id, text, date: new Date().toISOString() };
-    setInternalRequests(prev => prev.map(r => 
-        r.id === requestId ? { ...r, comments: [...(r.comments || []), newComment], isViewedByRequester: false } : r
-    ));
+    const request = internalRequests.find(r => r.id === requestId);
+    if (!request) return;
+    const newComment: Comment = { userId: user.id, text, date: new Date().toISOString() };
+    await updateDoc(doc(db, "internalRequests", requestId), { comments: [...(request.comments || []), newComment], isViewedByRequester: false });
   };
-  const deleteInternalRequest = (requestId: string) => {
-    setInternalRequests(prev => prev.filter(req => req.id !== requestId));
+  const deleteInternalRequest = async (requestId: string) => {
+    await deleteDoc(doc(db, "internalRequests", requestId));
   };
-  const markRequestAsViewed = (requestId: string) => {
-    setInternalRequests(prev => prev.map(req => req.id === requestId ? { ...req, isViewedByRequester: true } : req));
+  const markRequestAsViewed = async (requestId: string) => {
+    await updateDoc(doc(db, "internalRequests", requestId), { isViewedByRequester: true });
   };
-  const forwardInternalRequest = (requestId: string, role: Role, comment: string) => {
+  const forwardInternalRequest = async (requestId: string, role: Role, comment: string) => {
     addInternalRequestComment(requestId, `Forwarded to ${role}: ${comment}`);
-    setInternalRequests(prev => prev.map(req => req.id === requestId ? { ...req, forwardedTo: role } : req));
+    await updateDoc(doc(db, "internalRequests", requestId), { forwardedTo: role });
   };
-  const escalateInternalRequest = (requestId: string, comment: string) => {
+  const escalateInternalRequest = async (requestId: string, comment: string) => {
     addInternalRequestComment(requestId, `Request Escalated: ${comment}`);
-    setInternalRequests(prev => prev.map(req => req.id === requestId ? { ...req, isEscalated: true, forwardedTo: 'Manager' } : req));
+    await updateDoc(doc(db, "internalRequests", requestId), { isEscalated: true, forwardedTo: 'Manager' });
   };
 
-  const addManagementRequest = (data: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRecipient' | 'isViewedByRequester'>) => {
+  const addManagementRequest = async (data: Omit<ManagementRequest, 'id' | 'requesterId' | 'date' | 'status' | 'comments' | 'isViewedByRecipient' | 'isViewedByRequester'>) => {
      if (!user) return;
-    const newRequest: ManagementRequest = {
+    const newRequest: Omit<ManagementRequest, 'id'> = {
         ...data,
-        id: `mreq-${Date.now()}`,
         requesterId: user.id,
         date: new Date().toISOString(),
         status: 'Pending',
-        comments: [{ id: `c-${Date.now()}`, userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
+        comments: [{ userId: user.id, text: 'Request created.', date: new Date().toISOString() }],
         isViewedByRecipient: false,
         isViewedByRequester: true,
     };
-    setManagementRequests(prev => [...prev, newRequest]);
+    await addDoc(collection(db, "managementRequests"), newRequest);
   };
-  const updateManagementRequest = (updatedRequest: ManagementRequest) => {
-    setManagementRequests(prev => prev.map(req => req.id === updatedRequest.id ? {...updatedRequest, isViewedByRequester: false, isViewedByRecipient: false } : req));
+  const updateManagementRequest = async (updatedRequest: ManagementRequest) => {
+    const { id, ...data } = updatedRequest;
+    await updateDoc(doc(db, "managementRequests", id), {...data, isViewedByRequester: false, isViewedByRecipient: false });
   };
-  const addManagementRequestComment = (requestId: string, text: string) => {
+  const addManagementRequestComment = async (requestId: string, text: string) => {
     if(!user) return;
-    const newComment: Comment = { id: `c-${Date.now()}`, userId: user.id, text, date: new Date().toISOString() };
-    setManagementRequests(prev => prev.map(r => 
-        r.id === requestId ? { ...r, comments: [...(r.comments || []), newComment], isViewedByRequester: false, isViewedByRecipient: false } : r
-    ));
+    const request = managementRequests.find(r => r.id === requestId);
+    if (!request) return;
+    const newComment: Comment = { userId: user.id, text, date: new Date().toISOString() };
+    await updateDoc(doc(db, "managementRequests", requestId), { comments: [...(request.comments || []), newComment], isViewedByRequester: false, isViewedByRecipient: false });
   };
-  const markManagementRequestAsViewed = (requestId: string) => {
+  const markManagementRequestAsViewed = async (requestId: string) => {
     if (!user) return;
-    setManagementRequests(prev => prev.map(req => {
-        if (req.id === requestId) {
-            if (req.requesterId === user.id) return { ...req, isViewedByRequester: true };
-            if (req.recipientId === user.id) return { ...req, isViewedByRecipient: true };
-        }
-        return req;
-    }));
+    const request = managementRequests.find(r => r.id === requestId);
+    if (!request) return;
+    if (request.requesterId === user.id) await updateDoc(doc(db, "managementRequests", requestId), { isViewedByRequester: true });
+    if (request.recipientId === user.id) await updateDoc(doc(db, "managementRequests", requestId), { isViewedByRecipient: true });
   };
   
-  const addAnnouncement = (data: Pick<Announcement, 'title' | 'content'>) => {
+  const addAnnouncement = async (data: Pick<Announcement, 'title' | 'content'>) => {
     if (!user || !user.supervisorId) return;
-    const newAnnouncement: Announcement = {
+    const newAnnouncement: Omit<Announcement, 'id'> = {
         ...data,
-        id: `ann-${Date.now()}`,
         creatorId: user.id,
         approverId: user.supervisorId,
         date: new Date().toISOString(),
         status: 'pending',
         isViewed: [],
     };
-    setAnnouncements(prev => [...prev, newAnnouncement]);
+    await addDoc(collection(db, "announcements"), newAnnouncement);
   };
-  const updateAnnouncement = (updatedAnnouncement: Announcement) => {
-    setAnnouncements(prev => prev.map(a => a.id === updatedAnnouncement.id ? updatedAnnouncement : a));
+  const updateAnnouncement = async (updatedAnnouncement: Announcement) => {
+    const { id, ...data } = updatedAnnouncement;
+    await updateDoc(doc(db, "announcements", id), data);
   };
-  const approveAnnouncement = (announcementId: string) => {
-    setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'approved' } : a));
+  const approveAnnouncement = async (announcementId: string) => {
+    await updateDoc(doc(db, "announcements", announcementId), { status: 'approved' });
   };
-  const rejectAnnouncement = (announcementId: string) => {
-    setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'rejected' } : a));
+  const rejectAnnouncement = async (announcementId: string) => {
+    await updateDoc(doc(db, "announcements", announcementId), { status: 'rejected' });
   };
-  const returnAnnouncement = (announcementId: string, commentText: string) => {
+  const returnAnnouncement = async (announcementId: string, commentText: string) => {
     if (!user) return;
+    const announcement = announcements.find(a => a.id === announcementId);
+    if (!announcement) return;
     const comment: Comment = {
-      id: `c-${Date.now()}`,
       userId: user.id,
       text: `Returned for modification: ${commentText}`,
       date: new Date().toISOString(),
     };
-    setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, status: 'rejected', comments: [...(a.comments || []), comment] } : a));
+    await updateDoc(doc(db, "announcements", announcementId), { status: 'rejected', comments: [...(announcement.comments || []), comment] });
   };
-  const deleteAnnouncement = (announcementId: string) => {
-    setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
+  const deleteAnnouncement = async (announcementId: string) => {
+    await deleteDoc(doc(db, "announcements", announcementId));
   };
-  const dismissAnnouncement = (announcementId: string) => {
+  const dismissAnnouncement = async (announcementId: string) => {
     if(!user) return;
-    setAnnouncements(prev => prev.map(a => a.id === announcementId ? { ...a, isViewed: [...a.isViewed, user.id] } : a));
+    const announcement = announcements.find(a => a.id === announcementId);
+    if (!announcement) return;
+    await updateDoc(doc(db, "announcements", announcementId), { isViewed: [...announcement.isViewed, user.id] });
   };
   
-  const addIncidentReport = (data: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'isPublished'>) => {
+  const addIncidentReport = async (data: Omit<IncidentReport, 'id' | 'reporterId' | 'reportTime' | 'status' | 'comments' | 'isPublished' | 'reportedToUserIds'>) => {
     if(!user) return;
     const supervisorId = user.supervisorId;
     const hseUser = users.find(u => u.role === 'HSE');
     const reportedToUserIds = [supervisorId, hseUser?.id].filter(Boolean) as string[];
     
-    const newIncident: IncidentReport = {
+    const newIncident: Omit<IncidentReport, 'id'> = {
         ...data,
-        id: `inc-${Date.now()}`,
         reporterId: user.id,
         reportedToUserIds: reportedToUserIds,
         reportTime: new Date().toISOString(),
         status: 'New',
         isPublished: false,
-        comments: [{ id: `c-${Date.now()}`, userId: user.id, text: 'Incident reported.', date: new Date().toISOString() }],
+        comments: [{ userId: user.id, text: 'Incident reported.', date: new Date().toISOString() }],
     };
-    setIncidents(prev => [...prev, newIncident]);
+    await addDoc(collection(db, "incidents"), newIncident);
   };
   
-  const updateIncident = (updatedIncident: IncidentReport) => {
-    setIncidents(prev => prev.map(i => i.id === updatedIncident.id ? updatedIncident : i));
+  const updateIncident = async (updatedIncident: IncidentReport) => {
+    const { id, ...data } = updatedIncident;
+    await updateDoc(doc(db, "incidents", id), data);
   };
   
-  const addIncidentComment = (incidentId: string, text: string) => {
+  const addIncidentComment = async (incidentId: string, text: string) => {
     if(!user) return;
-    const newComment: Comment = { id: `c-${Date.now()}`, userId: user.id, text, date: new Date().toISOString() };
-    setIncidents(prev => prev.map(i => 
-        i.id === incidentId ? { ...i, comments: [...(i.comments || []), newComment] } : i
-    ));
+    const incident = incidents.find(i => i.id === incidentId);
+    if (!incident) return;
+    const newComment: Comment = { userId: user.id, text, date: new Date().toISOString() };
+    await updateDoc(doc(db, "incidents", incidentId), { comments: [...(incident.comments || []), newComment] });
   };
 
-  const publishIncident = (incidentId: string) => {
-    setIncidents(prev => prev.map(i => i.id === incidentId ? { ...i, isPublished: true } : i));
+  const publishIncident = async (incidentId: string) => {
+    await updateDoc(doc(db, "incidents", incidentId), { isPublished: true });
   };
   
-  const addUsersToIncidentReport = (incidentId: string, userIds: string[]) => {
-    setIncidents(prev => prev.map(i => 
-        i.id === incidentId ? { ...i, reportedToUserIds: Array.from(new Set([...(i.reportedToUserIds || []), ...userIds])) } : i
-    ));
+  const addUsersToIncidentReport = async (incidentId: string, userIds: string[]) => {
+    const incident = incidents.find(i => i.id === incidentId);
+    if (!incident) return;
+    await updateDoc(doc(db, "incidents", incidentId), { reportedToUserIds: Array.from(new Set([...(incident.reportedToUserIds || []), ...userIds])) });
   };
   
-  const addManualAchievement = (data: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => {
+  const addManualAchievement = async (data: Omit<Achievement, 'id' | 'type' | 'date' | 'awardedById' | 'status'>) => {
     if (!user) return;
     const isAdminOrManager = user.role === 'Admin' || user.role === 'Manager';
-    const newAchievement: Achievement = {
+    const newAchievement: Omit<Achievement, 'id'> = {
         ...data,
-        id: `ach-${Date.now()}`,
         type: 'manual',
         awardedById: user.id,
         date: new Date().toISOString(),
         status: isAdminOrManager ? 'approved' : 'pending',
     };
-    setAchievements(prev => [...prev, newAchievement]);
+    await addDoc(collection(db, "achievements"), newAchievement);
   };
   
-  const updateManualAchievement = (updatedAchievement: Achievement) => {
-    setAchievements(prev => prev.map(a => a.id === updatedAchievement.id ? updatedAchievement : a));
+  const updateManualAchievement = async (updatedAchievement: Achievement) => {
+    const { id, ...data } = updatedAchievement;
+    await updateDoc(doc(db, "achievements", id), data);
   };
   
-  const approveAchievement = (achievementId: string, points: number) => {
-    setAchievements(prev => prev.map(a => a.id === achievementId ? { ...a, status: 'approved', points } : a));
+  const approveAchievement = async (achievementId: string, points: number) => {
+    await updateDoc(doc(db, "achievements", achievementId), { status: 'approved', points });
   };
 
-  const rejectAchievement = (achievementId: string) => {
-    setAchievements(prev => prev.map(a => a.id === achievementId ? { ...a, status: 'rejected' } : a));
+  const rejectAchievement = async (achievementId: string) => {
+    await updateDoc(doc(db, "achievements", achievementId), { status: 'rejected' });
   };
 
-  const deleteManualAchievement = (achievementId: string) => {
-    setAchievements(prev => prev.filter(a => a.id !== achievementId));
+  const deleteManualAchievement = async (achievementId: string) => {
+    await deleteDoc(doc(db, "achievements", achievementId));
   };
   
-  const addPlannerEvent = (data: Omit<PlannerEvent, 'id' | 'comments'>) => {
-    const newEvent: PlannerEvent = {
+  const addPlannerEvent = async (data: Omit<PlannerEvent, 'id' | 'comments'>) => {
+    const newEvent: Omit<PlannerEvent, 'id'> = {
         ...data,
-        id: `event-${Date.now()}`,
         comments: [],
     };
-    setPlannerEvents(prev => [...prev, newEvent]);
+    await addDoc(collection(db, "plannerEvents"), newEvent);
   };
   
-  const updatePlannerEvent = (updatedEvent: PlannerEvent) => {
-    setPlannerEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e));
+  const updatePlannerEvent = async (updatedEvent: PlannerEvent) => {
+    const { id, ...data } = updatedEvent;
+    await updateDoc(doc(db, "plannerEvents", id), data);
   };
   
-  const deletePlannerEvent = (eventId: string) => {
-    setPlannerEvents(prev => prev.filter(e => e.id !== eventId));
+  const deletePlannerEvent = async (eventId: string) => {
+    await deleteDoc(doc(db, "plannerEvents", eventId));
   };
 
-  const addPlannerEventComment = (eventId: string, text: string) => {
+  const addPlannerEventComment = async (eventId: string, text: string) => {
     if (!user) return;
+    const event = plannerEvents.find(e => e.id === eventId);
+    if (!event) return;
     const newComment: Comment = {
-      id: `comment-${Date.now()}`,
       userId: user.id,
       text,
       date: new Date().toISOString(),
     };
-    setPlannerEvents(prev => prev.map(e => 
-        e.id === eventId ? { ...e, comments: [...(e.comments || []), newComment] } : e
-    ));
+    await updateDoc(doc(db, "plannerEvents", eventId), { comments: [...(event.comments || []), newComment] });
   };
   
-  const addDailyPlannerComment = (plannerUserId: string, date: Date, text: string) => {
+  const addDailyPlannerComment = async (plannerUserId: string, date: Date, text: string) => {
     if (!user) return;
     const dayKey = format(date, 'yyyy-MM-dd');
-    const existingEntryIndex = dailyPlannerComments.findIndex(dpc => dpc.day === dayKey && dpc.plannerUserId === plannerUserId);
-    const newComment: Comment = { id: `c-${Date.now()}`, userId: user.id, text, date: new Date().toISOString() };
+    const existingEntry = dailyPlannerComments.find(dpc => dpc.day === dayKey && dpc.plannerUserId === plannerUserId);
+    const newComment: Comment = { userId: user.id, text, date: new Date().toISOString() };
     
-    if (existingEntryIndex > -1) {
-        setDailyPlannerComments(prev => prev.map((entry, index) => 
-            index === existingEntryIndex ? { ...entry, comments: [...entry.comments, newComment] } : entry
-        ));
+    if (existingEntry) {
+        await updateDoc(doc(db, "dailyPlannerComments", existingEntry.id), { comments: [...existingEntry.comments, newComment] });
     } else {
-        const newEntry: DailyPlannerComment = {
-            id: `dpc-${Date.now()}`,
+        await addDoc(collection(db, "dailyPlannerComments"), {
             plannerUserId,
             day: dayKey,
             comments: [newComment]
-        };
-        setDailyPlannerComments(prev => [...prev, newEntry]);
+        });
     }
   };
 
-  const updateDailyPlannerComment = (commentId: string, plannerUserId: string, day: string, newText: string) => {
-     setDailyPlannerComments(prev => prev.map(dpc => {
-        if (dpc.day === day && dpc.plannerUserId === plannerUserId) {
-            return {
-                ...dpc,
-                comments: dpc.comments.map(c => c.id === commentId ? { ...c, text: newText } : c)
-            }
-        }
-        return dpc;
-     }));
+  const updateDailyPlannerComment = async (commentId: string, plannerUserId: string, day: string, newText: string) => {
+    const dayEntry = dailyPlannerComments.find(dpc => dpc.day === day && dpc.plannerUserId === plannerUserId);
+    if (!dayEntry) return;
+
+    const updatedComments = dayEntry.comments.map(c => c.id === commentId ? { ...c, text: newText } : c);
+    await updateDoc(doc(db, "dailyPlannerComments", dayEntry.id), { comments: updatedComments });
   };
 
-  const deleteDailyPlannerComment = (commentId: string, plannerUserId: string, day: string) => {
-     setDailyPlannerComments(prev => prev.map(dpc => {
-        if (dpc.day === day && dpc.plannerUserId === plannerUserId) {
-            return {
-                ...dpc,
-                comments: dpc.comments.filter(c => c.id !== commentId)
-            }
-        }
-        return dpc;
-     }));
+  const deleteDailyPlannerComment = async (commentId: string, plannerUserId: string, day: string) => {
+     const dayEntry = dailyPlannerComments.find(dpc => dpc.day === day && dpc.plannerUserId === plannerUserId);
+     if (!dayEntry) return;
+
+     const updatedComments = dayEntry.comments.filter(c => c.id !== commentId);
+     await updateDoc(doc(db, "dailyPlannerComments", dayEntry.id), { comments: updatedComments });
   };
 
-  const deleteAllDailyPlannerComments = (plannerUserId: string, day: string) => {
-    setDailyPlannerComments(prev => prev.filter(dpc => !(dpc.day === day && dpc.plannerUserId === plannerUserId)));
+  const deleteAllDailyPlannerComments = async (plannerUserId: string, day: string) => {
+    const dayEntry = dailyPlannerComments.find(dpc => dpc.day === day && dpc.plannerUserId === plannerUserId);
+    if (!dayEntry) return;
+    await deleteDoc(doc(db, "dailyPlannerComments", dayEntry.id));
   };
 
   // ----- DERIVED STATE & NOTIFICATIONS ----- //
@@ -941,7 +963,6 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
 
 
   const value: AppContextType = {
-    user,
     users,
     roles,
     tasks,
