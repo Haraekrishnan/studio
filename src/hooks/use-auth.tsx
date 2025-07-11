@@ -12,7 +12,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -43,25 +43,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     const q = query(collection(db, "users"), where("email", "==", email.toLowerCase()));
+    
     try {
       const querySnapshot = await getDocs(q);
+      
       if (querySnapshot.empty) {
+        console.log(`Login failed: No user found for email ${email}`);
         return false;
       }
       
-      const foundUserWithPassword = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as User;
+      const foundUserDoc = querySnapshot.docs[0];
+      const foundUser = { id: foundUserDoc.id, ...foundUserDoc.data() } as User;
       
-      if (foundUserWithPassword.password === password) {
-          const { password: _, ...userToStore } = foundUserWithPassword;
+      if (foundUser.password === password) {
+          const { password: _password, ...userToStore } = foundUser;
           sessionStorage.setItem('user', JSON.stringify(userToStore));
           setUser(userToStore);
+          router.push('/dashboard');
           return true;
+      } else {
+        console.log('Login failed: Password mismatch.');
+        return false;
       }
     } catch(e) {
       console.error("Login error:", e);
+      return false;
     }
-    return false;
-  }, []);
+  }, [router]);
 
   const logout = useCallback(() => {
     setUser(null);

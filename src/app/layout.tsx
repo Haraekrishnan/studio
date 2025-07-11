@@ -1,9 +1,6 @@
 'use client';
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { User } from '@/lib/types';
 import { AppContextProvider, useAppContext } from '@/context/app-context';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth.tsx';
