@@ -1,6 +1,7 @@
+
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
-import type { Priority, User, Task, TaskStatus, PlannerEvent, Comment, Role, ApprovalState, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, Trade, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, Announcement, IncidentReport } from './types';
+import type { User, Task, PlannerEvent, Comment, Role, Achievement, ActivityLog, DailyPlannerComment, RoleDefinition, InternalRequest, Project, InventoryItem, InventoryTransferRequest, CertificateRequest, CertificateRequestType, ManpowerLog, UTMachine, Vehicle, UTMachineUsageLog, ManpowerProfile, ManagementRequest, DftMachine, MobileSim, OtherEquipment, Driver, Announcement, IncidentReport } from '../lib/types';
 import { addDays, isBefore, eachDayOfInterval, endOfMonth, isSameDay, isWeekend, startOfDay, differenceInMinutes, format, differenceInDays, subDays, startOfMonth, isPast, isAfter } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
@@ -302,7 +303,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const value = {
-      user, users, roles, tasks, projects, inventoryItems, inventoryTransferRequests, certificateRequests, plannerEvents, dailyPlannerComments, achievements, activityLogs, manpowerLogs, manpowerProfiles, utMachines, dftMachines, mobileSims, otherEquipments, vehicles, drivers, appName, appLogo, internalRequests, managementRequests, announcements, incidents, 
+      users, roles, tasks, projects, inventoryItems, inventoryTransferRequests, certificateRequests, plannerEvents, dailyPlannerComments, achievements, activityLogs, manpowerLogs, manpowerProfiles, utMachines, dftMachines, mobileSims, otherEquipments, vehicles, drivers, appName, appLogo, internalRequests, managementRequests, announcements, incidents, 
       isDataLoading,
       updateBranding,
       getExpandedPlannerEvents,
@@ -606,7 +607,8 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       rejectAnnouncement: (id: string) => updateDocInCollection('announcements', id, { status: 'rejected' }),
       deleteAnnouncement: (id: string) => deleteDocFromCollection('announcements', id),
       returnAnnouncement: (id: string, comment: string) => {
-         updateDocInCollection('announcements', id, { status: 'rejected', comments: arrayUnion({ userId: user?.id, text: `Returned for modification: ${comment}`, date: new Date().toISOString() }) });
+         if(!user) return;
+         updateDocInCollection('announcements', id, { status: 'rejected', comments: arrayUnion({ userId: user.id, text: `Returned for modification: ${comment}`, date: new Date().toISOString() }) });
       },
       dismissAnnouncement: (id: string) => {
         if(!user) return;
@@ -702,7 +704,31 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
       },
   };
     
-  return <AppContext.Provider value={value as any}>{children}</AppContext.Provider>;
+  // Placeholder for derived state (notifications)
+  const derivedState = {
+    pendingStoreRequestCount: 0,
+    myRequestUpdateCount: 0,
+    pendingCertificateRequestCount: 0,
+    myCertificateRequestUpdateCount: 0,
+    workingManpowerCount: 0,
+    onLeaveManpowerCount: 0,
+    pendingAnnouncementCount: 0,
+    unreadAnnouncementCount: 0,
+    newIncidentCount: 0,
+    myUnreadManagementRequestCount: 0,
+    unreadManagementRequestCountForMe: 0,
+    expiringVehicleDocsCount: 0,
+    expiringDriverDocsCount: 0,
+    expiringUtMachineCalibrationsCount: 0,
+    expiringManpowerCount: 0,
+    pendingTaskApprovalCount: 0,
+    myNewTaskCount: 0,
+  };
+
+
+  const contextValue = { ...value, ...derivedState };
+
+  return <AppContext.Provider value={contextValue as any}>{children}</AppContext.Provider>;
 }
 
 export function useAppContext() {
