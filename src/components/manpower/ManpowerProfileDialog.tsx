@@ -217,29 +217,29 @@ export default function ManpowerProfileDialog({ isOpen, setIsOpen, profile }: Ma
 
   const onSubmit = (data: ProfileFormValues) => {
     const dataToSubmit = {
-        ...data,
-        leaveHistory: data.leaveHistory?.map(l => ({
-            ...l,
-            leaveStartDate: (l.leaveStartDate as Date).toISOString(),
-            plannedEndDate: (l.plannedEndDate as Date)?.toISOString(),
-            leaveEndDate: (l.leaveEndDate as Date)?.toISOString(),
-            rejoinedDate: (l.rejoinedDate as Date)?.toISOString(),
-        })),
-        passIssueDate: data.passIssueDate?.toISOString(),
-        joiningDate: data.joiningDate?.toISOString(),
-        woValidity: data.woValidity?.toISOString(),
-        wcPolicyValidity: data.wcPolicyValidity?.toISOString(),
-        labourContractValidity: data.labourContractValidity?.toISOString(),
-        medicalExpiryDate: data.medicalExpiryDate?.toISOString(),
-        safetyExpiryDate: data.safetyExpiryDate?.toISOString(),
-        irataValidity: data.irataValidity?.toISOString(),
-        contractValidity: data.contractValidity?.toISOString(),
-        terminationDate: data.terminationDate?.toISOString(),
-        resignationDate: data.resignationDate?.toISOString(),
+      ...data,
+      leaveHistory: data.leaveHistory?.map(l => ({
+        ...l,
+        leaveStartDate: l.leaveStartDate instanceof Date ? l.leaveStartDate.toISOString() : l.leaveStartDate,
+        plannedEndDate: l.plannedEndDate instanceof Date ? l.plannedEndDate.toISOString() : l.plannedEndDate,
+        leaveEndDate: l.leaveEndDate instanceof Date ? l.leaveEndDate.toISOString() : l.leaveEndDate,
+        rejoinedDate: l.rejoinedDate instanceof Date ? l.rejoinedDate.toISOString() : l.rejoinedDate,
+      })),
+      passIssueDate: data.passIssueDate?.toISOString(),
+      joiningDate: data.joiningDate?.toISOString(),
+      woValidity: data.woValidity?.toISOString(),
+      wcPolicyValidity: data.wcPolicyValidity?.toISOString(),
+      labourContractValidity: data.labourContractValidity?.toISOString(),
+      medicalExpiryDate: data.medicalExpiryDate?.toISOString(),
+      safetyExpiryDate: data.safetyExpiryDate?.toISOString(),
+      irataValidity: data.irataValidity?.toISOString(),
+      contractValidity: data.contractValidity?.toISOString(),
+      terminationDate: data.terminationDate?.toISOString(),
+      resignationDate: data.resignationDate?.toISOString(),
     };
 
     if (profile) {
-      updateManpowerProfile({ ...profile, ...dataToSubmit as any });
+      updateManpowerProfile({ ...profile, ...dataToSubmit });
       toast({ title: 'Profile Updated' });
     } else {
       addManpowerProfile(dataToSubmit as Omit<ManpowerProfile, 'id'>);
