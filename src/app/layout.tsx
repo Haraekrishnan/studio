@@ -7,6 +7,7 @@ import type { User } from '@/lib/types';
 import { AppContextProvider, useAppContext } from '@/context/app-context';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
+import './globals.css';
 
 
 function AppTitleUpdater({ children }: { children: React.ReactNode }) {
