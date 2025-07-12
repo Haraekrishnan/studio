@@ -1,6 +1,6 @@
 
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/app-context';
 import { useAuth } from '@/hooks/use-auth';
@@ -11,14 +11,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthLoading } = useAuth();
   const { isDataLoading } = useAppContext();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (!isAuthLoading && !user) {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (user === null) {
       router.replace('/login');
     }
-  }, [user, isAuthLoading, router]);
+  }, [user, router]);
 
-  if (isAuthLoading || isDataLoading || !user) {
+  if (!user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <p>Loading application...</p>
