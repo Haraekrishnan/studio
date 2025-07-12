@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useAppContext } from '@/context/app-context';
 import { useAuth } from '@/hooks/use-auth.tsx';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Menu, LayoutDashboard, Briefcase, Layers, LogOut, TrendingUp, FileText, User, CalendarDays, Users, Award, Clock, History, Archive, Users2, Car, HardHat, Megaphone, ShieldAlert, BadgeInfo } from 'lucide-react';
 import { Badge } from '../ui/badge';
@@ -84,6 +84,12 @@ export default function Header() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="flex flex-col p-0 bg-sidebar text-sidebar-foreground border-r-0">
+             <SheetHeader className="sr-only">
+              <SheetTitle>Main Menu</SheetTitle>
+              <SheetDescription>
+                Navigate to different pages of the application.
+              </SheetDescription>
+            </SheetHeader>
             <div className="p-4 border-b border-sidebar-foreground/20">
                 <Link href="/dashboard" className="flex items-center gap-3">
                     <div className="bg-primary p-2 rounded-lg flex items-center justify-center">
