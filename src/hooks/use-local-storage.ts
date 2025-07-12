@@ -8,17 +8,9 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
     }
     try {
       const item = window.localStorage.getItem(key);
-      // Check if the item is not null and is a valid JSON string
-      if (item) {
-        // A simple check to see if it's likely a JSON object/array/string literal
-        if (item.startsWith('{') || item.startsWith('[') || item.startsWith('"')) {
-          return JSON.parse(item);
-        }
-      }
-      // If it's not valid JSON, or null, return the item itself if it's a string or the initial value
-      return item !== null ? (item as unknown as T) : initialValue;
+      return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error(`Error parsing localStorage key "${key}":`, error);
+      console.error(error);
       return initialValue;
     }
   });
@@ -34,6 +26,15 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
       console.error(`Error setting localStorage key "${key}":`, error);
     }
   };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const item = window.localStorage.getItem(key);
+        if (item) {
+            setStoredValue(JSON.parse(item));
+        }
+    }
+  }, [key]);
 
   return [storedValue, setValue];
 }
